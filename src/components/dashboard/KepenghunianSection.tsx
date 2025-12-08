@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import {
   Car,
   MessageSquareWarning,
@@ -18,60 +19,62 @@ const services = [
     title: "Daftar Abonemen Parkir",
     description: "Kelola langganan parkir penghuni",
     color: "primary",
+    path: "/kepenghunian/abonemen-parkir",
   },
   {
     icon: MessageSquareWarning,
     title: "Daftar Keluhan Penghuni",
     description: "Lihat dan tangani keluhan",
     color: "warning",
+    path: "/kepenghunian/keluhan",
   },
   {
     icon: ClipboardCheck,
     title: "Pengajuan Izin Kerja",
     description: "Proses pengajuan izin renovasi",
     color: "info",
+    path: "/kepenghunian/izin-kerja",
   },
   {
     icon: PackageOpen,
     title: "Keluar & Masuk Barang",
     description: "Pencatatan lalu lintas barang",
     color: "accent",
+    path: "/kepenghunian/barang",
   },
   {
     icon: CreditCard,
     title: "Pembuatan Kartu Akses",
     description: "Request kartu akses baru",
     color: "primary",
+    path: "/kepenghunian/kartu-akses",
   },
 ];
 
 const colorStyles = {
   primary: {
-    bg: "bg-primary/10",
     icon: "bg-primary text-primary-foreground",
     hover: "hover:border-primary/50",
   },
   accent: {
-    bg: "bg-success-light",
-    icon: "bg-success text-success-light",
+    icon: "bg-success text-success-foreground",
     hover: "hover:border-success/50",
   },
   info: {
-    bg: "bg-info-light",
-    icon: "bg-info text-info-light",
+    icon: "bg-info text-white",
     hover: "hover:border-info/50",
   },
   warning: {
-    bg: "bg-warning-light",
-    icon: "bg-warning text-warning-light",
+    icon: "bg-warning text-white",
     hover: "hover:border-warning/50",
   },
 };
 
 export function KepenghunianSection({ onBack }: KepenghunianSectionProps) {
+  const navigate = useNavigate();
+
   return (
     <div className="animate-fade-in">
-      {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <button
           onClick={onBack}
@@ -85,13 +88,13 @@ export function KepenghunianSection({ onBack }: KepenghunianSectionProps) {
         </div>
       </div>
 
-      {/* Service Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {services.map((service, index) => {
           const styles = colorStyles[service.color as keyof typeof colorStyles];
           return (
             <div
               key={service.title}
+              onClick={() => navigate(service.path)}
               className={cn(
                 "group p-6 rounded-xl border border-border bg-card shadow-card cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-scale-in",
                 styles.hover

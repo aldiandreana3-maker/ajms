@@ -1,0 +1,213 @@
+import { useState } from "react";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { useUsers, useUpdateUserRole, useUpdateUserStatus } from "@/hooks/useUserManagement";
+import { useAuth } from "@/contexts/AuthContext";
+import { Users, Loader2, Shield, UserCheck, UserX } from "lucide-react";
+import { format } from "date-fns";
+
+type AppRole = "super_admin" | "admin" | "staff" | "agent" | "penghuni";
+
+const roleLabels: Record<string, string> = {
+  super_admin: "Super Admin",
+  admin: "Admin",
+  staff: "Staff",
+  agent: "Agent",
+  penghuni: "Penghuni",
+};
+
+const roleColors: Record<string, string> = {
+  super_admin: "bg-destructive/20 text-destructive border-destructive/30",
+  admin: "bg-primary/20 text-primary border-primary/30",
+  staff: "bg-info/20 text-info border-info/30",
+  agent: "bg-warning/20 text-warning border-warning/30",
+  penghuni: "bg-muted text-muted-foreground border-muted",
+};
+
+export default function ManajemenUser() {
+  const { isSuperAdmin, user: currentUser } = useAuth();
+  const { data: users, isLoading } = useUsers();
+  const updateRoleMutation = useUpdateUserRole();
+  const updateStatusMutation = useUpdateUserStatus();
+
+  const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [newRole, setNewRole] = useState<AppRole>("penghuni");
+
+  const handleUpdateRole = async () => {
+    if (selectedUser) {
+      await updateRoleMutation.mutateAsync({ userId: selectedUser, role: newRole });
+      setSelectedUser(null);
+    }
+  };
+
+  const handleToggleStatus = async (userId: string, isActive: boolean) => {
+    await updateStatusMutation.mutateAsync({ userId, isActive: !isActive });
+  };
+
+  if (!isSuperAdmin) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <Shield className="w-16 h-16 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-semibold text-foreground mb-2">Akses Ditolak</h2>
+          <p className="text-muted-foreground">Halaman ini hanya dapat diakses oleh Super Admin</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  return (
+    <MainLayout>
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-primary/10 rounded-xl">
+            <Users className="w-6 h-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Manajemen User</h1>
+            <p className="text-muted-foreground">Kelola akun dan role pengguna</p>
+          </div>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Daftar User</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>User</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Terdaftar</TableHead>
+                    <TableHead>Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users?.map((u) => (
+                    <TableRow key={u.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage src={u.avatar_url || undefined} />
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                              {u.full_name?.charAt(0) || u.email.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{u.full_name || "Belum diatur"}</p>
+                            <p className="text-sm text-muted-foreground">{u.email}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {u.role ? (
+                          <Badge className={roleColors[u.role]}>
+                            {roleLabels[u.role]}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline">Belum ada role</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {u.is_active ? (
+                            <Badge variant="outline" className="bg-success/10 text-success border-success/30">
+                              <UserCheck className="w-3 h-3 mr-1" />
+                              Aktif
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
+                              <UserX className="w-3 h-3 mr-1" />
+                              Nonaktif
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{format(new Date(u.created_at), "dd/MM/yyyy")}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Dialog open={selectedUser === u.id} onOpenChange={(open) => !open && setSelectedUser(null)}>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedUser(u.id);
+                                  setNewRole(u.role || "penghuni");
+                                }}
+                                disabled={u.id === currentUser?.id}
+                              >
+                                <Shield className="w-4 h-4 mr-1" />
+                                Role
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Ubah Role User</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <Label>Role</Label>
+                                  <Select value={newRole} onValueChange={(v) => setNewRole(v as AppRole)}>
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="super_admin">Super Admin</SelectItem>
+                                      <SelectItem value="admin">Admin</SelectItem>
+                                      <SelectItem value="staff">Staff</SelectItem>
+                                      <SelectItem value="agent">Agent</SelectItem>
+                                      <SelectItem value="penghuni">Penghuni</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <Button onClick={handleUpdateRole} disabled={updateRoleMutation.isPending} className="w-full">
+                                  {updateRoleMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                  Simpan
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={u.is_active}
+                              onCheckedChange={() => handleToggleStatus(u.id, u.is_active)}
+                              disabled={u.id === currentUser?.id || updateStatusMutation.isPending}
+                            />
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {users?.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                        Tidak ada user terdaftar
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </MainLayout>
+  );
+}
