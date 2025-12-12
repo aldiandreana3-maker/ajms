@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -11,45 +11,42 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGoodsMovement, useCreateGoodsMovement } from "@/hooks/useGoodsMovement";
-import { useUnits } from "@/hooks/useUnits";
-import { usePenghuni } from "@/hooks/usePenghuni";
+import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PackageOpen, Plus, Loader2, ArrowDownLeft, ArrowUpRight, QrCode } from "lucide-react";
 import { format } from "date-fns";
 
 export default function KeluarMasukBarang() {
   const { data: movements, isLoading } = useGoodsMovement();
-  const { data: units } = useUnits();
-  const { data: penghuni } = usePenghuni();
   const createMutation = useCreateGoodsMovement();
 
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({
-    unit_id: "",
-    penghuni_id: "",
+    unit_number: "",
+    penghuni_name: "",
+    penghuni_type: "",
     movement_type: "in" as "in" | "out",
     item_description: "",
     quantity: "1",
     carrier_name: "",
-    carrier_id: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await createMutation.mutateAsync({
-      ...form,
-      unit_id: form.unit_id || undefined,
-      penghuni_id: form.penghuni_id || undefined,
+      movement_type: form.movement_type,
+      item_description: form.item_description,
       quantity: parseInt(form.quantity) || 1,
+      carrier_name: form.carrier_name || undefined,
     });
     setIsOpen(false);
     setForm({
-      unit_id: "",
-      penghuni_id: "",
+      unit_number: "",
+      penghuni_name: "",
+      penghuni_type: "",
       movement_type: "in",
       item_description: "",
       quantity: "1",
       carrier_name: "",
-      carrier_id: "",
     });
   };
 
@@ -77,14 +74,7 @@ export default function KeluarMasukBarang() {
             <TableCell>{m.penghuni?.full_name || "-"}</TableCell>
             <TableCell>{m.item_description}</TableCell>
             <TableCell>{m.quantity}</TableCell>
-            <TableCell>
-              {m.carrier_name && (
-                <div>
-                  <p>{m.carrier_name}</p>
-                  {m.carrier_id && <p className="text-xs text-muted-foreground">{m.carrier_id}</p>}
-                </div>
-              )}
-            </TableCell>
+            <TableCell>{m.carrier_name || "-"}</TableCell>
             <TableCell>
               {m.qr_code && (
                 <Badge variant="outline" className="font-mono text-xs">
@@ -127,7 +117,7 @@ export default function KeluarMasukBarang() {
                 Catat Barang
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Catat Keluar/Masuk Barang</DialogTitle>
               </DialogHeader>
@@ -154,32 +144,35 @@ export default function KeluarMasukBarang() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <UnitSelector
+                  value={form.unit_number}
+                  onChange={(v) => setForm({ ...form, unit_number: v })}
+                />
+
                 <div className="space-y-2">
-                  <Label>Unit</Label>
-                  <Select value={form.unit_id} onValueChange={(v) => setForm({ ...form, unit_id: v })}>
+                  <Label>Nama Penghuni</Label>
+                  <Input
+                    value={form.penghuni_name}
+                    onChange={(e) => setForm({ ...form, penghuni_name: e.target.value })}
+                    placeholder="Masukkan nama penghuni"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Status Penghuni</Label>
+                  <Select value={form.penghuni_type} onValueChange={(v) => setForm({ ...form, penghuni_type: v })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Pilih unit" />
+                      <SelectValue placeholder="Pilih status" />
                     </SelectTrigger>
                     <SelectContent>
-                      {units?.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>{u.unit_number}</SelectItem>
-                      ))}
+                      <SelectItem value="pemilik">Pemilik</SelectItem>
+                      <SelectItem value="penyewa">Penyewa</SelectItem>
+                      <SelectItem value="agent">Agent</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>Penghuni</Label>
-                  <Select value={form.penghuni_id} onValueChange={(v) => setForm({ ...form, penghuni_id: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih penghuni" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {penghuni?.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+
                 <div className="space-y-2">
                   <Label>Deskripsi Barang</Label>
                   <Textarea
@@ -190,6 +183,7 @@ export default function KeluarMasukBarang() {
                     required
                   />
                 </div>
+
                 <div className="space-y-2">
                   <Label>Jumlah</Label>
                   <Input
@@ -199,24 +193,16 @@ export default function KeluarMasukBarang() {
                     onChange={(e) => setForm({ ...form, quantity: e.target.value })}
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Nama Pembawa</Label>
-                    <Input
-                      value={form.carrier_name}
-                      onChange={(e) => setForm({ ...form, carrier_name: e.target.value })}
-                      placeholder="Nama kurir/pembawa"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>ID/KTP Pembawa</Label>
-                    <Input
-                      value={form.carrier_id}
-                      onChange={(e) => setForm({ ...form, carrier_id: e.target.value })}
-                      placeholder="No. KTP"
-                    />
-                  </div>
+
+                <div className="space-y-2">
+                  <Label>Nama Pembawa</Label>
+                  <Input
+                    value={form.carrier_name}
+                    onChange={(e) => setForm({ ...form, carrier_name: e.target.value })}
+                    placeholder="Nama kurir/pembawa"
+                  />
                 </div>
+
                 <Button type="submit" className="w-full" disabled={createMutation.isPending}>
                   {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                   Simpan & Generate QR

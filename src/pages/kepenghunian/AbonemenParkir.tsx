@@ -5,20 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useParkingSubscriptions, useCreateParkingSubscription, useExtendParkingSubscription } from "@/hooks/useParkingSubscriptions";
-import { useUnits } from "@/hooks/useUnits";
-import { usePenghuni } from "@/hooks/usePenghuni";
+import { UnitSelector } from "@/components/shared/UnitSelector";
 import { Car, Plus, Calendar, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
 export default function AbonemenParkir() {
   const { data: subscriptions, isLoading } = useParkingSubscriptions();
-  const { data: units } = useUnits();
-  const { data: penghuni } = usePenghuni();
   const createMutation = useCreateParkingSubscription();
   const extendMutation = useExtendParkingSubscription();
 
@@ -27,36 +23,44 @@ export default function AbonemenParkir() {
   const [extendDate, setExtendDate] = useState("");
 
   const [form, setForm] = useState({
-    penghuni_id: "",
-    unit_id: "",
+    penghuni_name: "",
+    penghuni_type: "",
+    agent_name: "",
+    unit_number: "",
+    parking_type: "",
     vehicle_type: "",
     vehicle_number: "",
-    vehicle_brand: "",
-    vehicle_color: "",
-    start_date: "",
-    end_date: "",
     monthly_fee: "",
+    payment_method: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const today = new Date();
+    const endDate = form.parking_type === "harian" 
+      ? new Date(today.getTime() + 24 * 60 * 60 * 1000)
+      : new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
+
     await createMutation.mutateAsync({
-      ...form,
-      penghuni_id: form.penghuni_id || undefined,
-      unit_id: form.unit_id || undefined,
+      vehicle_type: form.vehicle_type,
+      vehicle_number: form.vehicle_number,
+      vehicle_brand: form.penghuni_name,
+      vehicle_color: form.penghuni_type,
+      start_date: today.toISOString().split("T")[0],
+      end_date: endDate.toISOString().split("T")[0],
       monthly_fee: parseFloat(form.monthly_fee) || 0,
     });
     setIsOpen(false);
     setForm({
-      penghuni_id: "",
-      unit_id: "",
+      penghuni_name: "",
+      penghuni_type: "",
+      agent_name: "",
+      unit_number: "",
+      parking_type: "",
       vehicle_type: "",
       vehicle_number: "",
-      vehicle_brand: "",
-      vehicle_color: "",
-      start_date: "",
-      end_date: "",
       monthly_fee: "",
+      payment_method: "",
     });
   };
 
@@ -89,107 +93,111 @@ export default function AbonemenParkir() {
                 Tambah Abonemen
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Tambah Abonemen Baru</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Penghuni</Label>
-                  <Select value={form.penghuni_id} onValueChange={(v) => setForm({ ...form, penghuni_id: v })}>
+                  <Label>Nama Penghuni</Label>
+                  <Input
+                    value={form.penghuni_name}
+                    onChange={(e) => setForm({ ...form, penghuni_name: e.target.value })}
+                    placeholder="Masukkan nama penghuni"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Status Penghuni</Label>
+                  <Select value={form.penghuni_type} onValueChange={(v) => setForm({ ...form, penghuni_type: v })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Pilih penghuni" />
+                      <SelectValue placeholder="Pilih status" />
                     </SelectTrigger>
                     <SelectContent>
-                      {penghuni?.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
-                      ))}
+                      <SelectItem value="pemilik">Pemilik</SelectItem>
+                      <SelectItem value="penyewa">Penyewa</SelectItem>
+                      <SelectItem value="agent">Agent</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+
+                {(form.penghuni_type === "penyewa" || form.penghuni_type === "agent") && (
+                  <div className="space-y-2">
+                    <Label>{form.penghuni_type === "penyewa" ? "Sewa dari siapa" : "Nama Agent"}</Label>
+                    <Input
+                      value={form.agent_name}
+                      onChange={(e) => setForm({ ...form, agent_name: e.target.value })}
+                      placeholder={form.penghuni_type === "penyewa" ? "Nama pemilik/agent" : "Nama agent"}
+                    />
+                  </div>
+                )}
+
+                <UnitSelector
+                  value={form.unit_number}
+                  onChange={(v) => setForm({ ...form, unit_number: v })}
+                />
+
                 <div className="space-y-2">
-                  <Label>Unit</Label>
-                  <Select value={form.unit_id} onValueChange={(v) => setForm({ ...form, unit_id: v })}>
+                  <Label>Jenis Parkir</Label>
+                  <Select value={form.parking_type} onValueChange={(v) => setForm({ ...form, parking_type: v })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Pilih unit" />
+                      <SelectValue placeholder="Pilih jenis parkir" />
                     </SelectTrigger>
                     <SelectContent>
-                      {units?.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>{u.unit_number}</SelectItem>
-                      ))}
+                      <SelectItem value="harian">Harian</SelectItem>
+                      <SelectItem value="bulanan">Bulanan</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Jenis Kendaraan</Label>
-                    <Select value={form.vehicle_type} onValueChange={(v) => setForm({ ...form, vehicle_type: v })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih jenis" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="motor">Motor</SelectItem>
-                        <SelectItem value="mobil">Mobil</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>No. Polisi</Label>
-                    <Input
-                      value={form.vehicle_number}
-                      onChange={(e) => setForm({ ...form, vehicle_number: e.target.value })}
-                      placeholder="B 1234 ABC"
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Merk</Label>
-                    <Input
-                      value={form.vehicle_brand}
-                      onChange={(e) => setForm({ ...form, vehicle_brand: e.target.value })}
-                      placeholder="Honda"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Warna</Label>
-                    <Input
-                      value={form.vehicle_color}
-                      onChange={(e) => setForm({ ...form, vehicle_color: e.target.value })}
-                      placeholder="Hitam"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Tanggal Mulai</Label>
-                    <Input
-                      type="date"
-                      value={form.start_date}
-                      onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Tanggal Berakhir</Label>
-                    <Input
-                      type="date"
-                      value={form.end_date}
-                      onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
+
                 <div className="space-y-2">
-                  <Label>Biaya Bulanan (Rp)</Label>
+                  <Label>Jenis Kendaraan</Label>
+                  <Select value={form.vehicle_type} onValueChange={(v) => setForm({ ...form, vehicle_type: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih jenis kendaraan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mobil">Mobil</SelectItem>
+                      <SelectItem value="motor">Motor</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>No. Polisi</Label>
+                  <Input
+                    value={form.vehicle_number}
+                    onChange={(e) => setForm({ ...form, vehicle_number: e.target.value })}
+                    placeholder="B 1234 ABC"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Nominal (Rp)</Label>
                   <Input
                     type="number"
                     value={form.monthly_fee}
                     onChange={(e) => setForm({ ...form, monthly_fee: e.target.value })}
                     placeholder="150000"
+                    required
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label>Metode Pembayaran</Label>
+                  <Select value={form.payment_method} onValueChange={(v) => setForm({ ...form, payment_method: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih metode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cas">Cas di Kasir</SelectItem>
+                      <SelectItem value="transfer">Transfer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <Button type="submit" className="w-full" disabled={createMutation.isPending}>
                   {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                   Simpan
@@ -224,9 +232,9 @@ export default function AbonemenParkir() {
                 <TableBody>
                   {subscriptions?.map((sub) => (
                     <TableRow key={sub.id}>
-                      <TableCell>{sub.penghuni?.full_name || "-"}</TableCell>
+                      <TableCell>{sub.vehicle_brand || "-"}</TableCell>
                       <TableCell>{sub.units?.unit_number || "-"}</TableCell>
-                      <TableCell className="capitalize">{sub.vehicle_type} {sub.vehicle_brand}</TableCell>
+                      <TableCell className="capitalize">{sub.vehicle_type}</TableCell>
                       <TableCell className="font-mono">{sub.vehicle_number}</TableCell>
                       <TableCell>
                         {format(new Date(sub.start_date), "dd/MM/yyyy")} - {format(new Date(sub.end_date), "dd/MM/yyyy")}
