@@ -10,8 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAccessCards, useCreateAccessCard, useUpdateAccessCardStatus } from "@/hooks/useAccessCards";
-import { useUnits } from "@/hooks/useUnits";
-import { usePenghuni } from "@/hooks/usePenghuni";
+import { UnitSelector } from "@/components/shared/UnitSelector";
 import { CreditCard, Plus, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -31,8 +30,6 @@ const statusLabels = {
 
 export default function KartuAkses() {
   const { data: cards, isLoading } = useAccessCards();
-  const { data: units } = useUnits();
-  const { data: penghuni } = usePenghuni();
   const createMutation = useCreateAccessCard();
   const updateStatusMutation = useUpdateAccessCardStatus();
 
@@ -42,12 +39,9 @@ export default function KartuAkses() {
   const [notes, setNotes] = useState("");
 
   const [form, setForm] = useState({
-    penghuni_id: "",
-    unit_id: "",
-    card_number: "",
-    card_type: "resident",
-    expires_at: "",
-    notes: "",
+    penghuni_name: "",
+    penghuni_type: "",
+    unit_number: "",
   });
 
   const generateCardNumber = () => {
@@ -60,21 +54,14 @@ export default function KartuAkses() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await createMutation.mutateAsync({
-      ...form,
-      penghuni_id: form.penghuni_id || undefined,
-      unit_id: form.unit_id || undefined,
-      card_number: form.card_number || generateCardNumber(),
-      expires_at: form.expires_at || undefined,
-      notes: form.notes || undefined,
+      card_number: generateCardNumber(),
+      card_type: form.penghuni_type || "resident",
     });
     setIsOpen(false);
     setForm({
-      penghuni_id: "",
-      unit_id: "",
-      card_number: "",
-      card_type: "resident",
-      expires_at: "",
-      notes: "",
+      penghuni_name: "",
+      penghuni_type: "",
+      unit_number: "",
     });
   };
 
@@ -117,70 +104,34 @@ export default function KartuAkses() {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Penghuni</Label>
-                  <Select value={form.penghuni_id} onValueChange={(v) => setForm({ ...form, penghuni_id: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih penghuni" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {penghuni?.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Unit</Label>
-                  <Select value={form.unit_id} onValueChange={(v) => setForm({ ...form, unit_id: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih unit" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {units?.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>{u.unit_number}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Nomor Kartu (opsional, akan digenerate otomatis)</Label>
+                  <Label>Nama Penghuni</Label>
                   <Input
-                    value={form.card_number}
-                    onChange={(e) => setForm({ ...form, card_number: e.target.value })}
-                    placeholder="AC-XXXXXX-XXXX"
+                    value={form.penghuni_name}
+                    onChange={(e) => setForm({ ...form, penghuni_name: e.target.value })}
+                    placeholder="Masukkan nama penghuni"
+                    required
                   />
                 </div>
+
                 <div className="space-y-2">
-                  <Label>Tipe Kartu</Label>
-                  <Select value={form.card_type} onValueChange={(v) => setForm({ ...form, card_type: v })}>
+                  <Label>Status Penghuni</Label>
+                  <Select value={form.penghuni_type} onValueChange={(v) => setForm({ ...form, penghuni_type: v })}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Pilih status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="resident">Penghuni</SelectItem>
-                      <SelectItem value="owner">Pemilik</SelectItem>
-                      <SelectItem value="tenant">Penyewa</SelectItem>
-                      <SelectItem value="guest">Tamu</SelectItem>
+                      <SelectItem value="pemilik">Pemilik</SelectItem>
+                      <SelectItem value="penyewa">Penyewa</SelectItem>
+                      <SelectItem value="agent">Agent</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>Tanggal Kadaluarsa (opsional)</Label>
-                  <Input
-                    type="date"
-                    value={form.expires_at}
-                    onChange={(e) => setForm({ ...form, expires_at: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Catatan</Label>
-                  <Textarea
-                    value={form.notes}
-                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                    placeholder="Catatan tambahan..."
-                    rows={2}
-                  />
-                </div>
+
+                <UnitSelector
+                  value={form.unit_number}
+                  onChange={(v) => setForm({ ...form, unit_number: v })}
+                />
+
                 <Button type="submit" className="w-full" disabled={createMutation.isPending}>
                   {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                   Registrasi Kartu
@@ -206,9 +157,8 @@ export default function KartuAkses() {
                     <TableHead>No. Kartu</TableHead>
                     <TableHead>Penghuni</TableHead>
                     <TableHead>Unit</TableHead>
-                    <TableHead>Tipe</TableHead>
+                    <TableHead>Status Penghuni</TableHead>
                     <TableHead>Diterbitkan</TableHead>
-                    <TableHead>Kadaluarsa</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Aksi</TableHead>
                   </TableRow>
@@ -221,7 +171,6 @@ export default function KartuAkses() {
                       <TableCell>{c.units?.unit_number || "-"}</TableCell>
                       <TableCell className="capitalize">{c.card_type}</TableCell>
                       <TableCell>{format(new Date(c.issued_at), "dd/MM/yyyy")}</TableCell>
-                      <TableCell>{c.expires_at ? format(new Date(c.expires_at), "dd/MM/yyyy") : "-"}</TableCell>
                       <TableCell>
                         <Badge className={statusColors[c.status]}>
                           {statusLabels[c.status]}
@@ -282,7 +231,7 @@ export default function KartuAkses() {
                   ))}
                   {cards?.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                         Belum ada kartu akses terdaftar
                       </TableCell>
                     </TableRow>

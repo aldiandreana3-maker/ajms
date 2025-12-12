@@ -7,16 +7,27 @@ import {
   Bell,
   User,
   Search,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const menuItems = [
-  { icon: Home, label: "Home", active: true },
-  { icon: Building, label: "Gedung" },
-  { icon: FileText, label: "Dokumen" },
-  { icon: BarChart3, label: "Statistik" },
-  { icon: Settings, label: "Pengaturan" },
+  { icon: Home, label: "Home", path: "/" },
+  { icon: Building, label: "Gedung", path: "/struktur-fasilitas" },
+  { icon: FileText, label: "Dokumen", path: "/berita" },
+  { icon: BarChart3, label: "Statistik", path: "/laporan-keuangan" },
+  { icon: Settings, label: "Pengaturan", path: "/profile" },
 ];
 
 interface TopMenuProps {
@@ -25,6 +36,26 @@ interface TopMenuProps {
 
 export function TopMenu({ sidebarCollapsed }: TopMenuProps) {
   const [activeItem, setActiveItem] = useState("Home");
+  const navigate = useNavigate();
+  const { user, signOut, role } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+  };
+
+  const handleMenuClick = (item: typeof menuItems[0]) => {
+    setActiveItem(item.label);
+    navigate(item.path);
+  };
+
+  const roleLabels: Record<string, string> = {
+    super_admin: "Super Admin",
+    admin: "Admin",
+    staff: "Staff",
+    agent: "Agent",
+    penghuni: "Penghuni",
+  };
 
   return (
     <header
@@ -41,7 +72,7 @@ export function TopMenu({ sidebarCollapsed }: TopMenuProps) {
             return (
               <button
                 key={item.label}
-                onClick={() => setActiveItem(item.label)}
+                onClick={() => handleMenuClick(item)}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200",
                   isActive
@@ -74,16 +105,37 @@ export function TopMenu({ sidebarCollapsed }: TopMenuProps) {
             <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full"></span>
           </button>
 
-          {/* Profile */}
-          <button className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-              <User className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <div className="hidden md:block text-left">
-              <p className="text-sm font-medium text-foreground">Admin</p>
-              <p className="text-xs text-muted-foreground">Administrator</p>
-            </div>
-          </button>
+          {/* Profile Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors">
+                <Avatar className="w-8 h-8">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                    {user?.email?.charAt(0).toUpperCase() || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="hidden md:block text-left">
+                  <p className="text-sm font-medium text-foreground">{user?.email?.split("@")[0] || "User"}</p>
+                  <p className="text-xs text-muted-foreground">{role ? roleLabels[role] : "User"}</p>
+                </div>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => navigate("/profile")}>
+                <User className="w-4 h-4 mr-2" />
+                Profil Saya
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/")}>
+                <Settings className="w-4 h-4 mr-2" />
+                Pengaturan
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                <LogOut className="w-4 h-4 mr-2" />
+                Keluar
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

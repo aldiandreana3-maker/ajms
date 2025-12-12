@@ -10,9 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useKeluhan, useCreateKeluhan, useUpdateKeluhanStatus } from "@/hooks/useKeluhan";
-import { useUnits } from "@/hooks/useUnits";
-import { usePenghuni } from "@/hooks/usePenghuni";
-import { MessageSquareWarning, Plus, Loader2 } from "lucide-react";
+import { UnitSelector } from "@/components/shared/UnitSelector";
+import { MessageSquareWarning, Plus, Loader2, Upload, ImageIcon, Video } from "lucide-react";
 import { format } from "date-fns";
 
 const statusColors = {
@@ -23,8 +22,6 @@ const statusColors = {
 
 export default function KeluhanPenghuni() {
   const { data: keluhan, isLoading } = useKeluhan();
-  const { data: units } = useUnits();
-  const { data: penghuni } = usePenghuni();
   const createMutation = useCreateKeluhan();
   const updateStatusMutation = useUpdateKeluhanStatus();
 
@@ -34,21 +31,22 @@ export default function KeluhanPenghuni() {
   const [response, setResponse] = useState("");
 
   const [form, setForm] = useState({
-    penghuni_id: "",
-    unit_id: "",
+    penghuni_name: "",
+    penghuni_type: "",
+    unit_number: "",
     subject: "",
     description: "",
+    media_file: null as File | null,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await createMutation.mutateAsync({
-      ...form,
-      penghuni_id: form.penghuni_id || undefined,
-      unit_id: form.unit_id || undefined,
+      subject: form.subject,
+      description: form.description,
     });
     setIsOpen(false);
-    setForm({ penghuni_id: "", unit_id: "", subject: "", description: "" });
+    setForm({ penghuni_name: "", penghuni_type: "", unit_number: "", subject: "", description: "", media_file: null });
   };
 
   const handleUpdateStatus = async () => {
@@ -60,6 +58,13 @@ export default function KeluhanPenghuni() {
       });
       setSelectedKeluhan(null);
       setResponse("");
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setForm({ ...form, media_file: file });
     }
   };
 
@@ -84,37 +89,40 @@ export default function KeluhanPenghuni() {
                 Input Keluhan
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Input Keluhan Baru</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Penghuni</Label>
-                  <Select value={form.penghuni_id} onValueChange={(v) => setForm({ ...form, penghuni_id: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih penghuni" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {penghuni?.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>Nama Penghuni</Label>
+                  <Input
+                    value={form.penghuni_name}
+                    onChange={(e) => setForm({ ...form, penghuni_name: e.target.value })}
+                    placeholder="Masukkan nama penghuni"
+                    required
+                  />
                 </div>
+
                 <div className="space-y-2">
-                  <Label>Unit</Label>
-                  <Select value={form.unit_id} onValueChange={(v) => setForm({ ...form, unit_id: v })}>
+                  <Label>Status Penghuni</Label>
+                  <Select value={form.penghuni_type} onValueChange={(v) => setForm({ ...form, penghuni_type: v })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Pilih unit" />
+                      <SelectValue placeholder="Pilih status" />
                     </SelectTrigger>
                     <SelectContent>
-                      {units?.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>{u.unit_number}</SelectItem>
-                      ))}
+                      <SelectItem value="pemilik">Pemilik</SelectItem>
+                      <SelectItem value="penyewa">Penyewa</SelectItem>
+                      <SelectItem value="agent">Agent</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+
+                <UnitSelector
+                  value={form.unit_number}
+                  onChange={(v) => setForm({ ...form, unit_number: v })}
+                />
+
                 <div className="space-y-2">
                   <Label>Subjek Keluhan</Label>
                   <Input
@@ -124,6 +132,7 @@ export default function KeluhanPenghuni() {
                     required
                   />
                 </div>
+
                 <div className="space-y-2">
                   <Label>Deskripsi</Label>
                   <Textarea
@@ -134,6 +143,37 @@ export default function KeluhanPenghuni() {
                     required
                   />
                 </div>
+
+                <div className="space-y-2">
+                  <Label>Upload Foto/Video</Label>
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                    <input
+                      type="file"
+                      accept="image/*,video/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      id="media-upload"
+                    />
+                    <label htmlFor="media-upload" className="cursor-pointer">
+                      {form.media_file ? (
+                        <div className="flex items-center justify-center gap-2 text-sm text-foreground">
+                          {form.media_file.type.startsWith("video") ? (
+                            <Video className="w-5 h-5" />
+                          ) : (
+                            <ImageIcon className="w-5 h-5" />
+                          )}
+                          {form.media_file.name}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <Upload className="w-8 h-8" />
+                          <span className="text-sm">Klik untuk upload foto atau video</span>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                </div>
+
                 <Button type="submit" className="w-full" disabled={createMutation.isPending}>
                   {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                   Simpan
