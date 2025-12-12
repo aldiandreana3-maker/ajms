@@ -1,7 +1,7 @@
 import { Calendar, ArrowRight } from "lucide-react";
 
 interface NewsItem {
-  id: string | number;
+  id: number;
   title: string;
   excerpt: string;
   date: string;

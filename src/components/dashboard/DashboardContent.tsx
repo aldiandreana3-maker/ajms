@@ -7,100 +7,49 @@ import {
   Wrench,
   Car,
   ArrowRight,
-  Home,
-  Layers,
-  MapPin,
 } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { NewsCard } from "./NewsCard";
-import { useDashboardStats } from "@/hooks/useDashboardStats";
-import { usePublishedNews } from "@/hooks/useNews";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
 
 interface DashboardContentProps {
   onOpenKepenghunian: () => void;
 }
 
-// Static building information
-const buildingInfo = {
-  name: "Rusunami The Jarrdin Cihampelas",
-  status: "Rumah Susun Sederhana Milik (Rusunami)",
-  address: "Jalan Cihampelas Belakang No. 10, Kelurahan Cipaganti, Kecamatan Coblong, Kota Bandung, Jawa Barat",
-  postalCode: "40131",
-  landArea: "12.083 m²",
-  towers: ["Tower A", "Tower B", "Tower C", "Tower D"],
-  totalUnits: 2444,
-  unitTypes: ["18.5 m²", "24 m²", "33 m²", "40 m²"],
-  commercialUnits: 90,
-  townHouse: 16,
-  communalSpace: 28,
-  parkingFloors: ["B1", "B2", "B3"],
-  pools: 2,
-  managedBy: "PPPSRS The Jarrdin Cihampelas",
-  officeLocation: "Lantai Basement 1 Tower A",
-};
+const stats = [
+  { title: "Total Unit", value: "1,248", icon: Building2, variant: "primary" as const, trend: { value: 2.5, isPositive: true } },
+  { title: "Penghuni Aktif", value: "892", icon: Users, variant: "accent" as const, trend: { value: 5.2, isPositive: true } },
+  { title: "Daftar Komersil", value: "45", icon: Store, variant: "info" as const },
+  { title: "Kartu Akses", value: "1,856", icon: CreditCard, variant: "default" as const },
+  { title: "Total Keluhan", value: "23", icon: MessageSquareWarning, variant: "warning" as const, trend: { value: 12, isPositive: false } },
+  { title: "Work Order", value: "18", icon: Wrench, variant: "default" as const },
+  { title: "Abonemen Parkir", value: "456", icon: Car, variant: "accent" as const },
+];
+
+const news = [
+  {
+    id: 1,
+    title: "Perbaikan Lift Tower A Selesai Dilakukan",
+    excerpt: "Pekerjaan perbaikan lift utama Tower A telah selesai dilaksanakan. Penghuni dapat menggunakan lift seperti biasa.",
+    date: "8 Desember 2025",
+    category: "Maintenance",
+  },
+  {
+    id: 2,
+    title: "Jadwal Pemadaman Listrik untuk Maintenance",
+    excerpt: "Akan dilakukan pemadaman listrik terjadwal pada tanggal 10 Desember 2025 pukul 09:00-12:00 WIB.",
+    date: "6 Desember 2025",
+    category: "Pengumuman",
+  },
+  {
+    id: 3,
+    title: "Pendaftaran Kartu Akses Baru Dibuka",
+    excerpt: "Bagi penghuni yang memerlukan kartu akses tambahan, silakan mengajukan melalui aplikasi atau datang ke kantor pengelola.",
+    date: "5 Desember 2025",
+    category: "Layanan",
+  },
+];
 
 export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) {
-  const { data: stats, isLoading: statsLoading } = useDashboardStats();
-  const { data: newsData, isLoading: newsLoading } = usePublishedNews();
-
-  const displayStats = [
-    { 
-      title: "Total Unit Hunian", 
-      value: buildingInfo.totalUnits.toLocaleString("id-ID"), 
-      icon: Building2, 
-      variant: "primary" as const,
-      subtitle: "4 Tower"
-    },
-    { 
-      title: "Penghuni Aktif", 
-      value: statsLoading ? "..." : (stats?.activePenghuni || 0).toLocaleString("id-ID"), 
-      icon: Users, 
-      variant: "accent" as const,
-    },
-    { 
-      title: "Unit Komersil", 
-      value: buildingInfo.commercialUnits.toString(), 
-      icon: Store, 
-      variant: "info" as const 
-    },
-    { 
-      title: "Kartu Akses Aktif", 
-      value: statsLoading ? "..." : (stats?.accessCards || 0).toLocaleString("id-ID"), 
-      icon: CreditCard, 
-      variant: "default" as const 
-    },
-    { 
-      title: "Total Keluhan", 
-      value: statsLoading ? "..." : (stats?.totalKeluhan || 0).toString(), 
-      icon: MessageSquareWarning, 
-      variant: "warning" as const,
-    },
-    { 
-      title: "Work Order", 
-      value: statsLoading ? "..." : (stats?.totalWorkOrders || 0).toString(), 
-      icon: Wrench, 
-      variant: "default" as const 
-    },
-    { 
-      title: "Abonemen Parkir", 
-      value: statsLoading ? "..." : (stats?.parkingSubscriptions || 0).toString(), 
-      icon: Car, 
-      variant: "accent" as const,
-      subtitle: "3 Lantai Parkir"
-    },
-  ];
-
-  const formattedNews = newsData?.map((n) => ({
-    id: n.id,
-    title: n.title,
-    excerpt: n.content.substring(0, 120) + (n.content.length > 120 ? "..." : ""),
-    date: n.published_at ? format(new Date(n.published_at), "d MMMM yyyy") : "-",
-    category: "Pengumuman",
-  })) || [];
-
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
@@ -119,29 +68,20 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
         </button>
       </div>
 
-
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {displayStats.slice(0, 4).map((stat, index) => (
+        {stats.slice(0, 4).map((stat, index) => (
           <StatCard key={stat.title} {...stat} delay={index * 100} />
         ))}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {displayStats.slice(4).map((stat, index) => (
+        {stats.slice(4).map((stat, index) => (
           <StatCard key={stat.title} {...stat} delay={(index + 4) * 100} />
         ))}
       </div>
 
       {/* News Section */}
-      <NewsCard news={formattedNews.length > 0 ? formattedNews : [
-        {
-          id: "1",
-          title: "Selamat datang di AJMS",
-          excerpt: "Sistem manajemen rusunami siap digunakan. Tambahkan berita melalui menu Berita.",
-          date: format(new Date(), "d MMMM yyyy"),
-          category: "Info",
-        }
-      ]} />
+      <NewsCard news={news} />
     </div>
   );
 }

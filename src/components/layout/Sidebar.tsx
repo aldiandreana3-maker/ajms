@@ -1,5 +1,5 @@
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -29,13 +29,6 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { signOut } = useAuth();
-
-  const handleLogout = async () => {
-    await signOut();
-    navigate("/auth");
-  };
 
   return (
     <aside
@@ -99,7 +92,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* Logout */}
       <div className="p-3 border-t border-sidebar-border">
         <button
-          onClick={handleLogout}
           className={cn(
             "flex items-center gap-3 w-full px-3 py-3 rounded-lg text-sidebar-foreground/70 hover:bg-destructive hover:text-destructive-foreground transition-all duration-200"
           )}
