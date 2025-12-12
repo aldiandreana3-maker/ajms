@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -10,8 +9,12 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Receipt,
+  Newspaper,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -20,6 +23,12 @@ const menuItems = [
   { icon: Layers, label: "Struktur Fasilitas", path: "/struktur-fasilitas" },
   { icon: Box, label: "Type Unit", path: "/type-unit" },
   { icon: FileBarChart, label: "Laporan Keuangan", path: "/laporan-keuangan" },
+  { icon: Receipt, label: "Tagihan", path: "/tagihan" },
+  { icon: Newspaper, label: "Berita", path: "/berita" },
+];
+
+const adminMenuItems = [
+  { icon: Shield, label: "Manajemen User", path: "/manajemen-user" },
 ];
 
 interface SidebarProps {
@@ -29,6 +38,13 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut, isSuperAdmin } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+  };
 
   return (
     <aside
@@ -87,11 +103,45 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             </NavLink>
           );
         })}
+
+        {/* Admin Menu */}
+        {isSuperAdmin && (
+          <>
+            {!collapsed && (
+              <div className="pt-4 pb-2">
+                <span className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider px-3">
+                  Admin
+                </span>
+              </div>
+            )}
+            {adminMenuItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group",
+                    isActive
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  )}
+                >
+                  <item.icon className={cn("w-5 h-5 flex-shrink-0", collapsed && "mx-auto")} />
+                  {!collapsed && (
+                    <span className="font-medium text-sm truncate">{item.label}</span>
+                  )}
+                </NavLink>
+              );
+            })}
+          </>
+        )}
       </nav>
 
       {/* Logout */}
       <div className="p-3 border-t border-sidebar-border">
         <button
+          onClick={handleLogout}
           className={cn(
             "flex items-center gap-3 w-full px-3 py-3 rounded-lg text-sidebar-foreground/70 hover:bg-destructive hover:text-destructive-foreground transition-all duration-200"
           )}
