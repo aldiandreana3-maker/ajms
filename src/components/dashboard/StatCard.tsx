@@ -1,5 +1,6 @@
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface StatCardProps {
   title: string;
@@ -11,6 +12,8 @@ interface StatCardProps {
   };
   variant?: "default" | "primary" | "accent" | "info" | "warning";
   delay?: number;
+  canEdit?: boolean;
+  onEdit?: () => void;
 }
 
 const variantStyles = {
@@ -36,15 +39,28 @@ export function StatCard({
   trend,
   variant = "default",
   delay = 0,
+  canEdit = false,
+  onEdit,
 }: StatCardProps) {
   return (
     <div
       className={cn(
-        "rounded-xl border p-5 shadow-card transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-slide-up",
+        "rounded-xl border p-5 shadow-card transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-slide-up relative",
         variantStyles[variant]
       )}
       style={{ animationDelay: `${delay}ms` }}
     >
+      {canEdit && onEdit && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-primary"
+          onClick={onEdit}
+          title="Edit jumlah"
+        >
+          <Pencil className="w-4 h-4" />
+        </Button>
+      )}
       <div className="flex items-start justify-between">
         <div className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
