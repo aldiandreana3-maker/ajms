@@ -91,12 +91,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               key={item.path}
               to={item.path}
               className={cn(
-                "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group relative",
+                "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group",
                 isActive
                   ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                // Red border for Super Admin only items
-                item.isSuperAdminOnly && "ring-2 ring-admin-red ring-offset-1 ring-offset-sidebar"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               )}
             >
               <item.icon className={cn("w-5 h-5 flex-shrink-0", collapsed && "mx-auto")} />
