@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { NewsCard } from "./NewsCard";
-import { ColorLegend } from "./ColorLegend";
+
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { usePublishedNews } from "@/hooks/useNews";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,15 +29,14 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
   const { user, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
 
-  // Stats with dataType: admin (red) = super admin managed, user (blue) = user managed
   const statCards = [
-    { title: "Total Unit", value: stats?.totalUnits?.toString() || "0", icon: Building2, variant: "primary" as const, dataType: "admin" as const },
-    { title: "Penghuni Aktif", value: stats?.activePenghuni?.toString() || "0", icon: Users, variant: "accent" as const, dataType: "admin" as const },
-    { title: "Daftar Komersil", value: stats?.commercialTenants?.toString() || "0", icon: Store, variant: "info" as const, dataType: "admin" as const },
-    { title: "Kartu Akses", value: stats?.accessCards?.toString() || "0", icon: CreditCard, variant: "default" as const, dataType: "user" as const },
-    { title: "Total Keluhan", value: stats?.totalKeluhan?.toString() || "0", icon: MessageSquareWarning, variant: "warning" as const, dataType: "user" as const },
-    { title: "Work Order", value: stats?.totalWorkOrders?.toString() || "0", icon: Wrench, variant: "default" as const, dataType: "user" as const },
-    { title: "Abonemen Parkir", value: stats?.parkingSubscriptions?.toString() || "0", icon: Car, variant: "accent" as const, dataType: "user" as const },
+    { title: "Total Unit", value: stats?.totalUnits?.toString() || "0", icon: Building2, variant: "primary" as const },
+    { title: "Penghuni Aktif", value: stats?.activePenghuni?.toString() || "0", icon: Users, variant: "accent" as const },
+    { title: "Daftar Komersil", value: stats?.commercialTenants?.toString() || "0", icon: Store, variant: "info" as const },
+    { title: "Kartu Akses", value: stats?.accessCards?.toString() || "0", icon: CreditCard, variant: "default" as const },
+    { title: "Total Keluhan", value: stats?.totalKeluhan?.toString() || "0", icon: MessageSquareWarning, variant: "warning" as const },
+    { title: "Work Order", value: stats?.totalWorkOrders?.toString() || "0", icon: Wrench, variant: "default" as const },
+    { title: "Abonemen Parkir", value: stats?.parkingSubscriptions?.toString() || "0", icon: Car, variant: "accent" as const },
   ];
 
   const formattedNews = newsData?.map((n, index) => ({
@@ -62,9 +61,6 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
 
   return (
     <div className="space-y-6">
-      {/* Color Legend */}
-      <ColorLegend />
-
       {/* Welcome Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -107,7 +103,7 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
         ))}
       </div>
 
-      {/* News Section - Super Admin only (red border indicator) */}
+      {/* News Section */}
       {newsLoading ? (
         <div className="flex justify-center py-8">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -123,7 +119,6 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
               category: "Info",
             }
           ]} 
-          isSuperAdminSection={true}
         />
       )}
     </div>

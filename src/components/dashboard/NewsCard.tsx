@@ -1,5 +1,4 @@
 import { Calendar, ArrowRight } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 interface NewsItem {
   id: string | number;
@@ -11,16 +10,12 @@ interface NewsItem {
 
 interface NewsCardProps {
   news: NewsItem[];
-  isSuperAdminSection?: boolean;
 }
 
-export function NewsCard({ news, isSuperAdminSection = false }: NewsCardProps) {
+export function NewsCard({ news }: NewsCardProps) {
   return (
     <div 
-      className={cn(
-        "bg-card rounded-xl border shadow-card p-6 animate-slide-up",
-        isSuperAdminSection ? "border-2 border-admin-red" : "border-border"
-      )} 
+      className="bg-card rounded-xl border border-border shadow-card p-6 animate-slide-up"
       style={{ animationDelay: "400ms" }}
     >
       <div className="flex items-center justify-between mb-6">
@@ -30,7 +25,7 @@ export function NewsCard({ news, isSuperAdminSection = false }: NewsCardProps) {
         </button>
       </div>
       <div className="space-y-4">
-        {news.map((item, index) => (
+        {news.map((item) => (
           <article
             key={item.id}
             className="group p-4 rounded-lg border border-border hover:border-accent/50 hover:bg-accent/5 transition-all duration-200 cursor-pointer"
