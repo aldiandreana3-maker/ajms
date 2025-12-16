@@ -12,6 +12,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useWorkPermits, useCreateWorkPermit, useUpdateWorkPermitStatus } from "@/hooks/useWorkPermits";
 import { useUnits } from "@/hooks/useUnits";
 import { usePenghuni } from "@/hooks/usePenghuni";
+import { PermissionButton } from "@/components/ui/permission-button";
+import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
+import { usePermissions } from "@/hooks/usePermissions";
 import { ClipboardCheck, Plus, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -22,6 +25,9 @@ const statusColors = {
 };
 
 export default function IzinKerja() {
+  const { getFeaturePermission, isAuthenticated } = usePermissions();
+  const permission = getFeaturePermission("izin-kerja");
+
   const { data: permits, isLoading } = useWorkPermits();
   const { data: units } = useUnits();
   const { data: penghuni } = usePenghuni();
@@ -89,13 +95,21 @@ export default function IzinKerja() {
             </div>
           </div>
 
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Ajukan Izin Kerja
-              </Button>
-            </DialogTrigger>
+          {!isAuthenticated ? (
+            <LoginPromptButton />
+          ) : (
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+              <DialogTrigger asChild>
+                <PermissionButton
+                  hasPermission={permission.canCreate}
+                  tooltip={permission.tooltip}
+                  category="blue"
+                  className="ring-2 ring-user-blue"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Ajukan Izin Kerja
+                </PermissionButton>
+              </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Pengajuan Izin Kerja Baru</DialogTitle>
@@ -182,6 +196,7 @@ export default function IzinKerja() {
               </form>
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
         <Card>

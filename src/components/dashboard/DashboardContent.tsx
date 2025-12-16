@@ -9,9 +9,11 @@ import {
   ArrowRight,
   Loader2,
   LogIn,
+  UserPlus,
 } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { NewsCard } from "./NewsCard";
+import { ColorLegend } from "./ColorLegend";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { usePublishedNews } from "@/hooks/useNews";
 import { useAuth } from "@/contexts/AuthContext";
@@ -60,23 +62,26 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
 
   return (
     <div className="space-y-6">
+      {/* Color Legend */}
+      <ColorLegend />
+
       {/* Welcome Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">
-            Selamat Datang, {user?.user_metadata?.full_name || "Admin"}!
+            Selamat Datang{user ? `, ${user.user_metadata?.full_name || "Pengguna"}` : ""}!
           </h1>
           <p className="text-muted-foreground">Ringkasan data apartemen hari ini</p>
         </div>
         <div className="flex items-center gap-3">
-          {/* Orange Login Button - Only shown when NOT logged in */}
+          {/* Orange Login/Register Button - Only shown when NOT logged in */}
           {!user && (
             <button
               onClick={() => navigate("/auth")}
-              className="inline-flex items-center gap-2 px-8 py-3 bg-login-orange text-login-orange-foreground rounded-full font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
+              className="inline-flex items-center gap-2 px-8 py-3 bg-login-orange text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
             >
               <LogIn className="w-5 h-5" />
-              Login
+              Login / Daftar
             </button>
           )}
           <button

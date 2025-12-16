@@ -11,6 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useKeluhan, useCreateKeluhan, useUpdateKeluhanStatus } from "@/hooks/useKeluhan";
 import { UnitSelector } from "@/components/shared/UnitSelector";
+import { PermissionButton } from "@/components/ui/permission-button";
+import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
+import { usePermissions } from "@/hooks/usePermissions";
 import { MessageSquareWarning, Plus, Loader2, Upload, ImageIcon, Video } from "lucide-react";
 import { format } from "date-fns";
 
@@ -21,6 +24,8 @@ const statusColors = {
 };
 
 export default function KeluhanPenghuni() {
+  const { getFeaturePermission, isAuthenticated } = usePermissions();
+  const permission = getFeaturePermission("keluhan");
   const { data: keluhan, isLoading } = useKeluhan();
   const createMutation = useCreateKeluhan();
   const updateStatusMutation = useUpdateKeluhanStatus();
@@ -82,13 +87,21 @@ export default function KeluhanPenghuni() {
             </div>
           </div>
 
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Input Keluhan
-              </Button>
-            </DialogTrigger>
+          {!isAuthenticated ? (
+            <LoginPromptButton />
+          ) : (
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+              <DialogTrigger asChild>
+                <PermissionButton
+                  hasPermission={permission.canCreate}
+                  tooltip={permission.tooltip}
+                  category="blue"
+                  className="ring-2 ring-user-blue"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Input Keluhan
+                </PermissionButton>
+              </DialogTrigger>
             <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Input Keluhan Baru</DialogTitle>
@@ -181,6 +194,7 @@ export default function KeluhanPenghuni() {
               </form>
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
         <Card>
