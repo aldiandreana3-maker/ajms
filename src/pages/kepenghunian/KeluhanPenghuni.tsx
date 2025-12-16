@@ -37,21 +37,20 @@ export default function KeluhanPenghuni() {
 
   const [form, setForm] = useState({
     penghuni_name: "",
-    penghuni_type: "",
     unit_number: "",
-    subject: "",
-    description: "",
+    phone: "",
+    keluhan: "",
     media_file: null as File | null,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await createMutation.mutateAsync({
-      subject: form.subject,
-      description: form.description,
+      subject: `Keluhan dari ${form.penghuni_name}`,
+      description: form.keluhan,
     });
     setIsOpen(false);
-    setForm({ penghuni_name: "", penghuni_type: "", unit_number: "", subject: "", description: "", media_file: null });
+    setForm({ penghuni_name: "", unit_number: "", phone: "", keluhan: "", media_file: null });
   };
 
   const handleUpdateStatus = async () => {
@@ -108,7 +107,7 @@ export default function KeluhanPenghuni() {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Nama Penghuni</Label>
+                  <Label>Nama Penghuni <span className="text-destructive">*</span></Label>
                   <Input
                     value={form.penghuni_name}
                     onChange={(e) => setForm({ ...form, penghuni_name: e.target.value })}
@@ -117,40 +116,27 @@ export default function KeluhanPenghuni() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Status Penghuni</Label>
-                  <Select value={form.penghuni_type} onValueChange={(v) => setForm({ ...form, penghuni_type: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pemilik">Pemilik</SelectItem>
-                      <SelectItem value="penyewa">Penyewa</SelectItem>
-                      <SelectItem value="agent">Agent</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 <UnitSelector
                   value={form.unit_number}
                   onChange={(v) => setForm({ ...form, unit_number: v })}
+                  label="Alamat Tower & Unit *"
                 />
 
                 <div className="space-y-2">
-                  <Label>Subjek Keluhan</Label>
+                  <Label>Nomor Telepon <span className="text-destructive">*</span></Label>
                   <Input
-                    value={form.subject}
-                    onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                    placeholder="Contoh: AC tidak dingin"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder="08xxxxxxxxxx"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Deskripsi</Label>
+                  <Label>Keluhan <span className="text-destructive">*</span></Label>
                   <Textarea
-                    value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    value={form.keluhan}
+                    onChange={(e) => setForm({ ...form, keluhan: e.target.value })}
                     placeholder="Jelaskan detail keluhan..."
                     rows={4}
                     required
@@ -158,7 +144,7 @@ export default function KeluhanPenghuni() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Upload Foto/Video</Label>
+                  <Label>Lampiran Foto/Video (Opsional)</Label>
                   <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
                     <input
                       type="file"

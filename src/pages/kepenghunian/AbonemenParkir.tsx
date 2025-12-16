@@ -13,7 +13,7 @@ import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Car, Plus, Calendar, Loader2 } from "lucide-react";
+import { Car, Plus, Calendar, Loader2, Upload, Info } from "lucide-react";
 import { format } from "date-fns";
 
 export default function AbonemenParkir() {
@@ -28,21 +28,27 @@ export default function AbonemenParkir() {
   const [extendDate, setExtendDate] = useState("");
 
   const [form, setForm] = useState({
-    penghuni_name: "",
-    penghuni_type: "",
-    agent_name: "",
     unit_number: "",
-    parking_type: "",
+    penghuni_name: "",
+    agent_name: "",
+    phone: "",
     vehicle_type: "",
+    member_card: "",
     vehicle_number: "",
-    monthly_fee: "",
-    payment_method: "",
+    request_type: "",
+    period_type: "",
+    ktp_photo: null as File | null,
+    stnk_photo: null as File | null,
+    rental_agreement: null as File | null,
+    payment_proof: null as File | null,
   });
+
+  const isNewRegistration = form.request_type === "registrasi_baru";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const today = new Date();
-    const endDate = form.parking_type === "harian" 
+    const endDate = form.period_type === "harian" 
       ? new Date(today.getTime() + 24 * 60 * 60 * 1000)
       : new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
 
@@ -50,22 +56,26 @@ export default function AbonemenParkir() {
       vehicle_type: form.vehicle_type,
       vehicle_number: form.vehicle_number,
       vehicle_brand: form.penghuni_name,
-      vehicle_color: form.penghuni_type,
+      vehicle_color: form.request_type,
       start_date: today.toISOString().split("T")[0],
       end_date: endDate.toISOString().split("T")[0],
-      monthly_fee: parseFloat(form.monthly_fee) || 0,
+      monthly_fee: 0,
     });
     setIsOpen(false);
     setForm({
-      penghuni_name: "",
-      penghuni_type: "",
-      agent_name: "",
       unit_number: "",
-      parking_type: "",
+      penghuni_name: "",
+      agent_name: "",
+      phone: "",
       vehicle_type: "",
+      member_card: "",
       vehicle_number: "",
-      monthly_fee: "",
-      payment_method: "",
+      request_type: "",
+      period_type: "",
+      ktp_photo: null,
+      stnk_photo: null,
+      rental_agreement: null,
+      payment_proof: null,
     });
   };
 
@@ -111,8 +121,14 @@ export default function AbonemenParkir() {
                 <DialogTitle>Tambah Abonemen Baru</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
+                <UnitSelector
+                  value={form.unit_number}
+                  onChange={(v) => setForm({ ...form, unit_number: v })}
+                  label="Tower Lantai Unit *"
+                />
+
                 <div className="space-y-2">
-                  <Label>Nama Penghuni</Label>
+                  <Label>Nama Penghuni <span className="text-destructive">*</span></Label>
                   <Input
                     value={form.penghuni_name}
                     onChange={(e) => setForm({ ...form, penghuni_name: e.target.value })}
@@ -122,50 +138,28 @@ export default function AbonemenParkir() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Status Penghuni</Label>
-                  <Select value={form.penghuni_type} onValueChange={(v) => setForm({ ...form, penghuni_type: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pemilik">Pemilik</SelectItem>
-                      <SelectItem value="penyewa">Penyewa</SelectItem>
-                      <SelectItem value="agent">Agent</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {(form.penghuni_type === "penyewa" || form.penghuni_type === "agent") && (
-                  <div className="space-y-2">
-                    <Label>{form.penghuni_type === "penyewa" ? "Sewa dari siapa" : "Nama Agent"}</Label>
-                    <Input
-                      value={form.agent_name}
-                      onChange={(e) => setForm({ ...form, agent_name: e.target.value })}
-                      placeholder={form.penghuni_type === "penyewa" ? "Nama pemilik/agent" : "Nama agent"}
-                    />
-                  </div>
-                )}
-
-                <UnitSelector
-                  value={form.unit_number}
-                  onChange={(v) => setForm({ ...form, unit_number: v })}
-                />
-
-                <div className="space-y-2">
-                  <Label>Jenis Parkir</Label>
-                  <Select value={form.parking_type} onValueChange={(v) => setForm({ ...form, parking_type: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih jenis parkir" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="harian">Harian</SelectItem>
-                      <SelectItem value="bulanan">Bulanan</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>Nama Agent (Jika Penyewa) <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={form.agent_name}
+                    onChange={(e) => setForm({ ...form, agent_name: e.target.value })}
+                    placeholder="Ketik 0 jika pemilik"
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">Jika pemilik, ketik 0</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Jenis Kendaraan</Label>
+                  <Label>Nomor Telepon <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder="08xxxxxxxxxx"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Jenis Kendaraan <span className="text-destructive">*</span></Label>
                   <Select value={form.vehicle_type} onValueChange={(v) => setForm({ ...form, vehicle_type: v })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih jenis kendaraan" />
@@ -173,12 +167,25 @@ export default function AbonemenParkir() {
                     <SelectContent>
                       <SelectItem value="mobil">Mobil</SelectItem>
                       <SelectItem value="motor">Motor</SelectItem>
+                      <SelectItem value="mobil_motor">Mobil & Motor</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>No. Polisi</Label>
+                  <Label>16 Digit Kartu Member <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={form.member_card}
+                    onChange={(e) => setForm({ ...form, member_card: e.target.value })}
+                    placeholder="Ketik 0 untuk registrasi baru"
+                    maxLength={16}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">Khusus perpanjangan. Untuk registrasi baru, ketik 0</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Nomor Plat Kendaraan <span className="text-destructive">*</span></Label>
                   <Input
                     value={form.vehicle_number}
                     onChange={(e) => setForm({ ...form, vehicle_number: e.target.value })}
@@ -188,27 +195,160 @@ export default function AbonemenParkir() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Nominal (Rp)</Label>
-                  <Input
-                    type="number"
-                    value={form.monthly_fee}
-                    onChange={(e) => setForm({ ...form, monthly_fee: e.target.value })}
-                    placeholder="150000"
-                    required
-                  />
+                  <Label>Jenis Pengajuan <span className="text-destructive">*</span></Label>
+                  <Select value={form.request_type} onValueChange={(v) => setForm({ ...form, request_type: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih jenis pengajuan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="registrasi_baru">Registrasi Baru</SelectItem>
+                      <SelectItem value="perpanjangan">Perpanjangan</SelectItem>
+                      <SelectItem value="kartu_hilang_rusak">Kartu Hilang / Rusak</SelectItem>
+                      <SelectItem value="ganti_plat">Ganti Plat</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Metode Pembayaran</Label>
-                  <Select value={form.payment_method} onValueChange={(v) => setForm({ ...form, payment_method: v })}>
+                  <Label>Harian / Bulanan <span className="text-destructive">*</span></Label>
+                  <Select value={form.period_type} onValueChange={(v) => setForm({ ...form, period_type: v })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Pilih metode" />
+                      <SelectValue placeholder="Pilih periode" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="cas">Cas di Kasir</SelectItem>
-                      <SelectItem value="transfer">Transfer</SelectItem>
+                      <SelectItem value="harian">Harian</SelectItem>
+                      <SelectItem value="bulanan">Bulanan</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">Jika hilang / rusak, ketik 0</p>
+                </div>
+
+                {isNewRegistration && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>Upload KTP <span className="text-destructive">*</span></Label>
+                      <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setForm({ ...form, ktp_photo: file });
+                          }}
+                          className="hidden"
+                          id="ktp-upload"
+                        />
+                        <label htmlFor="ktp-upload" className="cursor-pointer">
+                          {form.ktp_photo ? (
+                            <div className="flex items-center justify-center gap-2 text-sm text-foreground">
+                              <Upload className="w-5 h-5" />
+                              {form.ktp_photo.name}
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                              <Upload className="w-6 h-6" />
+                              <span className="text-sm">Upload KTP</span>
+                            </div>
+                          )}
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Foto Surat Kendaraan (STNK) <span className="text-destructive">*</span></Label>
+                      <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setForm({ ...form, stnk_photo: file });
+                          }}
+                          className="hidden"
+                          id="stnk-upload"
+                        />
+                        <label htmlFor="stnk-upload" className="cursor-pointer">
+                          {form.stnk_photo ? (
+                            <div className="flex items-center justify-center gap-2 text-sm text-foreground">
+                              <Upload className="w-5 h-5" />
+                              {form.stnk_photo.name}
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                              <Upload className="w-6 h-6" />
+                              <span className="text-sm">Upload STNK</span>
+                            </div>
+                          )}
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Upload Perjanjian Sewa <span className="text-destructive">*</span></Label>
+                      <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                        <input
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setForm({ ...form, rental_agreement: file });
+                          }}
+                          className="hidden"
+                          id="rental-upload"
+                        />
+                        <label htmlFor="rental-upload" className="cursor-pointer">
+                          {form.rental_agreement ? (
+                            <div className="flex items-center justify-center gap-2 text-sm text-foreground">
+                              <Upload className="w-5 h-5" />
+                              {form.rental_agreement.name}
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                              <Upload className="w-6 h-6" />
+                              <span className="text-sm">Upload perjanjian sewa</span>
+                            </div>
+                          )}
+                        </label>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <div className="space-y-2">
+                  <Label>Upload Bukti Bayar <span className="text-destructive">*</span></Label>
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setForm({ ...form, payment_proof: file });
+                      }}
+                      className="hidden"
+                      id="payment-upload"
+                    />
+                    <label htmlFor="payment-upload" className="cursor-pointer">
+                      {form.payment_proof ? (
+                        <div className="flex items-center justify-center gap-2 text-sm text-foreground">
+                          <Upload className="w-5 h-5" />
+                          {form.payment_proof.name}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <Upload className="w-6 h-6" />
+                          <span className="text-sm">Upload bukti bayar</span>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-info/10 rounded-lg flex items-start gap-2">
+                  <Info className="w-4 h-4 text-info mt-0.5" />
+                  <div className="text-sm text-info">
+                    <p className="font-medium">Pembayaran ke rekening:</p>
+                    <p className="font-mono">200001000338306 (BRI)</p>
+                  </div>
                 </div>
 
                 <Button type="submit" className="w-full" disabled={createMutation.isPending}>

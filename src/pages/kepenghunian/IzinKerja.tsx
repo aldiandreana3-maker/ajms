@@ -10,13 +10,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useWorkPermits, useCreateWorkPermit, useUpdateWorkPermitStatus } from "@/hooks/useWorkPermits";
-import { useUnits } from "@/hooks/useUnits";
-import { usePenghuni } from "@/hooks/usePenghuni";
+import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { usePermissions } from "@/hooks/usePermissions";
-import { ClipboardCheck, Plus, Loader2 } from "lucide-react";
-import { format } from "date-fns";
+import { ClipboardCheck, Plus, Loader2, Upload } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
 
 const statusColors = {
   pending: "bg-warning/20 text-warning border-warning/30",
@@ -29,8 +28,6 @@ export default function IzinKerja() {
   const permission = getFeaturePermission("izin-kerja");
 
   const { data: permits, isLoading } = useWorkPermits();
-  const { data: units } = useUnits();
-  const { data: penghuni } = usePenghuni();
   const createMutation = useCreateWorkPermit();
   const updateStatusMutation = useUpdateWorkPermitStatus();
 
@@ -38,34 +35,60 @@ export default function IzinKerja() {
   const [selectedPermit, setSelectedPermit] = useState<string | null>(null);
   const [newStatus, setNewStatus] = useState<"pending" | "approved" | "rejected">("pending");
   const [notes, setNotes] = useState("");
+  const [dateError, setDateError] = useState("");
 
   const [form, setForm] = useState({
-    unit_id: "",
-    penghuni_id: "",
+    name: "",
+    unit_number: "",
     vendor_name: "",
+    phone: "",
     work_description: "",
     worker_count: "1",
     start_date: "",
     end_date: "",
+    layout_file: null as File | null,
+    payment_method: "",
   });
+
+  const validateDates = (start: string, end: string) => {
+    if (start && end) {
+      const days = differenceInDays(new Date(end), new Date(start));
+      if (days > 60) {
+        setDateError("Lama pengerjaan maksimal 2 bulan (60 hari)");
+        return false;
+      }
+      if (days < 0) {
+        setDateError("Tanggal selesai harus setelah tanggal mulai");
+        return false;
+      }
+    }
+    setDateError("");
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateDates(form.start_date, form.end_date)) return;
+    
     await createMutation.mutateAsync({
-      ...form,
-      unit_id: form.unit_id || undefined,
-      penghuni_id: form.penghuni_id || undefined,
+      vendor_name: form.vendor_name,
+      work_description: form.work_description,
       worker_count: parseInt(form.worker_count) || 1,
+      start_date: form.start_date,
+      end_date: form.end_date,
     });
     setIsOpen(false);
     setForm({
-      unit_id: "",
-      penghuni_id: "",
+      name: "",
+      unit_number: "",
       vendor_name: "",
+      phone: "",
       work_description: "",
       worker_count: "1",
       start_date: "",
       end_date: "",
+      layout_file: null,
+      payment_method: "",
     });
   };
 
@@ -78,6 +101,13 @@ export default function IzinKerja() {
       });
       setSelectedPermit(null);
       setNotes("");
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setForm({ ...form, layout_file: file });
     }
   };
 
@@ -110,48 +140,49 @@ export default function IzinKerja() {
                   Ajukan Izin Kerja
                 </PermissionButton>
               </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Pengajuan Izin Kerja Baru</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Unit</Label>
-                  <Select value={form.unit_id} onValueChange={(v) => setForm({ ...form, unit_id: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih unit" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {units?.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>{u.unit_number}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Penghuni</Label>
-                  <Select value={form.penghuni_id} onValueChange={(v) => setForm({ ...form, penghuni_id: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih penghuni" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {penghuni?.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Nama Vendor/Teknisi</Label>
+                  <Label>Nama <span className="text-destructive">*</span></Label>
                   <Input
-                    value={form.vendor_name}
-                    onChange={(e) => setForm({ ...form, vendor_name: e.target.value })}
-                    placeholder="PT. Contoh Jaya"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="Nama penghuni"
                     required
                   />
                 </div>
+
+                <UnitSelector
+                  value={form.unit_number}
+                  onChange={(v) => setForm({ ...form, unit_number: v })}
+                  label="Alamat Tower & Unit *"
+                />
+
                 <div className="space-y-2">
-                  <Label>Deskripsi Pekerjaan</Label>
+                  <Label>Kantor / Penanggung Jawab <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={form.vendor_name}
+                    onChange={(e) => setForm({ ...form, vendor_name: e.target.value })}
+                    placeholder="PT. Contoh Jaya / Nama Vendor"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Nomor Telepon <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder="08xxxxxxxxxx"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Deskripsi Pekerjaan <span className="text-destructive">*</span></Label>
                   <Textarea
                     value={form.work_description}
                     onChange={(e) => setForm({ ...form, work_description: e.target.value })}
@@ -160,36 +191,87 @@ export default function IzinKerja() {
                     required
                   />
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Tanggal Mulai <span className="text-destructive">*</span></Label>
+                    <Input
+                      type="date"
+                      value={form.start_date}
+                      onChange={(e) => {
+                        setForm({ ...form, start_date: e.target.value });
+                        validateDates(e.target.value, form.end_date);
+                      }}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Tanggal Selesai <span className="text-destructive">*</span></Label>
+                    <Input
+                      type="date"
+                      value={form.end_date}
+                      onChange={(e) => {
+                        setForm({ ...form, end_date: e.target.value });
+                        validateDates(form.start_date, e.target.value);
+                      }}
+                      required
+                    />
+                  </div>
+                </div>
+                {dateError && <p className="text-sm text-destructive">{dateError}</p>}
+                <p className="text-xs text-muted-foreground">* Lama pengerjaan maksimal 2 bulan</p>
+
                 <div className="space-y-2">
-                  <Label>Jumlah Pekerja</Label>
+                  <Label>Jumlah Pekerja <span className="text-destructive">*</span></Label>
                   <Input
                     type="number"
                     min="1"
                     value={form.worker_count}
                     onChange={(e) => setForm({ ...form, worker_count: e.target.value })}
+                    required
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Tanggal Mulai</Label>
-                    <Input
-                      type="date"
-                      value={form.start_date}
-                      onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-                      required
+
+                <div className="space-y-2">
+                  <Label>Lampiran Layout Renovasi (Opsional)</Label>
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      id="layout-upload"
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Tanggal Selesai</Label>
-                    <Input
-                      type="date"
-                      value={form.end_date}
-                      onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-                      required
-                    />
+                    <label htmlFor="layout-upload" className="cursor-pointer">
+                      {form.layout_file ? (
+                        <div className="flex items-center justify-center gap-2 text-sm text-foreground">
+                          <Upload className="w-5 h-5" />
+                          {form.layout_file.name}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <Upload className="w-8 h-8" />
+                          <span className="text-sm">Klik untuk upload layout</span>
+                        </div>
+                      )}
+                    </label>
                   </div>
                 </div>
-                <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+
+                <div className="space-y-2">
+                  <Label>Metode Pembayaran (Opsional)</Label>
+                  <Select value={form.payment_method} onValueChange={(v) => setForm({ ...form, payment_method: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih metode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="kasir">Di Kasir</SelectItem>
+                      <SelectItem value="transfer">Transfer</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button type="submit" className="w-full" disabled={createMutation.isPending || !!dateError}>
                   {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                   Ajukan
                 </Button>

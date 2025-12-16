@@ -21,6 +21,7 @@ import KeluhanPenghuni from "./pages/kepenghunian/KeluhanPenghuni";
 import IzinKerja from "./pages/kepenghunian/IzinKerja";
 import KeluarMasukBarang from "./pages/kepenghunian/KeluarMasukBarang";
 import KartuAkses from "./pages/kepenghunian/KartuAkses";
+import TamuAsing from "./pages/kepenghunian/TamuAsing";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/kepenghunian/izin-kerja" element={<ProtectedRoute><IzinKerja /></ProtectedRoute>} />
             <Route path="/kepenghunian/barang" element={<ProtectedRoute><KeluarMasukBarang /></ProtectedRoute>} />
             <Route path="/kepenghunian/kartu-akses" element={<ProtectedRoute><KartuAkses /></ProtectedRoute>} />
+            <Route path="/kepenghunian/tamu-asing" element={<ProtectedRoute><TamuAsing /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
