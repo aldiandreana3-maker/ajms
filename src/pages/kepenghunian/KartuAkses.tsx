@@ -14,7 +14,7 @@ import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { usePermissions } from "@/hooks/usePermissions";
-import { CreditCard, Plus, Loader2 } from "lucide-react";
+import { CreditCard, Plus, Loader2, Upload } from "lucide-react";
 import { format } from "date-fns";
 
 const statusColors = {
@@ -44,9 +44,13 @@ export default function KartuAkses() {
   const [notes, setNotes] = useState("");
 
   const [form, setForm] = useState({
-    penghuni_name: "",
-    penghuni_type: "",
+    owner_name: "",
     unit_number: "",
+    request_type: "",
+    card_count: "1",
+    ktp_photo: null as File | null,
+    surat_kuasa: null as File | null,
+    payment_proof: null as File | null,
   });
 
   const generateCardNumber = () => {
@@ -60,13 +64,17 @@ export default function KartuAkses() {
     e.preventDefault();
     await createMutation.mutateAsync({
       card_number: generateCardNumber(),
-      card_type: form.penghuni_type || "resident",
+      card_type: form.request_type || "resident",
     });
     setIsOpen(false);
     setForm({
-      penghuni_name: "",
-      penghuni_type: "",
+      owner_name: "",
       unit_number: "",
+      request_type: "",
+      card_count: "1",
+      ktp_photo: null,
+      surat_kuasa: null,
+      payment_proof: null,
     });
   };
 
@@ -111,39 +119,141 @@ export default function KartuAkses() {
                   Buat Kartu Baru
                 </PermissionButton>
               </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Registrasi Kartu Akses</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Nama Penghuni</Label>
+                  <Label>Nama Pemilik <span className="text-destructive">*</span></Label>
                   <Input
-                    value={form.penghuni_name}
-                    onChange={(e) => setForm({ ...form, penghuni_name: e.target.value })}
-                    placeholder="Masukkan nama penghuni"
+                    value={form.owner_name}
+                    onChange={(e) => setForm({ ...form, owner_name: e.target.value })}
+                    placeholder="Masukkan nama pemilik"
                     required
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Status Penghuni</Label>
-                  <Select value={form.penghuni_type} onValueChange={(v) => setForm({ ...form, penghuni_type: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pemilik">Pemilik</SelectItem>
-                      <SelectItem value="penyewa">Penyewa</SelectItem>
-                      <SelectItem value="agent">Agent</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
 
                 <UnitSelector
                   value={form.unit_number}
                   onChange={(v) => setForm({ ...form, unit_number: v })}
+                  label="Tower & Nomor Unit *"
                 />
+
+                <div className="space-y-2">
+                  <Label>Keterangan <span className="text-destructive">*</span></Label>
+                  <Select value={form.request_type} onValueChange={(v) => setForm({ ...form, request_type: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih keterangan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="tambah_baru">Tambah Baru</SelectItem>
+                      <SelectItem value="hilang">Hilang</SelectItem>
+                      <SelectItem value="rusak">Rusak (Ada Fisik)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Jumlah Kartu Akses yang Dimiliki <span className="text-destructive">*</span></Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={form.card_count}
+                    onChange={(e) => setForm({ ...form, card_count: e.target.value })}
+                    placeholder="Jumlah kartu saat ini"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Upload KTP <span className="text-destructive">*</span></Label>
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setForm({ ...form, ktp_photo: file });
+                      }}
+                      className="hidden"
+                      id="ktp-upload"
+                      required
+                    />
+                    <label htmlFor="ktp-upload" className="cursor-pointer">
+                      {form.ktp_photo ? (
+                        <div className="flex items-center justify-center gap-2 text-sm text-foreground">
+                          <Upload className="w-5 h-5" />
+                          {form.ktp_photo.name}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <Upload className="w-8 h-8" />
+                          <span className="text-sm">Klik untuk upload KTP</span>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Foto Surat Kuasa (Opsional)</Label>
+                  <p className="text-xs text-muted-foreground">Jika penghuni dikuasakan</p>
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setForm({ ...form, surat_kuasa: file });
+                      }}
+                      className="hidden"
+                      id="surat-kuasa-upload"
+                    />
+                    <label htmlFor="surat-kuasa-upload" className="cursor-pointer">
+                      {form.surat_kuasa ? (
+                        <div className="flex items-center justify-center gap-2 text-sm text-foreground">
+                          <Upload className="w-5 h-5" />
+                          {form.surat_kuasa.name}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <Upload className="w-6 h-6" />
+                          <span className="text-sm">Upload surat kuasa</span>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Upload Bukti Pembayaran (Opsional)</Label>
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setForm({ ...form, payment_proof: file });
+                      }}
+                      className="hidden"
+                      id="payment-upload"
+                    />
+                    <label htmlFor="payment-upload" className="cursor-pointer">
+                      {form.payment_proof ? (
+                        <div className="flex items-center justify-center gap-2 text-sm text-foreground">
+                          <Upload className="w-5 h-5" />
+                          {form.payment_proof.name}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <Upload className="w-6 h-6" />
+                          <span className="text-sm">Upload bukti pembayaran</span>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                </div>
 
                 <Button type="submit" className="w-full" disabled={createMutation.isPending}>
                   {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
@@ -171,7 +281,7 @@ export default function KartuAkses() {
                     <TableHead>No. Kartu</TableHead>
                     <TableHead>Penghuni</TableHead>
                     <TableHead>Unit</TableHead>
-                    <TableHead>Status Penghuni</TableHead>
+                    <TableHead>Keterangan</TableHead>
                     <TableHead>Diterbitkan</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Aksi</TableHead>

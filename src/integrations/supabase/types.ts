@@ -256,6 +256,68 @@ export type Database = {
         }
         Relationships: []
       }
+      foreign_guest_reports: {
+        Row: {
+          birth_date: string
+          birth_place: string
+          check_in_date: string
+          check_out_date: string
+          created_at: string | null
+          full_name: string
+          gender: string
+          id: string
+          nationality: string
+          passport_expiry: string
+          passport_number: string
+          passport_photo_url: string | null
+          recorded_by: string | null
+          unit_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          birth_date: string
+          birth_place: string
+          check_in_date: string
+          check_out_date: string
+          created_at?: string | null
+          full_name: string
+          gender: string
+          id?: string
+          nationality: string
+          passport_expiry: string
+          passport_number: string
+          passport_photo_url?: string | null
+          recorded_by?: string | null
+          unit_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          birth_date?: string
+          birth_place?: string
+          check_in_date?: string
+          check_out_date?: string
+          created_at?: string | null
+          full_name?: string
+          gender?: string
+          id?: string
+          nationality?: string
+          passport_expiry?: string
+          passport_number?: string
+          passport_photo_url?: string | null
+          recorded_by?: string | null
+          unit_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "foreign_guest_reports_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       goods_movement: {
         Row: {
           carrier_id: string | null

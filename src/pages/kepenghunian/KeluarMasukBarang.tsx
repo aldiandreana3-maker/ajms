@@ -15,7 +15,7 @@ import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { usePermissions } from "@/hooks/usePermissions";
-import { PackageOpen, Plus, Loader2, ArrowDownLeft, ArrowUpRight, QrCode } from "lucide-react";
+import { PackageOpen, Plus, Loader2, ArrowDownLeft, ArrowUpRight, QrCode, Upload } from "lucide-react";
 import { format } from "date-fns";
 
 export default function KeluarMasukBarang() {
@@ -27,13 +27,14 @@ export default function KeluarMasukBarang() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({
-    unit_number: "",
     penghuni_name: "",
-    penghuni_type: "",
+    unit_number: "",
+    carrier_name: "",
+    ktp_photo: null as File | null,
+    phone: "",
+    rental_status: "",
     movement_type: "in" as "in" | "out",
     item_description: "",
-    quantity: "1",
-    carrier_name: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,19 +42,26 @@ export default function KeluarMasukBarang() {
     await createMutation.mutateAsync({
       movement_type: form.movement_type,
       item_description: form.item_description,
-      quantity: parseInt(form.quantity) || 1,
       carrier_name: form.carrier_name || undefined,
     });
     setIsOpen(false);
     setForm({
-      unit_number: "",
       penghuni_name: "",
-      penghuni_type: "",
+      unit_number: "",
+      carrier_name: "",
+      ktp_photo: null,
+      phone: "",
+      rental_status: "",
       movement_type: "in",
       item_description: "",
-      quantity: "1",
-      carrier_name: "",
     });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setForm({ ...form, ktp_photo: file });
+    }
   };
 
   const inMovements = movements?.filter((m) => m.movement_type === "in") || [];
@@ -67,8 +75,7 @@ export default function KeluarMasukBarang() {
           <TableHead>Unit</TableHead>
           <TableHead>Penghuni</TableHead>
           <TableHead>Deskripsi Barang</TableHead>
-          <TableHead>Qty</TableHead>
-          <TableHead>Pembawa</TableHead>
+          <TableHead>Penanggung Jawab</TableHead>
           <TableHead>QR Code</TableHead>
         </TableRow>
       </TableHeader>
@@ -79,7 +86,6 @@ export default function KeluarMasukBarang() {
             <TableCell>{m.units?.unit_number || "-"}</TableCell>
             <TableCell>{m.penghuni?.full_name || "-"}</TableCell>
             <TableCell>{m.item_description}</TableCell>
-            <TableCell>{m.quantity}</TableCell>
             <TableCell>{m.carrier_name || "-"}</TableCell>
             <TableCell>
               {m.qr_code && (
@@ -93,7 +99,7 @@ export default function KeluarMasukBarang() {
         ))}
         {data?.length === 0 && (
           <TableRow>
-            <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+            <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
               Belum ada data
             </TableCell>
           </TableRow>
@@ -137,83 +143,112 @@ export default function KeluarMasukBarang() {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Jenis</Label>
-                  <Select value={form.movement_type} onValueChange={(v) => setForm({ ...form, movement_type: v as "in" | "out" })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="in">
-                        <div className="flex items-center gap-2">
-                          <ArrowDownLeft className="w-4 h-4 text-success" />
-                          Barang Masuk
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="out">
-                        <div className="flex items-center gap-2">
-                          <ArrowUpRight className="w-4 h-4 text-warning" />
-                          Barang Keluar
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>Nama Penghuni <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={form.penghuni_name}
+                    onChange={(e) => setForm({ ...form, penghuni_name: e.target.value })}
+                    placeholder="Masukkan nama penghuni"
+                    required
+                  />
                 </div>
 
                 <UnitSelector
                   value={form.unit_number}
                   onChange={(v) => setForm({ ...form, unit_number: v })}
+                  label="Alamat Tower & Unit *"
                 />
 
                 <div className="space-y-2">
-                  <Label>Nama Penghuni</Label>
+                  <Label>Nama Penanggung Jawab <span className="text-destructive">*</span></Label>
                   <Input
-                    value={form.penghuni_name}
-                    onChange={(e) => setForm({ ...form, penghuni_name: e.target.value })}
-                    placeholder="Masukkan nama penghuni"
+                    value={form.carrier_name}
+                    onChange={(e) => setForm({ ...form, carrier_name: e.target.value })}
+                    placeholder="Nama penanggung jawab/pembawa"
+                    required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Status Penghuni</Label>
-                  <Select value={form.penghuni_type} onValueChange={(v) => setForm({ ...form, penghuni_type: v })}>
+                  <Label>Upload Foto KTP <span className="text-destructive">*</span></Label>
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      id="ktp-upload"
+                      required
+                    />
+                    <label htmlFor="ktp-upload" className="cursor-pointer">
+                      {form.ktp_photo ? (
+                        <div className="flex items-center justify-center gap-2 text-sm text-foreground">
+                          <Upload className="w-5 h-5" />
+                          {form.ktp_photo.name}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <Upload className="w-8 h-8" />
+                          <span className="text-sm">Klik untuk upload foto KTP</span>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Nomor Telepon <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder="08xxxxxxxxxx"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Status Sewa <span className="text-destructive">*</span></Label>
+                  <Select value={form.rental_status} onValueChange={(v) => setForm({ ...form, rental_status: v })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih status" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="pemilik">Pemilik</SelectItem>
                       <SelectItem value="penyewa">Penyewa</SelectItem>
-                      <SelectItem value="agent">Agent</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Deskripsi Barang</Label>
+                  <Label>Jenis Ijin <span className="text-destructive">*</span></Label>
+                  <Select value={form.movement_type} onValueChange={(v) => setForm({ ...form, movement_type: v as "in" | "out" })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="out">
+                        <div className="flex items-center gap-2">
+                          <ArrowUpRight className="w-4 h-4 text-warning" />
+                          Ijin Keluar Barang
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="in">
+                        <div className="flex items-center gap-2">
+                          <ArrowDownLeft className="w-4 h-4 text-success" />
+                          Ijin Masuk Barang
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Data Jenis Barang <span className="text-destructive">*</span></Label>
                   <Textarea
                     value={form.item_description}
                     onChange={(e) => setForm({ ...form, item_description: e.target.value })}
-                    placeholder="Contoh: 1 unit kulkas Samsung"
-                    rows={2}
+                    placeholder="Contoh: 1 unit kulkas Samsung, 2 kardus pakaian"
+                    rows={3}
                     required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Jumlah</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={form.quantity}
-                    onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Nama Pembawa</Label>
-                  <Input
-                    value={form.carrier_name}
-                    onChange={(e) => setForm({ ...form, carrier_name: e.target.value })}
-                    placeholder="Nama kurir/pembawa"
                   />
                 </div>
 

@@ -5,6 +5,7 @@ import {
   ClipboardCheck,
   PackageOpen,
   CreditCard,
+  Globe,
   ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -48,6 +49,13 @@ const services = [
     description: "Request kartu akses baru",
     color: "primary",
     path: "/kepenghunian/kartu-akses",
+  },
+  {
+    icon: Globe,
+    title: "Pelaporan Tamu Asing (WNA)",
+    description: "Catat data tamu warga negara asing",
+    color: "info",
+    path: "/kepenghunian/tamu-asing",
   },
 ];
 
