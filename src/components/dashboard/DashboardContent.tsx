@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Building2,
   Users,
@@ -9,12 +10,13 @@ import {
   ArrowRight,
   Loader2,
   LogIn,
-  UserPlus,
 } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { NewsCard } from "./NewsCard";
+import { EditStatDialog } from "./EditStatDialog";
 
 import { useDashboardStats } from "@/hooks/useDashboardStats";
+import { useDashboardSettings } from "@/hooks/useDashboardSettings";
 import { usePublishedNews } from "@/hooks/useNews";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -23,16 +25,69 @@ interface DashboardContentProps {
   onOpenKepenghunian: () => void;
 }
 
+interface EditDialogState {
+  open: boolean;
+  settingKey: string;
+  currentValue: number;
+  title: string;
+}
+
 export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: settings, isLoading: settingsLoading } = useDashboardSettings();
   const { data: newsData, isLoading: newsLoading } = usePublishedNews();
   const { user, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
 
-  const statCards = [
-    { title: "Total Unit", value: stats?.totalUnits?.toString() || "0", icon: Building2, variant: "primary" as const },
-    { title: "Penghuni Aktif", value: stats?.activePenghuni?.toString() || "0", icon: Users, variant: "accent" as const },
-    { title: "Daftar Komersil", value: stats?.commercialTenants?.toString() || "0", icon: Store, variant: "info" as const },
+  const [editDialog, setEditDialog] = useState<EditDialogState>({
+    open: false,
+    settingKey: "",
+    currentValue: 0,
+    title: "",
+  });
+
+  // Get values from dashboard_settings for RED category stats
+  const getSettingValue = (key: string): number => {
+    const setting = settings?.find((s) => s.setting_key === key);
+    return setting?.setting_value || 0;
+  };
+
+  const handleEditStat = (settingKey: string, title: string) => {
+    setEditDialog({
+      open: true,
+      settingKey,
+      currentValue: getSettingValue(settingKey),
+      title,
+    });
+  };
+
+  // RED category stats (from dashboard_settings - Super Admin editable)
+  const redCategoryStats = [
+    { 
+      title: "Total Unit", 
+      value: getSettingValue("total_units").toString(), 
+      icon: Building2, 
+      variant: "primary" as const,
+      settingKey: "total_units",
+    },
+    { 
+      title: "Penghuni Aktif", 
+      value: getSettingValue("penghuni_aktif").toString(), 
+      icon: Users, 
+      variant: "accent" as const,
+      settingKey: "penghuni_aktif",
+    },
+    { 
+      title: "Daftar Komersil", 
+      value: getSettingValue("data_komersil").toString(), 
+      icon: Store, 
+      variant: "info" as const,
+      settingKey: "data_komersil",
+    },
+  ];
+
+  // BLUE category stats (from actual data - user accumulated)
+  const blueCategoryStats = [
     { title: "Kartu Akses", value: stats?.accessCards?.toString() || "0", icon: CreditCard, variant: "default" as const },
     { title: "Total Keluhan", value: stats?.totalKeluhan?.toString() || "0", icon: MessageSquareWarning, variant: "warning" as const },
     { title: "Work Order", value: stats?.totalWorkOrders?.toString() || "0", icon: Wrench, variant: "default" as const },
@@ -51,7 +106,7 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
     category: "Pengumuman",
   })) || [];
 
-  if (statsLoading) {
+  if (statsLoading || settingsLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -91,15 +146,26 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statCards.slice(0, 4).map((stat, index) => (
-          <StatCard key={stat.title} {...stat} delay={index * 100} />
+      {/* Stats Grid - RED Category (Super Admin Editable) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {redCategoryStats.map((stat, index) => (
+          <StatCard 
+            key={stat.title} 
+            title={stat.title}
+            value={stat.value}
+            icon={stat.icon}
+            variant={stat.variant}
+            delay={index * 100}
+            canEdit={isSuperAdmin}
+            onEdit={() => handleEditStat(stat.settingKey, stat.title)}
+          />
         ))}
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {statCards.slice(4).map((stat, index) => (
-          <StatCard key={stat.title} {...stat} delay={(index + 4) * 100} />
+
+      {/* Stats Grid - BLUE Category (User Data) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {blueCategoryStats.map((stat, index) => (
+          <StatCard key={stat.title} {...stat} delay={(index + 3) * 100} />
         ))}
       </div>
 
@@ -121,6 +187,15 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
           ]} 
         />
       )}
+
+      {/* Edit Dialog for Super Admin */}
+      <EditStatDialog
+        open={editDialog.open}
+        onOpenChange={(open) => setEditDialog((prev) => ({ ...prev, open }))}
+        settingKey={editDialog.settingKey}
+        currentValue={editDialog.currentValue}
+        title={editDialog.title}
+      />
     </div>
   );
 }
