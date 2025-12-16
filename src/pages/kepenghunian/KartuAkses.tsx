@@ -11,6 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAccessCards, useCreateAccessCard, useUpdateAccessCardStatus } from "@/hooks/useAccessCards";
 import { UnitSelector } from "@/components/shared/UnitSelector";
+import { PermissionButton } from "@/components/ui/permission-button";
+import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
+import { usePermissions } from "@/hooks/usePermissions";
 import { CreditCard, Plus, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -29,6 +32,8 @@ const statusLabels = {
 };
 
 export default function KartuAkses() {
+  const { getFeaturePermission, isAuthenticated } = usePermissions();
+  const permission = getFeaturePermission("kartu-akses");
   const { data: cards, isLoading } = useAccessCards();
   const createMutation = useCreateAccessCard();
   const updateStatusMutation = useUpdateAccessCardStatus();
@@ -91,13 +96,21 @@ export default function KartuAkses() {
             </div>
           </div>
 
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Buat Kartu Baru
-              </Button>
-            </DialogTrigger>
+          {!isAuthenticated ? (
+            <LoginPromptButton />
+          ) : (
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+              <DialogTrigger asChild>
+                <PermissionButton
+                  hasPermission={permission.canCreate}
+                  tooltip={permission.tooltip}
+                  category="blue"
+                  className="ring-2 ring-user-blue"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Buat Kartu Baru
+                </PermissionButton>
+              </DialogTrigger>
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Registrasi Kartu Akses</DialogTitle>
@@ -139,6 +152,7 @@ export default function KartuAkses() {
               </form>
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
         <Card>

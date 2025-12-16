@@ -12,10 +12,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGoodsMovement, useCreateGoodsMovement } from "@/hooks/useGoodsMovement";
 import { UnitSelector } from "@/components/shared/UnitSelector";
+import { PermissionButton } from "@/components/ui/permission-button";
+import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
+import { usePermissions } from "@/hooks/usePermissions";
 import { PackageOpen, Plus, Loader2, ArrowDownLeft, ArrowUpRight, QrCode } from "lucide-react";
 import { format } from "date-fns";
 
 export default function KeluarMasukBarang() {
+  const { getFeaturePermission, isAuthenticated } = usePermissions();
+  const permission = getFeaturePermission("keluar-masuk-barang");
+
   const { data: movements, isLoading } = useGoodsMovement();
   const createMutation = useCreateGoodsMovement();
 
@@ -110,13 +116,21 @@ export default function KeluarMasukBarang() {
             </div>
           </div>
 
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Catat Barang
-              </Button>
-            </DialogTrigger>
+          {!isAuthenticated ? (
+            <LoginPromptButton />
+          ) : (
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+              <DialogTrigger asChild>
+                <PermissionButton
+                  hasPermission={permission.canCreate}
+                  tooltip={permission.tooltip}
+                  category="blue"
+                  className="ring-2 ring-user-blue"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Catat Barang
+                </PermissionButton>
+              </DialogTrigger>
             <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Catat Keluar/Masuk Barang</DialogTitle>
@@ -210,6 +224,7 @@ export default function KeluarMasukBarang() {
               </form>
             </DialogContent>
           </Dialog>
+          )}
         </div>
 
         <Card>

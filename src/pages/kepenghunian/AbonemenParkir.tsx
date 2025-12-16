@@ -10,10 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useParkingSubscriptions, useCreateParkingSubscription, useExtendParkingSubscription } from "@/hooks/useParkingSubscriptions";
 import { UnitSelector } from "@/components/shared/UnitSelector";
+import { PermissionButton } from "@/components/ui/permission-button";
+import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Car, Plus, Calendar, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
 export default function AbonemenParkir() {
+  const { getFeaturePermission, isAuthenticated } = usePermissions();
+  const permission = getFeaturePermission("abonemen-parkir");
   const { data: subscriptions, isLoading } = useParkingSubscriptions();
   const createMutation = useCreateParkingSubscription();
   const extendMutation = useExtendParkingSubscription();
@@ -86,13 +91,21 @@ export default function AbonemenParkir() {
             </div>
           </div>
 
-          <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Tambah Abonemen
-              </Button>
-            </DialogTrigger>
+          {!isAuthenticated ? (
+            <LoginPromptButton />
+          ) : (
+            <Dialog open={isOpen} onOpenChange={setIsOpen}>
+              <DialogTrigger asChild>
+                <PermissionButton
+                  hasPermission={permission.canCreate}
+                  tooltip={permission.tooltip}
+                  category="blue"
+                  className="ring-2 ring-user-blue"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Tambah Abonemen
+                </PermissionButton>
+              </DialogTrigger>
             <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Tambah Abonemen Baru</DialogTitle>
@@ -204,7 +217,8 @@ export default function AbonemenParkir() {
                 </Button>
               </form>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          )}
         </div>
 
         <Card>
