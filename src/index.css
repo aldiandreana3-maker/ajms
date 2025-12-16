@@ -55,10 +55,19 @@
     --info: 200 85% 50%;
     --info-light: 200 100% 95%;
 
+    /* Role-based colors */
+    --login-orange: 25 95% 53%;
+    --login-orange-foreground: 0 0% 100%;
+    --admin-red: 0 72% 51%;
+    --admin-red-light: 0 100% 97%;
+    --user-blue: 217 91% 60%;
+    --user-blue-light: 217 100% 97%;
+
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(220 60% 22%) 0%, hsl(220 60% 30%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(142 70% 40%) 0%, hsl(142 70% 50%) 100%);
     --gradient-card: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 20% 98%) 100%);
+    --gradient-orange: linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(25 95% 60%) 100%);
 
     /* Shadows */
     --shadow-sm: 0 1px 2px 0 hsl(220 60% 15% / 0.05);

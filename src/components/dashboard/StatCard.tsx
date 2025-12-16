@@ -10,6 +10,7 @@ interface StatCardProps {
     isPositive: boolean;
   };
   variant?: "default" | "primary" | "accent" | "info" | "warning";
+  dataType?: "admin" | "user"; // admin = red circle, user = blue circle
   delay?: number;
 }
 
@@ -35,8 +36,13 @@ export function StatCard({
   icon: Icon,
   trend,
   variant = "default",
+  dataType = "user",
   delay = 0,
 }: StatCardProps) {
+  const circleColorClass = dataType === "admin" 
+    ? "ring-2 ring-admin-red" 
+    : "ring-2 ring-user-blue";
+
   return (
     <div
       className={cn(
@@ -48,7 +54,12 @@ export function StatCard({
       <div className="flex items-start justify-between">
         <div className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-2xl font-bold text-foreground">{value}</p>
+          <div className={cn(
+            "w-14 h-14 rounded-full flex items-center justify-center bg-card",
+            circleColorClass
+          )}>
+            <p className="text-2xl font-bold text-foreground">{value}</p>
+          </div>
           {trend && (
             <p
               className={cn(
