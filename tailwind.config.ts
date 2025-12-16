@@ -76,6 +76,18 @@ export default {
           DEFAULT: "hsl(var(--info))",
           light: "hsl(var(--info-light))",
         },
+        "login-orange": {
+          DEFAULT: "hsl(var(--login-orange))",
+          foreground: "hsl(var(--login-orange-foreground))",
+        },
+        "admin-red": {
+          DEFAULT: "hsl(var(--admin-red))",
+          light: "hsl(var(--admin-red-light))",
+        },
+        "user-blue": {
+          DEFAULT: "hsl(var(--user-blue))",
+          light: "hsl(var(--user-blue-light))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

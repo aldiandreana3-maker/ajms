@@ -16,15 +16,16 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
+// Menu items with isSuperAdminOnly flag for red indicator
 const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
-  { icon: Users, label: "Tentang Kami", path: "/tentang-kami" },
-  { icon: Building2, label: "Agent Berkantor", path: "/agent-berkantor" },
-  { icon: Layers, label: "Struktur Fasilitas", path: "/struktur-fasilitas" },
-  { icon: Box, label: "Type Unit", path: "/type-unit" },
-  { icon: FileBarChart, label: "Laporan Keuangan", path: "/laporan-keuangan" },
-  { icon: Receipt, label: "Tagihan", path: "/tagihan" },
-  { icon: Newspaper, label: "Berita", path: "/berita" },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/", isSuperAdminOnly: false },
+  { icon: Users, label: "Tentang Kami", path: "/tentang-kami", isSuperAdminOnly: true },
+  { icon: Building2, label: "Agent Berkantor", path: "/agent-berkantor", isSuperAdminOnly: true },
+  { icon: Layers, label: "Struktur Fasilitas", path: "/struktur-fasilitas", isSuperAdminOnly: true },
+  { icon: Box, label: "Type Unit", path: "/type-unit", isSuperAdminOnly: true },
+  { icon: FileBarChart, label: "Laporan Keuangan", path: "/laporan-keuangan", isSuperAdminOnly: true },
+  { icon: Receipt, label: "Tagihan", path: "/tagihan", isSuperAdminOnly: true },
+  { icon: Newspaper, label: "Berita", path: "/berita", isSuperAdminOnly: true },
 ];
 
 const adminMenuItems = [
@@ -90,10 +91,12 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               key={item.path}
               to={item.path}
               className={cn(
-                "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group",
+                "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group relative",
                 isActive
                   ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                // Red border for Super Admin only items
+                item.isSuperAdminOnly && "ring-2 ring-admin-red ring-offset-1 ring-offset-sidebar"
               )}
             >
               <item.icon className={cn("w-5 h-5 flex-shrink-0", collapsed && "mx-auto")} />
