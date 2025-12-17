@@ -13,10 +13,12 @@ import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Car, Plus, Calendar, Loader2, Upload, Info } from "lucide-react";
+import { Car, Plus, Calendar, Loader2, Upload, Info, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 
 export default function AbonemenParkir() {
+  const navigate = useNavigate();
   const { getFeaturePermission, isAuthenticated } = usePermissions();
   const permission = getFeaturePermission("abonemen-parkir");
   const { data: subscriptions, isLoading } = useParkingSubscriptions();
@@ -92,6 +94,14 @@ export default function AbonemenParkir() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/")}
+              className="rounded-full"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
             <div className="p-3 bg-primary/10 rounded-xl">
               <Car className="w-6 h-6 text-primary" />
             </div>
@@ -121,11 +131,15 @@ export default function AbonemenParkir() {
                 <DialogTitle>Tambah Abonemen Baru</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <UnitSelector
-                  value={form.unit_number}
-                  onChange={(v) => setForm({ ...form, unit_number: v })}
-                  label="Tower Lantai Unit *"
-                />
+                <div className="space-y-2">
+                  <Label>Tower Lantai Unit <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={form.unit_number}
+                    onChange={(e) => setForm({ ...form, unit_number: e.target.value })}
+                    placeholder="Contoh: A0520, B1205"
+                    required
+                  />
+                </div>
 
                 <div className="space-y-2">
                   <Label>Nama Penghuni <span className="text-destructive">*</span></Label>
@@ -211,15 +225,12 @@ export default function AbonemenParkir() {
 
                 <div className="space-y-2">
                   <Label>Harian / Bulanan <span className="text-destructive">*</span></Label>
-                  <Select value={form.period_type} onValueChange={(v) => setForm({ ...form, period_type: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih periode" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="harian">Harian</SelectItem>
-                      <SelectItem value="bulanan">Bulanan</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    value={form.period_type}
+                    onChange={(e) => setForm({ ...form, period_type: e.target.value })}
+                    placeholder="Ketik: harian / bulanan (jika hilang/rusak ketik 0)"
+                    required
+                  />
                   <p className="text-xs text-muted-foreground">Jika hilang / rusak, ketik 0</p>
                 </div>
 
@@ -315,7 +326,7 @@ export default function AbonemenParkir() {
                 )}
 
                 <div className="space-y-2">
-                  <Label>Upload Bukti Bayar <span className="text-destructive">*</span></Label>
+                  <Label>Upload Bukti Bayar (Opsional)</Label>
                   <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
                     <input
                       type="file"

@@ -14,7 +14,8 @@ import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { usePermissions } from "@/hooks/usePermissions";
-import { ClipboardCheck, Plus, Loader2, Upload } from "lucide-react";
+import { ClipboardCheck, Plus, Loader2, Upload, ArrowLeft, Building2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { format, differenceInDays } from "date-fns";
 
 const statusColors = {
@@ -24,6 +25,7 @@ const statusColors = {
 };
 
 export default function IzinKerja() {
+  const navigate = useNavigate();
   const { getFeaturePermission, isAuthenticated } = usePermissions();
   const permission = getFeaturePermission("izin-kerja");
 
@@ -116,6 +118,14 @@ export default function IzinKerja() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/")}
+              className="rounded-full"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
             <div className="p-3 bg-info/10 rounded-xl">
               <ClipboardCheck className="w-6 h-6 text-info" />
             </div>
@@ -155,11 +165,15 @@ export default function IzinKerja() {
                   />
                 </div>
 
-                <UnitSelector
-                  value={form.unit_number}
-                  onChange={(v) => setForm({ ...form, unit_number: v })}
-                  label="Alamat Tower & Unit *"
-                />
+                <div className="space-y-2">
+                  <Label>Lokasi Kerja <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={form.unit_number}
+                    onChange={(e) => setForm({ ...form, unit_number: e.target.value })}
+                    placeholder="Contoh: Tower A Lantai 5 Unit 20, Area Lobby"
+                    required
+                  />
+                </div>
 
                 <div className="space-y-2">
                   <Label>Kantor / Penanggung Jawab <span className="text-destructive">*</span></Label>
@@ -269,6 +283,44 @@ export default function IzinKerja() {
                       <SelectItem value="transfer">Transfer</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Upload Bukti Transfer (Opsional)</Label>
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setForm({ ...form, layout_file: file });
+                      }}
+                      className="hidden"
+                      id="transfer-upload"
+                    />
+                    <label htmlFor="transfer-upload" className="cursor-pointer">
+                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                        <Upload className="w-6 h-6" />
+                        <span className="text-sm">Upload bukti transfer</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-info/10 rounded-lg space-y-2">
+                  <p className="font-medium text-info text-sm">Pembayaran ke rekening:</p>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Building2 className="w-4 h-4 text-info" />
+                    <span className="font-medium">BCA</span>
+                    <span className="font-mono">008 63 99789</span>
+                    <span className="text-muted-foreground">PPPSRS THE JARRDIN</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm">
+                    <Building2 className="w-4 h-4 text-info" />
+                    <span className="font-medium">BRI</span>
+                    <span className="font-mono">777 80808 11</span>
+                    <span className="text-muted-foreground">PPPSRS THE JARRDIN</span>
+                  </div>
                 </div>
 
                 <Button type="submit" className="w-full" disabled={createMutation.isPending || !!dateError}>

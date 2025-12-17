@@ -15,10 +15,12 @@ import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { usePermissions } from "@/hooks/usePermissions";
-import { PackageOpen, Plus, Loader2, ArrowDownLeft, ArrowUpRight, QrCode, Upload } from "lucide-react";
+import { PackageOpen, Plus, Loader2, ArrowDownLeft, ArrowUpRight, QrCode, Upload, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 
 export default function KeluarMasukBarang() {
+  const navigate = useNavigate();
   const { getFeaturePermission, isAuthenticated } = usePermissions();
   const permission = getFeaturePermission("keluar-masuk-barang");
 
@@ -113,6 +115,14 @@ export default function KeluarMasukBarang() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/")}
+              className="rounded-full"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
             <div className="p-3 bg-accent/10 rounded-xl">
               <PackageOpen className="w-6 h-6 text-accent" />
             </div>

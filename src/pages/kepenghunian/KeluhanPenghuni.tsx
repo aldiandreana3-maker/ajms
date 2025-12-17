@@ -14,7 +14,8 @@ import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { usePermissions } from "@/hooks/usePermissions";
-import { MessageSquareWarning, Plus, Loader2, Upload, ImageIcon, Video } from "lucide-react";
+import { MessageSquareWarning, Plus, Loader2, Upload, ImageIcon, Video, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 
 const statusColors = {
@@ -24,6 +25,7 @@ const statusColors = {
 };
 
 export default function KeluhanPenghuni() {
+  const navigate = useNavigate();
   const { getFeaturePermission, isAuthenticated } = usePermissions();
   const permission = getFeaturePermission("keluhan");
   const { data: keluhan, isLoading } = useKeluhan();
@@ -77,6 +79,14 @@ export default function KeluhanPenghuni() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/")}
+              className="rounded-full"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
             <div className="p-3 bg-warning/10 rounded-xl">
               <MessageSquareWarning className="w-6 h-6 text-warning" />
             </div>
