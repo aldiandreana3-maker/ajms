@@ -12,16 +12,35 @@ import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Globe, Plus, Loader2, Upload, ArrowLeft } from "lucide-react";
+import { Globe, Plus, Loader2, Upload, ArrowLeft, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
+import { exportToExcel, foreignGuestExportColumns } from "@/lib/exportExcel";
 
 export default function TamuAsing() {
   const navigate = useNavigate();
-  const { getFeaturePermission, isAuthenticated } = usePermissions();
+  const { getFeaturePermission, isAuthenticated, isAdmin, isSuperAdmin } = usePermissions();
   const permission = getFeaturePermission("tamu-asing");
   const { data: guests, isLoading } = useForeignGuests();
   const createMutation = useCreateForeignGuest();
+  const canExport = isAdmin || isSuperAdmin;
+
+  const handleExport = () => {
+    if (!guests) return;
+    const genderMap = { pria: "Pria", wanita: "Wanita" };
+    const exportData = guests.map((g) => ({
+      ...g,
+      unit_number: g.units?.unit_number || "-",
+      gender: genderMap[g.gender] || g.gender,
+      created_at: format(new Date(g.created_at), "dd/MM/yyyy HH:mm"),
+    }));
+    exportToExcel({
+      filename: `Tamu_Asing_${format(new Date(), "yyyy-MM-dd")}`,
+      sheetName: "Tamu Asing",
+      data: exportData,
+      columns: foreignGuestExportColumns,
+    });
+  };
 
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({
@@ -258,8 +277,14 @@ export default function TamuAsing() {
         </div>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Daftar Tamu Asing</CardTitle>
+            {canExport && guests && guests.length > 0 && (
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="w-4 h-4 mr-2" />
+                Export Excel
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {isLoading ? (

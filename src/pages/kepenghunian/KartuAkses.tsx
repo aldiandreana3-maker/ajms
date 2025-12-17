@@ -14,9 +14,10 @@ import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { usePermissions } from "@/hooks/usePermissions";
-import { CreditCard, Plus, Loader2, Upload, ArrowLeft } from "lucide-react";
+import { CreditCard, Plus, Loader2, Upload, ArrowLeft, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
+import { exportToExcel, accessCardExportColumns } from "@/lib/exportExcel";
 
 const statusColors = {
   active: "bg-success/20 text-success border-success/30",
@@ -34,11 +35,33 @@ const statusLabels = {
 
 export default function KartuAkses() {
   const navigate = useNavigate();
-  const { getFeaturePermission, isAuthenticated } = usePermissions();
+  const { getFeaturePermission, isAuthenticated, isAdmin, isSuperAdmin } = usePermissions();
   const permission = getFeaturePermission("kartu-akses");
   const { data: cards, isLoading } = useAccessCards();
   const createMutation = useCreateAccessCard();
   const updateStatusMutation = useUpdateAccessCardStatus();
+  const canExport = isAdmin || isSuperAdmin;
+
+  const statusLabelsExport = { active: "Aktif", inactive: "Nonaktif", lost: "Hilang", damaged: "Rusak" };
+
+  const handleExport = () => {
+    if (!cards) return;
+    const exportData = cards.map((c) => ({
+      ...c,
+      penghuni_name: c.penghuni?.full_name || "-",
+      unit_number: c.units?.unit_number || "-",
+      status: statusLabelsExport[c.status] || c.status,
+      created_at: format(new Date(c.created_at), "dd/MM/yyyy HH:mm"),
+      issued_at: c.issued_at ? format(new Date(c.issued_at), "dd/MM/yyyy") : "-",
+      expires_at: c.expires_at ? format(new Date(c.expires_at), "dd/MM/yyyy") : "-",
+    }));
+    exportToExcel({
+      filename: `Kartu_Akses_${format(new Date(), "yyyy-MM-dd")}`,
+      sheetName: "Kartu Akses",
+      data: exportData,
+      columns: accessCardExportColumns,
+    });
+  };
 
   const [isOpen, setIsOpen] = useState(false);
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
@@ -276,8 +299,14 @@ export default function KartuAkses() {
         </div>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Daftar Kartu Akses</CardTitle>
+            {canExport && cards && cards.length > 0 && (
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="w-4 h-4 mr-2" />
+                Export Excel
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {isLoading ? (

@@ -13,17 +13,35 @@ import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Car, Plus, Calendar, Loader2, Upload, Info, ArrowLeft } from "lucide-react";
+import { Car, Plus, Calendar, Loader2, Upload, Info, ArrowLeft, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
+import { exportToExcel, parkingExportColumns } from "@/lib/exportExcel";
 
 export default function AbonemenParkir() {
   const navigate = useNavigate();
-  const { getFeaturePermission, isAuthenticated } = usePermissions();
+  const { getFeaturePermission, isAuthenticated, isAdmin, isSuperAdmin } = usePermissions();
   const permission = getFeaturePermission("abonemen-parkir");
   const { data: subscriptions, isLoading } = useParkingSubscriptions();
   const createMutation = useCreateParkingSubscription();
   const extendMutation = useExtendParkingSubscription();
+  const canExport = isAdmin || isSuperAdmin;
+
+  const handleExport = () => {
+    if (!subscriptions) return;
+    const exportData = subscriptions.map((sub) => ({
+      ...sub,
+      unit_number: sub.units?.unit_number || "-",
+      is_active: sub.is_active ? "Aktif" : "Tidak Aktif",
+      created_at: format(new Date(sub.created_at), "dd/MM/yyyy HH:mm"),
+    }));
+    exportToExcel({
+      filename: `Abonemen_Parkir_${format(new Date(), "yyyy-MM-dd")}`,
+      sheetName: "Abonemen Parkir",
+      data: exportData,
+      columns: parkingExportColumns,
+    });
+  };
 
   const [isOpen, setIsOpen] = useState(false);
   const [extendId, setExtendId] = useState<string | null>(null);
@@ -373,8 +391,14 @@ export default function AbonemenParkir() {
         </div>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Daftar Abonemen</CardTitle>
+            {canExport && subscriptions && subscriptions.length > 0 && (
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="w-4 h-4 mr-2" />
+                Export Excel
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {isLoading ? (
