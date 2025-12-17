@@ -105,37 +105,39 @@ export function TopMenu({ sidebarCollapsed }: TopMenuProps) {
             <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full"></span>
           </button>
 
-          {/* Profile Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors">
-                <Avatar className="w-8 h-8">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                    {user?.email?.charAt(0).toUpperCase() || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium text-foreground">{user?.email?.split("@")[0] || "User"}</p>
-                  <p className="text-xs text-muted-foreground">{role ? roleLabels[role] : "User"}</p>
-                </div>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={() => navigate("/profile")}>
-                <User className="w-4 h-4 mr-2" />
-                Profil Saya
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/")}>
-                <Settings className="w-4 h-4 mr-2" />
-                Pengaturan
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
-                <LogOut className="w-4 h-4 mr-2" />
-                Keluar
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Profile Dropdown - Only show when logged in */}
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors">
+                  <Avatar className="w-8 h-8">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                      {user?.email?.charAt(0).toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="hidden md:block text-left">
+                    <p className="text-sm font-medium text-foreground">{user?.email?.split("@")[0] || "User"}</p>
+                    <p className="text-xs text-muted-foreground">{role ? roleLabels[role] : "User"}</p>
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => navigate("/profile")}>
+                  <User className="w-4 h-4 mr-2" />
+                  Profil Saya
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate("/")}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Pengaturan
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Keluar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
         </div>
       </div>
     </header>
