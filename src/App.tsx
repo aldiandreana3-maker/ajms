@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
+// import { ProtectedRoute } from "@/components/ProtectedRoute"; // Temporarily disabled
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import TentangKami from "./pages/TentangKami";
@@ -35,22 +35,22 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/tentang-kami" element={<ProtectedRoute><TentangKami /></ProtectedRoute>} />
-            <Route path="/agent-berkantor" element={<ProtectedRoute><AgentBerkantor /></ProtectedRoute>} />
-            <Route path="/struktur-fasilitas" element={<ProtectedRoute><StrukturFasilitas /></ProtectedRoute>} />
-            <Route path="/type-unit" element={<ProtectedRoute><TypeUnit /></ProtectedRoute>} />
-            <Route path="/laporan-keuangan" element={<ProtectedRoute><LaporanKeuangan /></ProtectedRoute>} />
-            <Route path="/tagihan" element={<ProtectedRoute><Tagihan /></ProtectedRoute>} />
-            <Route path="/berita" element={<ProtectedRoute><Berita /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/manajemen-user" element={<ProtectedRoute requireSuperAdmin><ManajemenUser /></ProtectedRoute>} />
-            <Route path="/kepenghunian/abonemen-parkir" element={<ProtectedRoute><AbonemenParkir /></ProtectedRoute>} />
-            <Route path="/kepenghunian/keluhan" element={<ProtectedRoute><KeluhanPenghuni /></ProtectedRoute>} />
-            <Route path="/kepenghunian/izin-kerja" element={<ProtectedRoute><IzinKerja /></ProtectedRoute>} />
-            <Route path="/kepenghunian/barang" element={<ProtectedRoute><KeluarMasukBarang /></ProtectedRoute>} />
-            <Route path="/kepenghunian/kartu-akses" element={<ProtectedRoute><KartuAkses /></ProtectedRoute>} />
-            <Route path="/kepenghunian/tamu-asing" element={<ProtectedRoute><TamuAsing /></ProtectedRoute>} />
+            <Route path="/" element={<Index />} />
+            <Route path="/tentang-kami" element={<TentangKami />} />
+            <Route path="/agent-berkantor" element={<AgentBerkantor />} />
+            <Route path="/struktur-fasilitas" element={<StrukturFasilitas />} />
+            <Route path="/type-unit" element={<TypeUnit />} />
+            <Route path="/laporan-keuangan" element={<LaporanKeuangan />} />
+            <Route path="/tagihan" element={<Tagihan />} />
+            <Route path="/berita" element={<Berita />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/manajemen-user" element={<ManajemenUser />} />
+            <Route path="/kepenghunian/abonemen-parkir" element={<AbonemenParkir />} />
+            <Route path="/kepenghunian/keluhan" element={<KeluhanPenghuni />} />
+            <Route path="/kepenghunian/izin-kerja" element={<IzinKerja />} />
+            <Route path="/kepenghunian/barang" element={<KeluarMasukBarang />} />
+            <Route path="/kepenghunian/kartu-akses" element={<KartuAkses />} />
+            <Route path="/kepenghunian/tamu-asing" element={<TamuAsing />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
