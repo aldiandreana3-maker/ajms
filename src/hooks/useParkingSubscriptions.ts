@@ -56,6 +56,20 @@ export function useCreateParkingSubscription() {
 
   return useMutation({
     mutationFn: async (input: CreateParkingInput) => {
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError) throw sessionError;
+      if (!session) {
+        throw new Error("Sesi login tidak ditemukan. Silakan login ulang.");
+      }
+
+      // Ensure token is fresh before writing (avoids RLS failures when session isn't attached)
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) throw refreshError;
+
       const { data, error } = await supabase
         .from("parking_subscriptions")
         .insert(input)
