@@ -14,7 +14,8 @@ import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { usePermissions } from "@/hooks/usePermissions";
-import { CreditCard, Plus, Loader2, Upload } from "lucide-react";
+import { CreditCard, Plus, Loader2, Upload, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 
 const statusColors = {
@@ -32,6 +33,7 @@ const statusLabels = {
 };
 
 export default function KartuAkses() {
+  const navigate = useNavigate();
   const { getFeaturePermission, isAuthenticated } = usePermissions();
   const permission = getFeaturePermission("kartu-akses");
   const { data: cards, isLoading } = useAccessCards();
@@ -95,6 +97,14 @@ export default function KartuAkses() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/")}
+              className="rounded-full"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
             <div className="p-3 bg-primary/10 rounded-xl">
               <CreditCard className="w-6 h-6 text-primary" />
             </div>
@@ -155,13 +165,13 @@ export default function KartuAkses() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Jumlah Kartu Akses yang Dimiliki <span className="text-destructive">*</span></Label>
+                  <Label>Jumlah Akses yang Diajukan <span className="text-destructive">*</span></Label>
                   <Input
                     type="number"
-                    min="0"
+                    min="1"
                     value={form.card_count}
                     onChange={(e) => setForm({ ...form, card_count: e.target.value })}
-                    placeholder="Jumlah kartu saat ini"
+                    placeholder="Jumlah kartu yang diajukan"
                     required
                   />
                 </div>

@@ -12,10 +12,12 @@ import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Globe, Plus, Loader2, Upload } from "lucide-react";
+import { Globe, Plus, Loader2, Upload, ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 
 export default function TamuAsing() {
+  const navigate = useNavigate();
   const { getFeaturePermission, isAuthenticated } = usePermissions();
   const permission = getFeaturePermission("tamu-asing");
   const { data: guests, isLoading } = useForeignGuests();
@@ -79,6 +81,14 @@ export default function TamuAsing() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/")}
+              className="rounded-full"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
             <div className="p-3 bg-info/10 rounded-xl">
               <Globe className="w-6 h-6 text-info" />
             </div>
