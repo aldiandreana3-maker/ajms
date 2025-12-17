@@ -14,9 +14,10 @@ import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { usePermissions } from "@/hooks/usePermissions";
-import { ClipboardCheck, Plus, Loader2, Upload, ArrowLeft, Building2 } from "lucide-react";
+import { ClipboardCheck, Plus, Loader2, Upload, ArrowLeft, Building2, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format, differenceInDays } from "date-fns";
+import { exportToExcel, workPermitExportColumns } from "@/lib/exportExcel";
 
 const statusColors = {
   pending: "bg-warning/20 text-warning border-warning/30",
@@ -26,12 +27,31 @@ const statusColors = {
 
 export default function IzinKerja() {
   const navigate = useNavigate();
-  const { getFeaturePermission, isAuthenticated } = usePermissions();
+  const { getFeaturePermission, isAuthenticated, isAdmin, isSuperAdmin } = usePermissions();
   const permission = getFeaturePermission("izin-kerja");
 
   const { data: permits, isLoading } = useWorkPermits();
   const createMutation = useCreateWorkPermit();
   const updateStatusMutation = useUpdateWorkPermitStatus();
+  const canExport = isAdmin || isSuperAdmin;
+
+  const handleExport = () => {
+    if (!permits) return;
+    const statusMap = { pending: "Pending", approved: "Disetujui", rejected: "Ditolak" };
+    const exportData = permits.map((p) => ({
+      ...p,
+      penghuni_name: p.penghuni?.full_name || "-",
+      unit_number: p.units?.unit_number || "-",
+      status: statusMap[p.status] || p.status,
+      created_at: format(new Date(p.created_at), "dd/MM/yyyy HH:mm"),
+    }));
+    exportToExcel({
+      filename: `Izin_Kerja_${format(new Date(), "yyyy-MM-dd")}`,
+      sheetName: "Izin Kerja",
+      data: exportData,
+      columns: workPermitExportColumns,
+    });
+  };
 
   const [isOpen, setIsOpen] = useState(false);
   const [selectedPermit, setSelectedPermit] = useState<string | null>(null);
@@ -334,8 +354,14 @@ export default function IzinKerja() {
         </div>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Daftar Pengajuan</CardTitle>
+            {canExport && permits && permits.length > 0 && (
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="w-4 h-4 mr-2" />
+                Export Excel
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {isLoading ? (

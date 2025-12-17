@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -15,18 +15,36 @@ import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { usePermissions } from "@/hooks/usePermissions";
-import { PackageOpen, Plus, Loader2, ArrowDownLeft, ArrowUpRight, QrCode, Upload, ArrowLeft } from "lucide-react";
+import { PackageOpen, Plus, Loader2, ArrowDownLeft, ArrowUpRight, QrCode, Upload, ArrowLeft, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
+import { exportToExcel, goodsMovementExportColumns } from "@/lib/exportExcel";
 
 export default function KeluarMasukBarang() {
   const navigate = useNavigate();
-  const { getFeaturePermission, isAuthenticated } = usePermissions();
+  const { getFeaturePermission, isAuthenticated, isAdmin, isSuperAdmin } = usePermissions();
   const permission = getFeaturePermission("keluar-masuk-barang");
 
   const { data: movements, isLoading } = useGoodsMovement();
   const createMutation = useCreateGoodsMovement();
+  const canExport = isAdmin || isSuperAdmin;
 
+  const handleExport = () => {
+    if (!movements) return;
+    const exportData = movements.map((m) => ({
+      ...m,
+      penghuni_name: m.penghuni?.full_name || "-",
+      unit_number: m.units?.unit_number || "-",
+      movement_type: m.movement_type === "in" ? "Masuk" : "Keluar",
+      created_at: format(new Date(m.created_at), "dd/MM/yyyy HH:mm"),
+    }));
+    exportToExcel({
+      filename: `Keluar_Masuk_Barang_${format(new Date(), "yyyy-MM-dd")}`,
+      sheetName: "Keluar Masuk Barang",
+      data: exportData,
+      columns: goodsMovementExportColumns,
+    });
+  };
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({
     penghuni_name: "",
@@ -273,7 +291,16 @@ export default function KeluarMasukBarang() {
         </div>
 
         <Card>
-          <CardContent className="pt-6">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle>Riwayat Keluar Masuk Barang</CardTitle>
+            {canExport && movements && movements.length > 0 && (
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="w-4 h-4 mr-2" />
+                Export Excel
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent>
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />

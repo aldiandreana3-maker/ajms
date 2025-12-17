@@ -14,9 +14,10 @@ import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { usePermissions } from "@/hooks/usePermissions";
-import { MessageSquareWarning, Plus, Loader2, Upload, ImageIcon, Video, ArrowLeft } from "lucide-react";
+import { MessageSquareWarning, Plus, Loader2, Upload, ImageIcon, Video, ArrowLeft, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
+import { exportToExcel, keluhanExportColumns } from "@/lib/exportExcel";
 
 const statusColors = {
   pending: "bg-warning/20 text-warning border-warning/30",
@@ -26,11 +27,30 @@ const statusColors = {
 
 export default function KeluhanPenghuni() {
   const navigate = useNavigate();
-  const { getFeaturePermission, isAuthenticated } = usePermissions();
+  const { getFeaturePermission, isAuthenticated, isAdmin, isSuperAdmin } = usePermissions();
   const permission = getFeaturePermission("keluhan");
   const { data: keluhan, isLoading } = useKeluhan();
   const createMutation = useCreateKeluhan();
   const updateStatusMutation = useUpdateKeluhanStatus();
+  const canExport = isAdmin || isSuperAdmin;
+
+  const handleExport = () => {
+    if (!keluhan) return;
+    const statusMap = { pending: "Pending", proses: "Proses", selesai: "Selesai" };
+    const exportData = keluhan.map((k) => ({
+      ...k,
+      penghuni_name: k.penghuni?.full_name || "-",
+      unit_number: k.units?.unit_number || "-",
+      status: statusMap[k.status] || k.status,
+      created_at: format(new Date(k.created_at), "dd/MM/yyyy HH:mm"),
+    }));
+    exportToExcel({
+      filename: `Keluhan_Penghuni_${format(new Date(), "yyyy-MM-dd")}`,
+      sheetName: "Keluhan Penghuni",
+      data: exportData,
+      columns: keluhanExportColumns,
+    });
+  };
 
   const [isOpen, setIsOpen] = useState(false);
   const [selectedKeluhan, setSelectedKeluhan] = useState<string | null>(null);
@@ -194,8 +214,14 @@ export default function KeluhanPenghuni() {
         </div>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Daftar Keluhan</CardTitle>
+            {canExport && keluhan && keluhan.length > 0 && (
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="w-4 h-4 mr-2" />
+                Export Excel
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {isLoading ? (
