@@ -10,7 +10,6 @@ import Auth from "./pages/Auth";
 import TentangKami from "./pages/TentangKami";
 import AgentBerkantor from "./pages/AgentBerkantor";
 import StrukturFasilitas from "./pages/StrukturFasilitas";
-import TypeUnit from "./pages/TypeUnit";
 import LaporanKeuangan from "./pages/LaporanKeuangan";
 import Tagihan from "./pages/Tagihan";
 import Berita from "./pages/Berita";
@@ -39,7 +38,6 @@ const App = () => (
             <Route path="/tentang-kami" element={<TentangKami />} />
             <Route path="/agent-berkantor" element={<AgentBerkantor />} />
             <Route path="/struktur-fasilitas" element={<StrukturFasilitas />} />
-            <Route path="/type-unit" element={<TypeUnit />} />
             <Route path="/laporan-keuangan" element={<LaporanKeuangan />} />
             <Route path="/tagihan" element={<Tagihan />} />
             <Route path="/berita" element={<Berita />} />
