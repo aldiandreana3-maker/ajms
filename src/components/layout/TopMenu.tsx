@@ -41,7 +41,7 @@ export function TopMenu({ sidebarCollapsed }: TopMenuProps) {
 
   const handleLogout = async () => {
     await signOut();
-    navigate("/auth");
+    navigate("/");
   };
 
   const handleMenuClick = (item: typeof menuItems[0]) => {
