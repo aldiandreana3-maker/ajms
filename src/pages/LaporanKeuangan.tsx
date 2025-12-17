@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
   TrendingUp,
@@ -6,40 +7,103 @@ import {
   FileText,
   Download,
   Calendar,
+  Edit,
+  Trash2,
+  Plus,
+  Loader2,
 } from "lucide-react";
-
-const financialSummary = [
-  {
-    title: "Total Pendapatan",
-    value: "Rp 2.450.000.000",
-    change: "+12.5%",
-    isPositive: true,
-    icon: TrendingUp,
-  },
-  {
-    title: "Total Pengeluaran",
-    value: "Rp 890.000.000",
-    change: "+5.2%",
-    isPositive: false,
-    icon: TrendingDown,
-  },
-  {
-    title: "Saldo Kas",
-    value: "Rp 1.560.000.000",
-    change: "+8.3%",
-    isPositive: true,
-    icon: DollarSign,
-  },
-];
-
-const reports = [
-  { id: 1, name: "Laporan Keuangan November 2025", date: "01 Des 2025", size: "2.4 MB" },
-  { id: 2, name: "Laporan Keuangan Oktober 2025", date: "01 Nov 2025", size: "2.1 MB" },
-  { id: 3, name: "Laporan Keuangan September 2025", date: "01 Okt 2025", size: "2.3 MB" },
-  { id: 4, name: "Laporan Keuangan Q3 2025", date: "15 Okt 2025", size: "5.8 MB" },
-];
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useFinancialReport } from "@/hooks/useFinancialReport";
 
 const LaporanKeuangan = () => {
+  const { isSuperAdmin } = useAuth();
+  const { data: financialData, isLoading } = useFinancialReport();
+
+  const income = financialData?.totalIncome || 0;
+  const expenses = financialData?.totalExpense || 0;
+  const balance = income - expenses;
+
+  const [reports, setReports] = useState([
+    { id: "1", name: "Laporan Keuangan November 2025", date: "01 Des 2025", size: "2.4 MB" },
+    { id: "2", name: "Laporan Keuangan Oktober 2025", date: "01 Nov 2025", size: "2.1 MB" },
+    { id: "3", name: "Laporan Keuangan September 2025", date: "01 Okt 2025", size: "2.3 MB" },
+    { id: "4", name: "Laporan Keuangan Q3 2025", date: "15 Okt 2025", size: "5.8 MB" },
+  ]);
+
+  const [isOpen, setIsOpen] = useState(false);
+  const [editingReport, setEditingReport] = useState<{ id: string; name: string; date: string; size: string } | null>(null);
+  const [form, setForm] = useState({ name: "", date: "", size: "" });
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const financialSummary = [
+    {
+      title: "Total Pendapatan",
+      value: formatCurrency(income),
+      change: "+12.5%",
+      isPositive: true,
+      icon: TrendingUp,
+    },
+    {
+      title: "Total Pengeluaran",
+      value: formatCurrency(expenses),
+      change: "+5.2%",
+      isPositive: false,
+      icon: TrendingDown,
+    },
+    {
+      title: "Saldo Kas",
+      value: formatCurrency(balance),
+      change: "+8.3%",
+      isPositive: true,
+      icon: DollarSign,
+    },
+  ];
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingReport) {
+      setReports(reports.map(r => r.id === editingReport.id ? { ...r, ...form } : r));
+    } else {
+      setReports([{ id: Date.now().toString(), ...form }, ...reports]);
+    }
+    setIsOpen(false);
+    setEditingReport(null);
+    setForm({ name: "", date: "", size: "" });
+  };
+
+  const handleEdit = (report: typeof reports[0]) => {
+    setEditingReport(report);
+    setForm({ name: report.name, date: report.date, size: report.size });
+    setIsOpen(true);
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm("Apakah Anda yakin ingin menghapus laporan ini?")) {
+      setReports(reports.filter(r => r.id !== id));
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </MainLayout>
+    );
+  }
+
   return (
     <MainLayout>
       <div className="space-y-6 animate-fade-in">
@@ -94,12 +158,20 @@ const LaporanKeuangan = () => {
 
         {/* Reports List */}
         <div className="bg-card rounded-xl border border-border shadow-card">
-          <div className="p-6 border-b border-border">
-            <h2 className="text-lg font-bold text-foreground">Dokumen Laporan</h2>
-            <p className="text-sm text-muted-foreground">Unduh laporan keuangan bulanan</p>
+          <div className="p-6 border-b border-border flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-foreground">Dokumen Laporan</h2>
+              <p className="text-sm text-muted-foreground">Unduh laporan keuangan bulanan</p>
+            </div>
+            {isSuperAdmin && (
+              <Button onClick={() => { setEditingReport(null); setForm({ name: "", date: "", size: "" }); setIsOpen(true); }}>
+                <Plus className="w-4 h-4 mr-2" />
+                Tambah Laporan
+              </Button>
+            )}
           </div>
           <div className="divide-y divide-border">
-            {reports.map((report, index) => (
+            {reports.map((report) => (
               <div
                 key={report.id}
                 className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
@@ -115,14 +187,68 @@ const LaporanKeuangan = () => {
                     </p>
                   </div>
                 </div>
-                <button className="p-2 rounded-lg hover:bg-muted transition-colors">
-                  <Download className="w-5 h-5 text-muted-foreground" />
-                </button>
+                <div className="flex items-center gap-2">
+                  {isSuperAdmin && (
+                    <>
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(report)}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleDelete(report.id)}>
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </>
+                  )}
+                  <button className="p-2 rounded-lg hover:bg-muted transition-colors">
+                    <Download className="w-5 h-5 text-muted-foreground" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </div>
+
+      <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) { setEditingReport(null); setForm({ name: "", date: "", size: "" }); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingReport ? "Edit Laporan" : "Tambah Laporan Baru"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nama Laporan</Label>
+              <Input
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Laporan Keuangan November 2025"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Tanggal</Label>
+                <Input
+                  value={form.date}
+                  onChange={(e) => setForm({ ...form, date: e.target.value })}
+                  placeholder="01 Des 2025"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Ukuran File</Label>
+                <Input
+                  value={form.size}
+                  onChange={(e) => setForm({ ...form, size: e.target.value })}
+                  placeholder="2.4 MB"
+                  required
+                />
+              </div>
+            </div>
+            <Button type="submit" className="w-full">
+              {editingReport ? "Update" : "Simpan"}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 };

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useNews, useCreateNews, useUpdateNews, useDeleteNews } from "@/hooks/useNews";
+import { useAuth } from "@/contexts/AuthContext";
 import { Newspaper, Plus, Loader2, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -18,6 +19,7 @@ export default function Berita() {
   const createMutation = useCreateNews();
   const updateMutation = useUpdateNews();
   const deleteMutation = useDeleteNews();
+  const { isSuperAdmin } = useAuth();
 
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -88,85 +90,91 @@ export default function Berita() {
               <Newspaper className="w-6 h-6 text-info" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Manajemen Berita</h1>
-              <p className="text-muted-foreground">Kelola berita dan pengumuman</p>
+              <h1 className="text-2xl font-bold text-foreground">
+                {isSuperAdmin ? "Manajemen Berita" : "Berita & Pengumuman"}
+              </h1>
+              <p className="text-muted-foreground">
+                {isSuperAdmin ? "Kelola berita dan pengumuman" : "Lihat berita dan pengumuman terbaru"}
+              </p>
             </div>
           </div>
 
-          <Dialog open={isOpen} onOpenChange={(open) => {
-            setIsOpen(open);
-            if (!open) {
-              setEditingId(null);
-              resetForm();
-            }
-          }}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Tambah Berita
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg">
-              <DialogHeader>
-                <DialogTitle>{editingId ? "Edit Berita" : "Tambah Berita Baru"}</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Judul</Label>
-                  <Input
-                    value={form.title}
-                    onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    placeholder="Judul berita..."
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Konten</Label>
-                  <Textarea
-                    value={form.content}
-                    onChange={(e) => setForm({ ...form, content: e.target.value })}
-                    placeholder="Isi berita..."
-                    rows={6}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>URL Gambar (opsional)</Label>
-                  <Input
-                    value={form.image_url}
-                    onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-                    placeholder="https://..."
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+          {isSuperAdmin && (
+            <Dialog open={isOpen} onOpenChange={(open) => {
+              setIsOpen(open);
+              if (!open) {
+                setEditingId(null);
+                resetForm();
+              }
+            }}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Tambah Berita
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>{editingId ? "Edit Berita" : "Tambah Berita Baru"}</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as "draft" | "published" })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="draft">Draft</SelectItem>
-                        <SelectItem value="published">Published</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Jadwal Publish (opsional)</Label>
+                    <Label>Judul</Label>
                     <Input
-                      type="datetime-local"
-                      value={form.scheduled_at}
-                      onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })}
+                      value={form.title}
+                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+                      placeholder="Judul berita..."
+                      required
                     />
                   </div>
-                </div>
-                <Button type="submit" className="w-full" disabled={createMutation.isPending || updateMutation.isPending}>
-                  {(createMutation.isPending || updateMutation.isPending) ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                  {editingId ? "Update" : "Simpan"}
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <div className="space-y-2">
+                    <Label>Konten</Label>
+                    <Textarea
+                      value={form.content}
+                      onChange={(e) => setForm({ ...form, content: e.target.value })}
+                      placeholder="Isi berita..."
+                      rows={6}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>URL Gambar (opsional)</Label>
+                    <Input
+                      value={form.image_url}
+                      onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+                      placeholder="https://..."
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Status</Label>
+                      <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as "draft" | "published" })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="draft">Draft</SelectItem>
+                          <SelectItem value="published">Published</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Jadwal Publish (opsional)</Label>
+                      <Input
+                        type="datetime-local"
+                        value={form.scheduled_at}
+                        onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <Button type="submit" className="w-full" disabled={createMutation.isPending || updateMutation.isPending}>
+                    {(createMutation.isPending || updateMutation.isPending) ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    {editingId ? "Update" : "Simpan"}
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
 
         <Card>
@@ -186,7 +194,7 @@ export default function Berita() {
                     <TableHead>Status</TableHead>
                     <TableHead>Dibuat</TableHead>
                     <TableHead>Dipublikasi</TableHead>
-                    <TableHead>Aksi</TableHead>
+                    {isSuperAdmin && <TableHead>Aksi</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -205,21 +213,23 @@ export default function Berita() {
                       </TableCell>
                       <TableCell>{format(new Date(n.created_at), "dd/MM/yyyy")}</TableCell>
                       <TableCell>{n.published_at ? format(new Date(n.published_at), "dd/MM/yyyy HH:mm") : "-"}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => handleEdit(n)}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => handleDelete(n.id)} disabled={deleteMutation.isPending}>
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
+                      {isSuperAdmin && (
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handleEdit(n)}>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleDelete(n.id)} disabled={deleteMutation.isPending}>
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                   {news?.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={isSuperAdmin ? 5 : 4} className="text-center text-muted-foreground py-8">
                         Belum ada berita
                       </TableCell>
                     </TableRow>

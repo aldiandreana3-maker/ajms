@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      about_us: {
+        Row: {
+          content: string
+          created_at: string | null
+          display_order: number | null
+          icon_name: string | null
+          id: string
+          is_active: boolean | null
+          section_key: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          display_order?: number | null
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          section_key: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          display_order?: number | null
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          section_key?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       access_cards: {
         Row: {
           card_number: string
@@ -70,6 +106,81 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      agent_units: {
+        Row: {
+          agent_id: string
+          created_at: string | null
+          id: string
+          unit_id: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string | null
+          id?: string
+          unit_id: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string | null
+          id?: string
+          unit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_units_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_units_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agents: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          office_location: string | null
+          phone: string | null
+          photo_url: string | null
+          position: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          office_location?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          position: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          office_location?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          position?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       bills: {
         Row: {
@@ -252,6 +363,48 @@ export type Database = {
           id?: string
           receipt_url?: string | null
           recorded_by?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      facilities: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          floor_location: string | null
+          icon_name: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          name: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          floor_location?: string | null
+          icon_name?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          floor_location?: string | null
+          icon_name?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string
+          status?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -811,6 +964,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_unit_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
