@@ -8,6 +8,7 @@ import {
   User,
   Search,
   LogOut,
+  LogIn,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -21,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 
 const menuItems = [
   { icon: Home, label: "Home", path: "/" },
@@ -137,7 +139,15 @@ export function TopMenu({ sidebarCollapsed }: TopMenuProps) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : null}
+          ) : (
+            <Button
+              onClick={() => navigate("/auth")}
+              className="bg-orange-500 hover:bg-orange-600 text-white shadow-lg"
+            >
+              <LogIn className="w-4 h-4 mr-2" />
+              Login / Daftar
+            </Button>
+          )}
         </div>
       </div>
     </header>
