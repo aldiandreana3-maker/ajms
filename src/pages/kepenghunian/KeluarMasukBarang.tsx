@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGoodsMovement, useCreateGoodsMovement } from "@/hooks/useGoodsMovement";
-import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
+import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PackageOpen, Plus, Loader2, ArrowDownLeft, ArrowUpRight, QrCode, Upload, ArrowLeft, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -29,9 +29,28 @@ export default function KeluarMasukBarang() {
   const createMutation = useCreateGoodsMovement();
   const canExport = isAdmin || isSuperAdmin;
 
+  const [searchValue, setSearchValue] = useState("");
+  const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
+
+  const filteredData = useMemo(() => {
+    if (!movements) return [];
+    let filtered = filterByDate(movements, dateFilter);
+    if (searchValue) {
+      const search = searchValue.toLowerCase();
+      filtered = filtered.filter(
+        (m) =>
+          m.item_description?.toLowerCase().includes(search) ||
+          m.carrier_name?.toLowerCase().includes(search) ||
+          m.penghuni?.full_name?.toLowerCase().includes(search) ||
+          m.units?.unit_number?.toLowerCase().includes(search)
+      );
+    }
+    return filtered;
+  }, [movements, searchValue, dateFilter]);
+
   const handleExport = () => {
-    if (!movements) return;
-    const exportData = movements.map((m) => ({
+    if (!filteredData.length) return;
+    const exportData = filteredData.map((m) => ({
       ...m,
       penghuni_name: m.penghuni?.full_name || "-",
       unit_number: m.units?.unit_number || "-",
@@ -45,6 +64,7 @@ export default function KeluarMasukBarang() {
       columns: goodsMovementExportColumns,
     });
   };
+
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({
     penghuni_name: "",
@@ -84,8 +104,8 @@ export default function KeluarMasukBarang() {
     }
   };
 
-  const inMovements = movements?.filter((m) => m.movement_type === "in") || [];
-  const outMovements = movements?.filter((m) => m.movement_type === "out") || [];
+  const inMovements = filteredData.filter((m) => m.movement_type === "in");
+  const outMovements = filteredData.filter((m) => m.movement_type === "out");
 
   const MovementTable = ({ data }: { data: typeof movements }) => (
     <Table>
@@ -120,7 +140,7 @@ export default function KeluarMasukBarang() {
         {data?.length === 0 && (
           <TableRow>
             <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-              Belum ada data
+              {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada data"}
             </TableCell>
           </TableRow>
         )}
@@ -136,7 +156,7 @@ export default function KeluarMasukBarang() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/?section=kepenghunian")}
               className="rounded-full"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -180,11 +200,15 @@ export default function KeluarMasukBarang() {
                   />
                 </div>
 
-                <UnitSelector
-                  value={form.unit_number}
-                  onChange={(v) => setForm({ ...form, unit_number: v })}
-                  label="Alamat Tower & Unit *"
-                />
+                <div className="space-y-2">
+                  <Label>Alamat Tower & Unit <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={form.unit_number}
+                    onChange={(e) => setForm({ ...form, unit_number: e.target.value })}
+                    placeholder="Contoh: A0520, B1205"
+                    required
+                  />
+                </div>
 
                 <div className="space-y-2">
                   <Label>Nama Penanggung Jawab <span className="text-destructive">*</span></Label>
@@ -205,7 +229,6 @@ export default function KeluarMasukBarang() {
                       onChange={handleFileChange}
                       className="hidden"
                       id="ktp-upload"
-                      required
                     />
                     <label htmlFor="ktp-upload" className="cursor-pointer">
                       {form.ktp_photo ? (
@@ -293,7 +316,7 @@ export default function KeluarMasukBarang() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle>Riwayat Keluar Masuk Barang</CardTitle>
-            {canExport && movements && movements.length > 0 && (
+            {canExport && filteredData.length > 0 && (
               <Button variant="outline" size="sm" onClick={handleExport}>
                 <Download className="w-4 h-4 mr-2" />
                 Export Excel
@@ -301,6 +324,13 @@ export default function KeluarMasukBarang() {
             )}
           </CardHeader>
           <CardContent>
+            <DataFilterBar
+              searchValue={searchValue}
+              onSearchChange={setSearchValue}
+              dateFilter={dateFilter}
+              onDateFilterChange={setDateFilter}
+              searchPlaceholder="Cari barang, nama, unit..."
+            />
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -308,7 +338,7 @@ export default function KeluarMasukBarang() {
             ) : (
               <Tabs defaultValue="all">
                 <TabsList>
-                  <TabsTrigger value="all">Semua ({movements?.length || 0})</TabsTrigger>
+                  <TabsTrigger value="all">Semua ({filteredData.length})</TabsTrigger>
                   <TabsTrigger value="in" className="text-success">
                     <ArrowDownLeft className="w-4 h-4 mr-1" />
                     Masuk ({inMovements.length})
@@ -319,7 +349,7 @@ export default function KeluarMasukBarang() {
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="all" className="mt-4">
-                  <MovementTable data={movements} />
+                  <MovementTable data={filteredData} />
                 </TabsContent>
                 <TabsContent value="in" className="mt-4">
                   <MovementTable data={inMovements} />

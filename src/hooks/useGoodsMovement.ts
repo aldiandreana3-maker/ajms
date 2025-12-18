@@ -54,9 +54,13 @@ export function useCreateGoodsMovement() {
 
   return useMutation({
     mutationFn: async (input: CreateGoodsMovementInput) => {
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        throw new Error("Silakan login terlebih dahulu");
+      }
       
-      // Generate QR code (simple UUID-based code)
+      await supabase.auth.refreshSession();
+      
       const qr_code = `GM-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
       
       const { data, error } = await supabase
@@ -64,7 +68,7 @@ export function useCreateGoodsMovement() {
         .insert({
           ...input,
           qr_code,
-          recorded_by: userData.user?.id,
+          recorded_by: sessionData.session.user.id,
         })
         .select()
         .single();

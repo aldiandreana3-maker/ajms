@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useParkingSubscriptions, useCreateParkingSubscription, useExtendParkingSubscription } from "@/hooks/useParkingSubscriptions";
-import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
+import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Car, Plus, Calendar, Loader2, Upload, Info, ArrowLeft, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -27,9 +27,28 @@ export default function AbonemenParkir() {
   const extendMutation = useExtendParkingSubscription();
   const canExport = isAdmin || isSuperAdmin;
 
+  const [searchValue, setSearchValue] = useState("");
+  const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
+
+  const filteredData = useMemo(() => {
+    if (!subscriptions) return [];
+    let filtered = filterByDate(subscriptions, dateFilter);
+    if (searchValue) {
+      const search = searchValue.toLowerCase();
+      filtered = filtered.filter(
+        (sub) =>
+          sub.vehicle_number?.toLowerCase().includes(search) ||
+          sub.vehicle_type?.toLowerCase().includes(search) ||
+          sub.vehicle_brand?.toLowerCase().includes(search) ||
+          sub.units?.unit_number?.toLowerCase().includes(search)
+      );
+    }
+    return filtered;
+  }, [subscriptions, searchValue, dateFilter]);
+
   const handleExport = () => {
-    if (!subscriptions) return;
-    const exportData = subscriptions.map((sub) => ({
+    if (!filteredData.length) return;
+    const exportData = filteredData.map((sub) => ({
       ...sub,
       unit_number: sub.units?.unit_number || "-",
       is_active: sub.is_active ? "Aktif" : "Tidak Aktif",
@@ -115,7 +134,7 @@ export default function AbonemenParkir() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/?section=kepenghunian")}
               className="rounded-full"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -393,7 +412,7 @@ export default function AbonemenParkir() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Daftar Abonemen</CardTitle>
-            {canExport && subscriptions && subscriptions.length > 0 && (
+            {canExport && filteredData.length > 0 && (
               <Button variant="outline" size="sm" onClick={handleExport}>
                 <Download className="w-4 h-4 mr-2" />
                 Export Excel
@@ -401,6 +420,13 @@ export default function AbonemenParkir() {
             )}
           </CardHeader>
           <CardContent>
+            <DataFilterBar
+              searchValue={searchValue}
+              onSearchChange={setSearchValue}
+              dateFilter={dateFilter}
+              onDateFilterChange={setDateFilter}
+              searchPlaceholder="Cari plat, unit, nama..."
+            />
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -409,34 +435,38 @@ export default function AbonemenParkir() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Penghuni</TableHead>
+                    <TableHead>Tanggal</TableHead>
                     <TableHead>Unit</TableHead>
                     <TableHead>Kendaraan</TableHead>
-                    <TableHead>No. Polisi</TableHead>
+                    <TableHead>Plat</TableHead>
                     <TableHead>Periode</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {subscriptions?.map((sub) => (
+                  {filteredData.map((sub) => (
                     <TableRow key={sub.id}>
-                      <TableCell>{sub.vehicle_brand || "-"}</TableCell>
+                      <TableCell>{format(new Date(sub.created_at), "dd/MM/yyyy")}</TableCell>
                       <TableCell>{sub.units?.unit_number || "-"}</TableCell>
                       <TableCell className="capitalize">{sub.vehicle_type}</TableCell>
                       <TableCell className="font-mono">{sub.vehicle_number}</TableCell>
                       <TableCell>
-                        {format(new Date(sub.start_date), "dd/MM/yyyy")} - {format(new Date(sub.end_date), "dd/MM/yyyy")}
+                        {format(new Date(sub.start_date), "dd/MM")} - {format(new Date(sub.end_date), "dd/MM/yyyy")}
                       </TableCell>
                       <TableCell>
                         <Badge variant={sub.is_active ? "default" : "secondary"}>
-                          {sub.is_active ? "Aktif" : "Nonaktif"}
+                          {sub.is_active ? "Aktif" : "Expired"}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <Dialog open={extendId === sub.id} onOpenChange={(open) => !open && setExtendId(null)}>
                           <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" onClick={() => setExtendId(sub.id)}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setExtendId(sub.id)}
+                            >
                               <Calendar className="w-4 h-4 mr-1" />
                               Perpanjang
                             </Button>
@@ -456,7 +486,7 @@ export default function AbonemenParkir() {
                               </div>
                               <Button onClick={handleExtend} disabled={extendMutation.isPending} className="w-full">
                                 {extendMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                Simpan
+                                Perpanjang
                               </Button>
                             </div>
                           </DialogContent>
@@ -464,10 +494,10 @@ export default function AbonemenParkir() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {subscriptions?.length === 0 && (
+                  {filteredData.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                        Belum ada data abonemen parkir
+                        {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada abonemen parkir"}
                       </TableCell>
                     </TableRow>
                   )}

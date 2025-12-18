@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useForeignGuests, useCreateForeignGuest } from "@/hooks/useForeignGuests";
-import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
+import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Globe, Plus, Loader2, Upload, ArrowLeft, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -25,10 +25,29 @@ export default function TamuAsing() {
   const createMutation = useCreateForeignGuest();
   const canExport = isAdmin || isSuperAdmin;
 
+  const [searchValue, setSearchValue] = useState("");
+  const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
+
+  const filteredData = useMemo(() => {
+    if (!guests) return [];
+    let filtered = filterByDate(guests, dateFilter);
+    if (searchValue) {
+      const search = searchValue.toLowerCase();
+      filtered = filtered.filter(
+        (g) =>
+          g.full_name?.toLowerCase().includes(search) ||
+          g.nationality?.toLowerCase().includes(search) ||
+          g.passport_number?.toLowerCase().includes(search) ||
+          g.units?.unit_number?.toLowerCase().includes(search)
+      );
+    }
+    return filtered;
+  }, [guests, searchValue, dateFilter]);
+
   const handleExport = () => {
-    if (!guests) return;
+    if (!filteredData.length) return;
     const genderMap = { pria: "Pria", wanita: "Wanita" };
-    const exportData = guests.map((g) => ({
+    const exportData = filteredData.map((g) => ({
       ...g,
       unit_number: g.units?.unit_number || "-",
       gender: genderMap[g.gender] || g.gender,
@@ -103,7 +122,7 @@ export default function TamuAsing() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/?section=kepenghunian")}
               className="rounded-full"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -147,11 +166,15 @@ export default function TamuAsing() {
                     />
                   </div>
 
-                  <UnitSelector
-                    value={form.unit_number}
-                    onChange={(v) => setForm({ ...form, unit_number: v })}
-                    label="Alamat Tower & Unit *"
-                  />
+                  <div className="space-y-2">
+                    <Label>Alamat Tower & Unit <span className="text-destructive">*</span></Label>
+                    <Input
+                      value={form.unit_number}
+                      onChange={(e) => setForm({ ...form, unit_number: e.target.value })}
+                      placeholder="Contoh: A0520, B1205"
+                      required
+                    />
+                  </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -227,7 +250,6 @@ export default function TamuAsing() {
                         onChange={handleFileChange}
                         className="hidden"
                         id="passport-upload"
-                        required
                       />
                       <label htmlFor="passport-upload" className="cursor-pointer">
                         {form.passport_photo ? (
@@ -279,7 +301,7 @@ export default function TamuAsing() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Daftar Tamu Asing</CardTitle>
-            {canExport && guests && guests.length > 0 && (
+            {canExport && filteredData.length > 0 && (
               <Button variant="outline" size="sm" onClick={handleExport}>
                 <Download className="w-4 h-4 mr-2" />
                 Export Excel
@@ -287,6 +309,13 @@ export default function TamuAsing() {
             )}
           </CardHeader>
           <CardContent>
+            <DataFilterBar
+              searchValue={searchValue}
+              onSearchChange={setSearchValue}
+              dateFilter={dateFilter}
+              onDateFilterChange={setDateFilter}
+              searchPlaceholder="Cari nama, paspor, negara..."
+            />
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -304,7 +333,7 @@ export default function TamuAsing() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {guests?.map((g) => (
+                  {filteredData.map((g) => (
                     <TableRow key={g.id}>
                       <TableCell>
                         <div>
@@ -319,10 +348,10 @@ export default function TamuAsing() {
                       <TableCell>{format(new Date(g.check_out_date), "dd/MM/yyyy")}</TableCell>
                     </TableRow>
                   ))}
-                  {guests?.length === 0 && (
+                  {filteredData.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        Belum ada data tamu asing
+                        {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada data tamu asing"}
                       </TableCell>
                     </TableRow>
                   )}
