@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAccessCards, useCreateAccessCard, useUpdateAccessCardStatus } from "@/hooks/useAccessCards";
-import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
+import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { CreditCard, Plus, Loader2, Upload, ArrowLeft, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -42,11 +42,30 @@ export default function KartuAkses() {
   const updateStatusMutation = useUpdateAccessCardStatus();
   const canExport = isAdmin || isSuperAdmin;
 
+  const [searchValue, setSearchValue] = useState("");
+  const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
+
+  const filteredData = useMemo(() => {
+    if (!cards) return [];
+    let filtered = filterByDate(cards, dateFilter);
+    if (searchValue) {
+      const search = searchValue.toLowerCase();
+      filtered = filtered.filter(
+        (c) =>
+          c.card_number?.toLowerCase().includes(search) ||
+          c.penghuni?.full_name?.toLowerCase().includes(search) ||
+          c.units?.unit_number?.toLowerCase().includes(search) ||
+          c.card_type?.toLowerCase().includes(search)
+      );
+    }
+    return filtered;
+  }, [cards, searchValue, dateFilter]);
+
   const statusLabelsExport = { active: "Aktif", inactive: "Nonaktif", lost: "Hilang", damaged: "Rusak" };
 
   const handleExport = () => {
-    if (!cards) return;
-    const exportData = cards.map((c) => ({
+    if (!filteredData.length) return;
+    const exportData = filteredData.map((c) => ({
       ...c,
       penghuni_name: c.penghuni?.full_name || "-",
       unit_number: c.units?.unit_number || "-",
@@ -123,7 +142,7 @@ export default function KartuAkses() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/?section=kepenghunian")}
               className="rounded-full"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -167,11 +186,15 @@ export default function KartuAkses() {
                   />
                 </div>
 
-                <UnitSelector
-                  value={form.unit_number}
-                  onChange={(v) => setForm({ ...form, unit_number: v })}
-                  label="Tower & Nomor Unit *"
-                />
+                <div className="space-y-2">
+                  <Label>Tower & Nomor Unit <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={form.unit_number}
+                    onChange={(e) => setForm({ ...form, unit_number: e.target.value })}
+                    placeholder="Contoh: A0520, B1205"
+                    required
+                  />
+                </div>
 
                 <div className="space-y-2">
                   <Label>Keterangan <span className="text-destructive">*</span></Label>
@@ -211,7 +234,6 @@ export default function KartuAkses() {
                       }}
                       className="hidden"
                       id="ktp-upload"
-                      required
                     />
                     <label htmlFor="ktp-upload" className="cursor-pointer">
                       {form.ktp_photo ? (
@@ -301,7 +323,7 @@ export default function KartuAkses() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Daftar Kartu Akses</CardTitle>
-            {canExport && cards && cards.length > 0 && (
+            {canExport && filteredData.length > 0 && (
               <Button variant="outline" size="sm" onClick={handleExport}>
                 <Download className="w-4 h-4 mr-2" />
                 Export Excel
@@ -309,6 +331,13 @@ export default function KartuAkses() {
             )}
           </CardHeader>
           <CardContent>
+            <DataFilterBar
+              searchValue={searchValue}
+              onSearchChange={setSearchValue}
+              dateFilter={dateFilter}
+              onDateFilterChange={setDateFilter}
+              searchPlaceholder="Cari kartu, nama, unit..."
+            />
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -327,7 +356,7 @@ export default function KartuAkses() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {cards?.map((c) => (
+                  {filteredData.map((c) => (
                     <TableRow key={c.id}>
                       <TableCell className="font-mono">{c.card_number}</TableCell>
                       <TableCell>{c.penghuni?.full_name || "-"}</TableCell>
@@ -392,10 +421,10 @@ export default function KartuAkses() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {cards?.length === 0 && (
+                  {filteredData.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                        Belum ada kartu akses terdaftar
+                        {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada kartu akses terdaftar"}
                       </TableCell>
                     </TableRow>
                   )}

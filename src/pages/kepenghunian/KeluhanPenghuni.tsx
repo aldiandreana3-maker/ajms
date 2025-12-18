@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useKeluhan, useCreateKeluhan, useUpdateKeluhanStatus } from "@/hooks/useKeluhan";
-import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
+import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { MessageSquareWarning, Plus, Loader2, Upload, ImageIcon, Video, ArrowLeft, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -34,10 +34,29 @@ export default function KeluhanPenghuni() {
   const updateStatusMutation = useUpdateKeluhanStatus();
   const canExport = isAdmin || isSuperAdmin;
 
+  const [searchValue, setSearchValue] = useState("");
+  const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
+
+  const filteredData = useMemo(() => {
+    if (!keluhan) return [];
+    let filtered = filterByDate(keluhan, dateFilter);
+    if (searchValue) {
+      const search = searchValue.toLowerCase();
+      filtered = filtered.filter(
+        (k) =>
+          k.subject?.toLowerCase().includes(search) ||
+          k.description?.toLowerCase().includes(search) ||
+          k.penghuni?.full_name?.toLowerCase().includes(search) ||
+          k.units?.unit_number?.toLowerCase().includes(search)
+      );
+    }
+    return filtered;
+  }, [keluhan, searchValue, dateFilter]);
+
   const handleExport = () => {
-    if (!keluhan) return;
+    if (!filteredData.length) return;
     const statusMap = { pending: "Pending", proses: "Proses", selesai: "Selesai" };
-    const exportData = keluhan.map((k) => ({
+    const exportData = filteredData.map((k) => ({
       ...k,
       penghuni_name: k.penghuni?.full_name || "-",
       unit_number: k.units?.unit_number || "-",
@@ -102,7 +121,7 @@ export default function KeluhanPenghuni() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/?section=kepenghunian")}
               className="rounded-full"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -146,11 +165,15 @@ export default function KeluhanPenghuni() {
                   />
                 </div>
 
-                <UnitSelector
-                  value={form.unit_number}
-                  onChange={(v) => setForm({ ...form, unit_number: v })}
-                  label="Alamat Tower & Unit *"
-                />
+                <div className="space-y-2">
+                  <Label>Alamat Tower & Unit <span className="text-destructive">*</span></Label>
+                  <Input
+                    value={form.unit_number}
+                    onChange={(e) => setForm({ ...form, unit_number: e.target.value })}
+                    placeholder="Contoh: A0520, B1205"
+                    required
+                  />
+                </div>
 
                 <div className="space-y-2">
                   <Label>Nomor Telepon <span className="text-destructive">*</span></Label>
@@ -216,7 +239,7 @@ export default function KeluhanPenghuni() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Daftar Keluhan</CardTitle>
-            {canExport && keluhan && keluhan.length > 0 && (
+            {canExport && filteredData.length > 0 && (
               <Button variant="outline" size="sm" onClick={handleExport}>
                 <Download className="w-4 h-4 mr-2" />
                 Export Excel
@@ -224,6 +247,13 @@ export default function KeluhanPenghuni() {
             )}
           </CardHeader>
           <CardContent>
+            <DataFilterBar
+              searchValue={searchValue}
+              onSearchChange={setSearchValue}
+              dateFilter={dateFilter}
+              onDateFilterChange={setDateFilter}
+              searchPlaceholder="Cari keluhan, nama, unit..."
+            />
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -241,7 +271,7 @@ export default function KeluhanPenghuni() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {keluhan?.map((k) => (
+                  {filteredData.map((k) => (
                     <TableRow key={k.id}>
                       <TableCell>{format(new Date(k.created_at), "dd/MM/yyyy")}</TableCell>
                       <TableCell>{k.penghuni?.full_name || "-"}</TableCell>
@@ -309,10 +339,10 @@ export default function KeluhanPenghuni() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {keluhan?.length === 0 && (
+                  {filteredData.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        Belum ada keluhan
+                        {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada keluhan"}
                       </TableCell>
                     </TableRow>
                   )}

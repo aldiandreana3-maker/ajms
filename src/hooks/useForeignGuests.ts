@@ -57,13 +57,18 @@ export function useCreateForeignGuest() {
 
   return useMutation({
     mutationFn: async (input: CreateForeignGuestInput) => {
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        throw new Error("Silakan login terlebih dahulu");
+      }
+      
+      await supabase.auth.refreshSession();
       
       const { data, error } = await (supabase as any)
         .from("foreign_guest_reports")
         .insert({
           ...input,
-          recorded_by: userData.user?.id,
+          recorded_by: sessionData.session.user.id,
         })
         .select()
         .single();

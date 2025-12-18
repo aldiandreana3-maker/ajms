@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useWorkPermits, useCreateWorkPermit, useUpdateWorkPermitStatus } from "@/hooks/useWorkPermits";
-import { UnitSelector } from "@/components/shared/UnitSelector";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
+import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { ClipboardCheck, Plus, Loader2, Upload, ArrowLeft, Building2, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -35,10 +35,29 @@ export default function IzinKerja() {
   const updateStatusMutation = useUpdateWorkPermitStatus();
   const canExport = isAdmin || isSuperAdmin;
 
+  const [searchValue, setSearchValue] = useState("");
+  const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
+
+  const filteredData = useMemo(() => {
+    if (!permits) return [];
+    let filtered = filterByDate(permits, dateFilter);
+    if (searchValue) {
+      const search = searchValue.toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          p.vendor_name?.toLowerCase().includes(search) ||
+          p.work_description?.toLowerCase().includes(search) ||
+          p.penghuni?.full_name?.toLowerCase().includes(search) ||
+          p.units?.unit_number?.toLowerCase().includes(search)
+      );
+    }
+    return filtered;
+  }, [permits, searchValue, dateFilter]);
+
   const handleExport = () => {
-    if (!permits) return;
+    if (!filteredData.length) return;
     const statusMap = { pending: "Pending", approved: "Disetujui", rejected: "Ditolak" };
-    const exportData = permits.map((p) => ({
+    const exportData = filteredData.map((p) => ({
       ...p,
       penghuni_name: p.penghuni?.full_name || "-",
       unit_number: p.units?.unit_number || "-",
@@ -141,7 +160,7 @@ export default function IzinKerja() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/?section=kepenghunian")}
               className="rounded-full"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -356,7 +375,7 @@ export default function IzinKerja() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Daftar Pengajuan</CardTitle>
-            {canExport && permits && permits.length > 0 && (
+            {canExport && filteredData.length > 0 && (
               <Button variant="outline" size="sm" onClick={handleExport}>
                 <Download className="w-4 h-4 mr-2" />
                 Export Excel
@@ -364,6 +383,13 @@ export default function IzinKerja() {
             )}
           </CardHeader>
           <CardContent>
+            <DataFilterBar
+              searchValue={searchValue}
+              onSearchChange={setSearchValue}
+              dateFilter={dateFilter}
+              onDateFilterChange={setDateFilter}
+              searchPlaceholder="Cari vendor, pekerjaan, unit..."
+            />
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -382,7 +408,7 @@ export default function IzinKerja() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {permits?.map((p) => (
+                  {filteredData.map((p) => (
                     <TableRow key={p.id}>
                       <TableCell>{p.units?.unit_number || "-"}</TableCell>
                       <TableCell>{p.vendor_name}</TableCell>
@@ -436,7 +462,7 @@ export default function IzinKerja() {
                                 <Textarea
                                   value={notes}
                                   onChange={(e) => setNotes(e.target.value)}
-                                  placeholder="Tambahkan catatan..."
+                                  placeholder="Alasan atau catatan..."
                                   rows={3}
                                 />
                               </div>
@@ -450,10 +476,10 @@ export default function IzinKerja() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {permits?.length === 0 && (
+                  {filteredData.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                        Belum ada pengajuan izin kerja
+                        {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada pengajuan izin kerja"}
                       </TableCell>
                     </TableRow>
                   )}

@@ -50,6 +50,13 @@ export function useCreateKeluhan() {
 
   return useMutation({
     mutationFn: async (input: CreateKeluhanInput) => {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        throw new Error("Silakan login terlebih dahulu");
+      }
+      
+      await supabase.auth.refreshSession();
+      
       const { data, error } = await supabase
         .from("keluhan")
         .insert(input)
