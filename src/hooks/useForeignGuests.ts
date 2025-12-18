@@ -17,6 +17,7 @@ interface ForeignGuest {
   check_out_date: string;
   recorded_by: string | null;
   created_at: string;
+  unit_number: string | null;
   units?: { unit_number: string } | null;
 }
 
@@ -32,6 +33,7 @@ interface CreateForeignGuestInput {
   passport_photo_url?: string;
   check_in_date: string;
   check_out_date: string;
+  unit_number?: string;
 }
 
 export function useForeignGuests() {
@@ -67,7 +69,17 @@ export function useCreateForeignGuest() {
       const { data, error } = await (supabase as any)
         .from("foreign_guest_reports")
         .insert({
-          ...input,
+          full_name: input.full_name,
+          birth_place: input.birth_place,
+          birth_date: input.birth_date,
+          gender: input.gender,
+          nationality: input.nationality,
+          passport_number: input.passport_number,
+          passport_expiry: input.passport_expiry,
+          passport_photo_url: input.passport_photo_url,
+          check_in_date: input.check_in_date,
+          check_out_date: input.check_out_date,
+          unit_number: input.unit_number,
           recorded_by: sessionData.session.user.id,
         })
         .select()

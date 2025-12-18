@@ -17,6 +17,9 @@ interface WorkPermit {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  penghuni_name: string | null;
+  unit_number: string | null;
+  phone: string | null;
   penghuni?: { full_name: string } | null;
   units?: { unit_number: string } | null;
 }
@@ -30,6 +33,9 @@ interface CreateWorkPermitInput {
   start_date: string;
   end_date: string;
   document_url?: string;
+  penghuni_name?: string;
+  unit_number?: string;
+  phone?: string;
 }
 
 export function useWorkPermits() {
@@ -65,7 +71,17 @@ export function useCreateWorkPermit() {
       
       const { data, error } = await supabase
         .from("work_permits")
-        .insert(input)
+        .insert({
+          vendor_name: input.vendor_name,
+          work_description: input.work_description,
+          worker_count: input.worker_count || 1,
+          start_date: input.start_date,
+          end_date: input.end_date,
+          document_url: input.document_url,
+          penghuni_name: input.penghuni_name,
+          unit_number: input.unit_number,
+          phone: input.phone,
+        })
         .select()
         .single();
 

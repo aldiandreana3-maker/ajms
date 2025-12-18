@@ -47,8 +47,8 @@ export default function IzinKerja() {
         (p) =>
           p.vendor_name?.toLowerCase().includes(search) ||
           p.work_description?.toLowerCase().includes(search) ||
-          p.penghuni?.full_name?.toLowerCase().includes(search) ||
-          p.units?.unit_number?.toLowerCase().includes(search)
+          p.penghuni_name?.toLowerCase().includes(search) ||
+          p.unit_number?.toLowerCase().includes(search)
       );
     }
     return filtered;
@@ -59,8 +59,8 @@ export default function IzinKerja() {
     const statusMap = { pending: "Pending", approved: "Disetujui", rejected: "Ditolak" };
     const exportData = filteredData.map((p) => ({
       ...p,
-      penghuni_name: p.penghuni?.full_name || "-",
-      unit_number: p.units?.unit_number || "-",
+      penghuni_name: p.penghuni_name || p.penghuni?.full_name || "-",
+      unit_number: p.unit_number || p.units?.unit_number || "-",
       status: statusMap[p.status] || p.status,
       created_at: format(new Date(p.created_at), "dd/MM/yyyy HH:mm"),
     }));
@@ -117,6 +117,9 @@ export default function IzinKerja() {
       worker_count: parseInt(form.worker_count) || 1,
       start_date: form.start_date,
       end_date: form.end_date,
+      penghuni_name: form.name,
+      unit_number: form.unit_number,
+      phone: form.phone,
     });
     setIsOpen(false);
     setForm({
@@ -410,7 +413,7 @@ export default function IzinKerja() {
                 <TableBody>
                   {filteredData.map((p) => (
                     <TableRow key={p.id}>
-                      <TableCell>{p.units?.unit_number || "-"}</TableCell>
+                      <TableCell>{p.unit_number || p.units?.unit_number || "-"}</TableCell>
                       <TableCell>{p.vendor_name}</TableCell>
                       <TableCell className="max-w-xs">
                         <p className="line-clamp-2">{p.work_description}</p>

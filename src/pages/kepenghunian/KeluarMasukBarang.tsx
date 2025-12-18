@@ -41,8 +41,8 @@ export default function KeluarMasukBarang() {
         (m) =>
           m.item_description?.toLowerCase().includes(search) ||
           m.carrier_name?.toLowerCase().includes(search) ||
-          m.penghuni?.full_name?.toLowerCase().includes(search) ||
-          m.units?.unit_number?.toLowerCase().includes(search)
+          m.penghuni_name?.toLowerCase().includes(search) ||
+          m.unit_number?.toLowerCase().includes(search)
       );
     }
     return filtered;
@@ -52,8 +52,8 @@ export default function KeluarMasukBarang() {
     if (!filteredData.length) return;
     const exportData = filteredData.map((m) => ({
       ...m,
-      penghuni_name: m.penghuni?.full_name || "-",
-      unit_number: m.units?.unit_number || "-",
+      penghuni_name: m.penghuni_name || m.penghuni?.full_name || "-",
+      unit_number: m.unit_number || m.units?.unit_number || "-",
       movement_type: m.movement_type === "in" ? "Masuk" : "Keluar",
       created_at: format(new Date(m.created_at), "dd/MM/yyyy HH:mm"),
     }));
@@ -83,6 +83,10 @@ export default function KeluarMasukBarang() {
       movement_type: form.movement_type,
       item_description: form.item_description,
       carrier_name: form.carrier_name || undefined,
+      penghuni_name: form.penghuni_name,
+      unit_number: form.unit_number,
+      phone: form.phone,
+      rental_status: form.rental_status,
     });
     setIsOpen(false);
     setForm({
@@ -123,8 +127,8 @@ export default function KeluarMasukBarang() {
         {data?.map((m) => (
           <TableRow key={m.id}>
             <TableCell>{format(new Date(m.created_at), "dd/MM/yyyy HH:mm")}</TableCell>
-            <TableCell>{m.units?.unit_number || "-"}</TableCell>
-            <TableCell>{m.penghuni?.full_name || "-"}</TableCell>
+            <TableCell>{m.unit_number || m.units?.unit_number || "-"}</TableCell>
+            <TableCell>{m.penghuni_name || m.penghuni?.full_name || "-"}</TableCell>
             <TableCell>{m.item_description}</TableCell>
             <TableCell>{m.carrier_name || "-"}</TableCell>
             <TableCell>

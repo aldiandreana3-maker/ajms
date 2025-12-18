@@ -38,7 +38,7 @@ export default function TamuAsing() {
           g.full_name?.toLowerCase().includes(search) ||
           g.nationality?.toLowerCase().includes(search) ||
           g.passport_number?.toLowerCase().includes(search) ||
-          g.units?.unit_number?.toLowerCase().includes(search)
+          g.unit_number?.toLowerCase().includes(search)
       );
     }
     return filtered;
@@ -49,7 +49,7 @@ export default function TamuAsing() {
     const genderMap = { pria: "Pria", wanita: "Wanita" };
     const exportData = filteredData.map((g) => ({
       ...g,
-      unit_number: g.units?.unit_number || "-",
+      unit_number: g.unit_number || g.units?.unit_number || "-",
       gender: genderMap[g.gender] || g.gender,
       created_at: format(new Date(g.created_at), "dd/MM/yyyy HH:mm"),
     }));
@@ -90,6 +90,7 @@ export default function TamuAsing() {
       passport_expiry: form.passport_expiry,
       check_in_date: form.check_in_date,
       check_out_date: form.check_out_date,
+      unit_number: form.unit_number,
     });
     setIsOpen(false);
     setForm({
@@ -341,7 +342,7 @@ export default function TamuAsing() {
                           <p className="text-sm text-muted-foreground capitalize">{g.gender}</p>
                         </div>
                       </TableCell>
-                      <TableCell>{g.units?.unit_number || "-"}</TableCell>
+                      <TableCell>{g.unit_number || g.units?.unit_number || "-"}</TableCell>
                       <TableCell>{g.nationality}</TableCell>
                       <TableCell className="font-mono">{g.passport_number}</TableCell>
                       <TableCell>{format(new Date(g.check_in_date), "dd/MM/yyyy")}</TableCell>

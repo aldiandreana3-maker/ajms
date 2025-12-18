@@ -60,8 +60,12 @@ export type Database = {
           issued_at: string | null
           notes: string | null
           penghuni_id: string | null
+          penghuni_name: string | null
+          quantity_requested: number | null
+          request_type: string | null
           status: Database["public"]["Enums"]["card_status"] | null
           unit_id: string | null
+          unit_number: string | null
           updated_at: string | null
         }
         Insert: {
@@ -73,8 +77,12 @@ export type Database = {
           issued_at?: string | null
           notes?: string | null
           penghuni_id?: string | null
+          penghuni_name?: string | null
+          quantity_requested?: number | null
+          request_type?: string | null
           status?: Database["public"]["Enums"]["card_status"] | null
           unit_id?: string | null
+          unit_number?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -86,8 +94,12 @@ export type Database = {
           issued_at?: string | null
           notes?: string | null
           penghuni_id?: string | null
+          penghuni_name?: string | null
+          quantity_requested?: number | null
+          request_type?: string | null
           status?: Database["public"]["Enums"]["card_status"] | null
           unit_id?: string | null
+          unit_number?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -425,6 +437,7 @@ export type Database = {
           passport_photo_url: string | null
           recorded_by: string | null
           unit_id: string | null
+          unit_number: string | null
           updated_at: string | null
         }
         Insert: {
@@ -442,6 +455,7 @@ export type Database = {
           passport_photo_url?: string | null
           recorded_by?: string | null
           unit_id?: string | null
+          unit_number?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -459,6 +473,7 @@ export type Database = {
           passport_photo_url?: string | null
           recorded_by?: string | null
           unit_id?: string | null
+          unit_number?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -480,11 +495,15 @@ export type Database = {
           item_description: string
           movement_type: string
           penghuni_id: string | null
+          penghuni_name: string | null
+          phone: string | null
           photo_url: string | null
           qr_code: string | null
           quantity: number | null
           recorded_by: string | null
+          rental_status: string | null
           unit_id: string | null
+          unit_number: string | null
         }
         Insert: {
           carrier_id?: string | null
@@ -494,11 +513,15 @@ export type Database = {
           item_description: string
           movement_type: string
           penghuni_id?: string | null
+          penghuni_name?: string | null
+          phone?: string | null
           photo_url?: string | null
           qr_code?: string | null
           quantity?: number | null
           recorded_by?: string | null
+          rental_status?: string | null
           unit_id?: string | null
+          unit_number?: string | null
         }
         Update: {
           carrier_id?: string | null
@@ -508,11 +531,15 @@ export type Database = {
           item_description?: string
           movement_type?: string
           penghuni_id?: string | null
+          penghuni_name?: string | null
+          phone?: string | null
           photo_url?: string | null
           qr_code?: string | null
           quantity?: number | null
           recorded_by?: string | null
+          rental_status?: string | null
           unit_id?: string | null
+          unit_number?: string | null
         }
         Relationships: [
           {
@@ -538,11 +565,14 @@ export type Database = {
           handled_by: string | null
           id: string
           penghuni_id: string | null
+          penghuni_name: string | null
+          phone: string | null
           photo_url: string | null
           response: string | null
           status: Database["public"]["Enums"]["complaint_status"] | null
           subject: string
           unit_id: string | null
+          unit_number: string | null
           updated_at: string | null
         }
         Insert: {
@@ -551,11 +581,14 @@ export type Database = {
           handled_by?: string | null
           id?: string
           penghuni_id?: string | null
+          penghuni_name?: string | null
+          phone?: string | null
           photo_url?: string | null
           response?: string | null
           status?: Database["public"]["Enums"]["complaint_status"] | null
           subject: string
           unit_id?: string | null
+          unit_number?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -564,11 +597,14 @@ export type Database = {
           handled_by?: string | null
           id?: string
           penghuni_id?: string | null
+          penghuni_name?: string | null
+          phone?: string | null
           photo_url?: string | null
           response?: string | null
           status?: Database["public"]["Enums"]["complaint_status"] | null
           subject?: string
           unit_id?: string | null
+          unit_number?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -629,14 +665,21 @@ export type Database = {
       }
       parking_subscriptions: {
         Row: {
+          agent_name: string | null
           created_at: string | null
           end_date: string
           id: string
           is_active: boolean | null
+          member_card: string | null
           monthly_fee: number | null
           penghuni_id: string | null
+          penghuni_name: string | null
+          period_type: string | null
+          phone: string | null
+          request_type: string | null
           start_date: string
           unit_id: string | null
+          unit_number: string | null
           updated_at: string | null
           vehicle_brand: string | null
           vehicle_color: string | null
@@ -644,14 +687,21 @@ export type Database = {
           vehicle_type: string
         }
         Insert: {
+          agent_name?: string | null
           created_at?: string | null
           end_date: string
           id?: string
           is_active?: boolean | null
+          member_card?: string | null
           monthly_fee?: number | null
           penghuni_id?: string | null
+          penghuni_name?: string | null
+          period_type?: string | null
+          phone?: string | null
+          request_type?: string | null
           start_date: string
           unit_id?: string | null
+          unit_number?: string | null
           updated_at?: string | null
           vehicle_brand?: string | null
           vehicle_color?: string | null
@@ -659,14 +709,21 @@ export type Database = {
           vehicle_type: string
         }
         Update: {
+          agent_name?: string | null
           created_at?: string | null
           end_date?: string
           id?: string
           is_active?: boolean | null
+          member_card?: string | null
           monthly_fee?: number | null
           penghuni_id?: string | null
+          penghuni_name?: string | null
+          period_type?: string | null
+          phone?: string | null
+          request_type?: string | null
           start_date?: string
           unit_id?: string | null
+          unit_number?: string | null
           updated_at?: string | null
           vehicle_brand?: string | null
           vehicle_color?: string | null
@@ -902,9 +959,12 @@ export type Database = {
           id: string
           notes: string | null
           penghuni_id: string | null
+          penghuni_name: string | null
+          phone: string | null
           start_date: string
           status: Database["public"]["Enums"]["permit_status"] | null
           unit_id: string | null
+          unit_number: string | null
           updated_at: string | null
           vendor_name: string
           work_description: string
@@ -918,9 +978,12 @@ export type Database = {
           id?: string
           notes?: string | null
           penghuni_id?: string | null
+          penghuni_name?: string | null
+          phone?: string | null
           start_date: string
           status?: Database["public"]["Enums"]["permit_status"] | null
           unit_id?: string | null
+          unit_number?: string | null
           updated_at?: string | null
           vendor_name: string
           work_description: string
@@ -934,9 +997,12 @@ export type Database = {
           id?: string
           notes?: string | null
           penghuni_id?: string | null
+          penghuni_name?: string | null
+          phone?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["permit_status"] | null
           unit_id?: string | null
+          unit_number?: string | null
           updated_at?: string | null
           vendor_name?: string
           work_description?: string

@@ -39,8 +39,8 @@ export default function AbonemenParkir() {
         (sub) =>
           sub.vehicle_number?.toLowerCase().includes(search) ||
           sub.vehicle_type?.toLowerCase().includes(search) ||
-          sub.vehicle_brand?.toLowerCase().includes(search) ||
-          sub.units?.unit_number?.toLowerCase().includes(search)
+          sub.penghuni_name?.toLowerCase().includes(search) ||
+          sub.unit_number?.toLowerCase().includes(search)
       );
     }
     return filtered;
@@ -50,7 +50,8 @@ export default function AbonemenParkir() {
     if (!filteredData.length) return;
     const exportData = filteredData.map((sub) => ({
       ...sub,
-      unit_number: sub.units?.unit_number || "-",
+      unit_number: sub.unit_number || sub.units?.unit_number || "-",
+      penghuni_name: sub.penghuni_name || "-",
       is_active: sub.is_active ? "Aktif" : "Tidak Aktif",
       created_at: format(new Date(sub.created_at), "dd/MM/yyyy HH:mm"),
     }));
@@ -94,11 +95,16 @@ export default function AbonemenParkir() {
     await createMutation.mutateAsync({
       vehicle_type: form.vehicle_type,
       vehicle_number: form.vehicle_number,
-      vehicle_brand: form.penghuni_name,
-      vehicle_color: form.request_type,
       start_date: today.toISOString().split("T")[0],
       end_date: endDate.toISOString().split("T")[0],
       monthly_fee: 0,
+      penghuni_name: form.penghuni_name,
+      unit_number: form.unit_number,
+      phone: form.phone,
+      agent_name: form.agent_name,
+      member_card: form.member_card,
+      request_type: form.request_type,
+      period_type: form.period_type,
     });
     setIsOpen(false);
     setForm({
@@ -436,6 +442,7 @@ export default function AbonemenParkir() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Tanggal</TableHead>
+                    <TableHead>Nama</TableHead>
                     <TableHead>Unit</TableHead>
                     <TableHead>Kendaraan</TableHead>
                     <TableHead>Plat</TableHead>
@@ -448,7 +455,8 @@ export default function AbonemenParkir() {
                   {filteredData.map((sub) => (
                     <TableRow key={sub.id}>
                       <TableCell>{format(new Date(sub.created_at), "dd/MM/yyyy")}</TableCell>
-                      <TableCell>{sub.units?.unit_number || "-"}</TableCell>
+                      <TableCell>{sub.penghuni_name || "-"}</TableCell>
+                      <TableCell>{sub.unit_number || sub.units?.unit_number || "-"}</TableCell>
                       <TableCell className="capitalize">{sub.vehicle_type}</TableCell>
                       <TableCell className="font-mono">{sub.vehicle_number}</TableCell>
                       <TableCell>
@@ -496,7 +504,7 @@ export default function AbonemenParkir() {
                   ))}
                   {filteredData.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                         {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada abonemen parkir"}
                       </TableCell>
                     </TableRow>

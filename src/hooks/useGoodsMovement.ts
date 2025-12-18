@@ -15,6 +15,10 @@ interface GoodsMovement {
   photo_url: string | null;
   recorded_by: string | null;
   created_at: string;
+  penghuni_name: string | null;
+  unit_number: string | null;
+  phone: string | null;
+  rental_status: string | null;
   penghuni?: { full_name: string } | null;
   units?: { unit_number: string } | null;
 }
@@ -28,6 +32,10 @@ interface CreateGoodsMovementInput {
   carrier_name?: string;
   carrier_id?: string;
   photo_url?: string;
+  penghuni_name?: string;
+  unit_number?: string;
+  phone?: string;
+  rental_status?: string;
 }
 
 export function useGoodsMovement() {
@@ -66,9 +74,18 @@ export function useCreateGoodsMovement() {
       const { data, error } = await supabase
         .from("goods_movement")
         .insert({
-          ...input,
+          movement_type: input.movement_type,
+          item_description: input.item_description,
+          quantity: input.quantity || 1,
+          carrier_name: input.carrier_name,
+          carrier_id: input.carrier_id,
+          photo_url: input.photo_url,
           qr_code,
           recorded_by: sessionData.session.user.id,
+          penghuni_name: input.penghuni_name,
+          unit_number: input.unit_number,
+          phone: input.phone,
+          rental_status: input.rental_status,
         })
         .select()
         .single();
