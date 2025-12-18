@@ -53,8 +53,8 @@ export default function KartuAkses() {
       filtered = filtered.filter(
         (c) =>
           c.card_number?.toLowerCase().includes(search) ||
-          c.penghuni?.full_name?.toLowerCase().includes(search) ||
-          c.units?.unit_number?.toLowerCase().includes(search) ||
+          c.penghuni_name?.toLowerCase().includes(search) ||
+          c.unit_number?.toLowerCase().includes(search) ||
           c.card_type?.toLowerCase().includes(search)
       );
     }
@@ -67,8 +67,8 @@ export default function KartuAkses() {
     if (!filteredData.length) return;
     const exportData = filteredData.map((c) => ({
       ...c,
-      penghuni_name: c.penghuni?.full_name || "-",
-      unit_number: c.units?.unit_number || "-",
+      penghuni_name: c.penghuni_name || c.penghuni?.full_name || "-",
+      unit_number: c.unit_number || c.units?.unit_number || "-",
       status: statusLabelsExport[c.status] || c.status,
       created_at: format(new Date(c.created_at), "dd/MM/yyyy HH:mm"),
       issued_at: c.issued_at ? format(new Date(c.issued_at), "dd/MM/yyyy") : "-",
@@ -109,6 +109,10 @@ export default function KartuAkses() {
     await createMutation.mutateAsync({
       card_number: generateCardNumber(),
       card_type: form.request_type || "resident",
+      penghuni_name: form.owner_name,
+      unit_number: form.unit_number,
+      request_type: form.request_type,
+      quantity_requested: parseInt(form.card_count) || 1,
     });
     setIsOpen(false);
     setForm({
@@ -359,8 +363,8 @@ export default function KartuAkses() {
                   {filteredData.map((c) => (
                     <TableRow key={c.id}>
                       <TableCell className="font-mono">{c.card_number}</TableCell>
-                      <TableCell>{c.penghuni?.full_name || "-"}</TableCell>
-                      <TableCell>{c.units?.unit_number || "-"}</TableCell>
+                      <TableCell>{c.penghuni_name || c.penghuni?.full_name || "-"}</TableCell>
+                      <TableCell>{c.unit_number || c.units?.unit_number || "-"}</TableCell>
                       <TableCell className="capitalize">{c.card_type}</TableCell>
                       <TableCell>{format(new Date(c.issued_at), "dd/MM/yyyy")}</TableCell>
                       <TableCell>

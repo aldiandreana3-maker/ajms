@@ -14,6 +14,10 @@ interface AccessCard {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  penghuni_name: string | null;
+  unit_number: string | null;
+  request_type: string | null;
+  quantity_requested: number | null;
   penghuni?: { full_name: string } | null;
   units?: { unit_number: string } | null;
 }
@@ -25,6 +29,10 @@ interface CreateAccessCardInput {
   card_type?: string;
   expires_at?: string;
   notes?: string;
+  penghuni_name?: string;
+  unit_number?: string;
+  request_type?: string;
+  quantity_requested?: number;
 }
 
 export function useAccessCards() {
@@ -60,7 +68,16 @@ export function useCreateAccessCard() {
       
       const { data, error } = await supabase
         .from("access_cards")
-        .insert(input)
+        .insert({
+          card_number: input.card_number,
+          card_type: input.card_type || "resident",
+          expires_at: input.expires_at,
+          notes: input.notes,
+          penghuni_name: input.penghuni_name,
+          unit_number: input.unit_number,
+          request_type: input.request_type,
+          quantity_requested: input.quantity_requested || 1,
+        })
         .select()
         .single();
 

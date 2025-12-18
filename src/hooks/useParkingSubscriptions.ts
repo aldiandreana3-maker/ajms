@@ -4,8 +4,8 @@ import { toast } from "sonner";
 
 interface ParkingSubscription {
   id: string;
-  penghuni_id: string | null;
   unit_id: string | null;
+  penghuni_id: string | null;
   vehicle_type: string;
   vehicle_number: string;
   vehicle_brand: string | null;
@@ -16,13 +16,18 @@ interface ParkingSubscription {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  penghuni_name: string | null;
+  unit_number: string | null;
+  phone: string | null;
+  agent_name: string | null;
+  member_card: string | null;
+  request_type: string | null;
+  period_type: string | null;
   penghuni?: { full_name: string } | null;
   units?: { unit_number: string } | null;
 }
 
 interface CreateParkingInput {
-  penghuni_id?: string;
-  unit_id?: string;
   vehicle_type: string;
   vehicle_number: string;
   vehicle_brand?: string;
@@ -30,6 +35,13 @@ interface CreateParkingInput {
   start_date: string;
   end_date: string;
   monthly_fee?: number;
+  penghuni_name?: string;
+  unit_number?: string;
+  phone?: string;
+  agent_name?: string;
+  member_card?: string;
+  request_type?: string;
+  period_type?: string;
 }
 
 export function useParkingSubscriptions() {
@@ -56,23 +68,31 @@ export function useCreateParkingSubscription() {
 
   return useMutation({
     mutationFn: async (input: CreateParkingInput) => {
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-
-      if (sessionError) throw sessionError;
-      if (!session) {
-        throw new Error("Sesi login tidak ditemukan. Silakan login ulang.");
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session) {
+        throw new Error("Silakan login terlebih dahulu");
       }
-
-      // Ensure token is fresh before writing (avoids RLS failures when session isn't attached)
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) throw refreshError;
-
+      
+      await supabase.auth.refreshSession();
+      
       const { data, error } = await supabase
         .from("parking_subscriptions")
-        .insert(input)
+        .insert({
+          vehicle_type: input.vehicle_type,
+          vehicle_number: input.vehicle_number,
+          vehicle_brand: input.vehicle_brand,
+          vehicle_color: input.vehicle_color,
+          start_date: input.start_date,
+          end_date: input.end_date,
+          monthly_fee: input.monthly_fee || 0,
+          penghuni_name: input.penghuni_name,
+          unit_number: input.unit_number,
+          phone: input.phone,
+          agent_name: input.agent_name,
+          member_card: input.member_card,
+          request_type: input.request_type,
+          period_type: input.period_type,
+        })
         .select()
         .single();
 

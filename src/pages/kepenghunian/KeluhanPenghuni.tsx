@@ -46,8 +46,8 @@ export default function KeluhanPenghuni() {
         (k) =>
           k.subject?.toLowerCase().includes(search) ||
           k.description?.toLowerCase().includes(search) ||
-          k.penghuni?.full_name?.toLowerCase().includes(search) ||
-          k.units?.unit_number?.toLowerCase().includes(search)
+          k.penghuni_name?.toLowerCase().includes(search) ||
+          k.unit_number?.toLowerCase().includes(search)
       );
     }
     return filtered;
@@ -58,8 +58,8 @@ export default function KeluhanPenghuni() {
     const statusMap = { pending: "Pending", proses: "Proses", selesai: "Selesai" };
     const exportData = filteredData.map((k) => ({
       ...k,
-      penghuni_name: k.penghuni?.full_name || "-",
-      unit_number: k.units?.unit_number || "-",
+      penghuni_name: k.penghuni_name || k.penghuni?.full_name || "-",
+      unit_number: k.unit_number || k.units?.unit_number || "-",
       status: statusMap[k.status] || k.status,
       created_at: format(new Date(k.created_at), "dd/MM/yyyy HH:mm"),
     }));
@@ -89,6 +89,9 @@ export default function KeluhanPenghuni() {
     await createMutation.mutateAsync({
       subject: `Keluhan dari ${form.penghuni_name}`,
       description: form.keluhan,
+      penghuni_name: form.penghuni_name,
+      unit_number: form.unit_number,
+      phone: form.phone,
     });
     setIsOpen(false);
     setForm({ penghuni_name: "", unit_number: "", phone: "", keluhan: "", media_file: null });
@@ -274,8 +277,8 @@ export default function KeluhanPenghuni() {
                   {filteredData.map((k) => (
                     <TableRow key={k.id}>
                       <TableCell>{format(new Date(k.created_at), "dd/MM/yyyy")}</TableCell>
-                      <TableCell>{k.penghuni?.full_name || "-"}</TableCell>
-                      <TableCell>{k.units?.unit_number || "-"}</TableCell>
+                      <TableCell>{k.penghuni_name || k.penghuni?.full_name || "-"}</TableCell>
+                      <TableCell>{k.unit_number || k.units?.unit_number || "-"}</TableCell>
                       <TableCell>
                         <div>
                           <p className="font-medium">{k.subject}</p>

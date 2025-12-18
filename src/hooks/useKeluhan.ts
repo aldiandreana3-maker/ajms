@@ -14,6 +14,9 @@ interface Keluhan {
   handled_by: string | null;
   created_at: string;
   updated_at: string;
+  penghuni_name: string | null;
+  unit_number: string | null;
+  phone: string | null;
   penghuni?: { full_name: string } | null;
   units?: { unit_number: string } | null;
 }
@@ -24,6 +27,9 @@ interface CreateKeluhanInput {
   subject: string;
   description: string;
   photo_url?: string;
+  penghuni_name?: string;
+  unit_number?: string;
+  phone?: string;
 }
 
 export function useKeluhan() {
@@ -59,7 +65,14 @@ export function useCreateKeluhan() {
       
       const { data, error } = await supabase
         .from("keluhan")
-        .insert(input)
+        .insert({
+          subject: input.subject,
+          description: input.description,
+          photo_url: input.photo_url,
+          penghuni_name: input.penghuni_name,
+          unit_number: input.unit_number,
+          phone: input.phone,
+        })
         .select()
         .single();
 
