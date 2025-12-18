@@ -7,12 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useForeignGuests, useCreateForeignGuest } from "@/hooks/useForeignGuests";
+import { useForeignGuests, useCreateForeignGuest, useDeleteForeignGuest } from "@/hooks/useForeignGuests";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Globe, Plus, Loader2, Upload, ArrowLeft, Download } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Globe, Plus, Loader2, Upload, ArrowLeft, Download, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, foreignGuestExportColumns } from "@/lib/exportExcel";
@@ -23,7 +24,9 @@ export default function TamuAsing() {
   const permission = getFeaturePermission("tamu-asing");
   const { data: guests, isLoading } = useForeignGuests();
   const createMutation = useCreateForeignGuest();
+  const deleteMutation = useDeleteForeignGuest();
   const canExport = isAdmin || isSuperAdmin;
+  const canDelete = isAdmin || isSuperAdmin;
 
   const [searchValue, setSearchValue] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
@@ -331,6 +334,7 @@ export default function TamuAsing() {
                     <TableHead>No. Paspor</TableHead>
                     <TableHead>Check In</TableHead>
                     <TableHead>Check Out</TableHead>
+                    {canDelete && <TableHead>Aksi</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -347,11 +351,40 @@ export default function TamuAsing() {
                       <TableCell className="font-mono">{g.passport_number}</TableCell>
                       <TableCell>{format(new Date(g.check_in_date), "dd/MM/yyyy")}</TableCell>
                       <TableCell>{format(new Date(g.check_out_date), "dd/MM/yyyy")}</TableCell>
+                      {canDelete && (
+                        <TableCell>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Hapus Data Tamu Asing?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Data tamu asing ini akan dihapus permanen dan tidak dapat dikembalikan.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Batal</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteMutation.mutate(g.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  {deleteMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                  Hapus
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                   {filteredData.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={canDelete ? 7 : 6} className="text-center text-muted-foreground py-8">
                         {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada data tamu asing"}
                       </TableCell>
                     </TableRow>

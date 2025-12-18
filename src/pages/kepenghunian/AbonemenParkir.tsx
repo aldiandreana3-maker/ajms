@@ -8,12 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useParkingSubscriptions, useCreateParkingSubscription, useExtendParkingSubscription } from "@/hooks/useParkingSubscriptions";
+import { useParkingSubscriptions, useCreateParkingSubscription, useExtendParkingSubscription, useDeleteParkingSubscription } from "@/hooks/useParkingSubscriptions";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Car, Plus, Calendar, Loader2, Upload, Info, ArrowLeft, Download } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Car, Plus, Calendar, Loader2, Upload, Info, ArrowLeft, Download, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, parkingExportColumns } from "@/lib/exportExcel";
@@ -25,7 +26,9 @@ export default function AbonemenParkir() {
   const { data: subscriptions, isLoading } = useParkingSubscriptions();
   const createMutation = useCreateParkingSubscription();
   const extendMutation = useExtendParkingSubscription();
+  const deleteMutation = useDeleteParkingSubscription();
   const canExport = isAdmin || isSuperAdmin;
+  const canDelete = isAdmin || isSuperAdmin;
 
   const [searchValue, setSearchValue] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
@@ -467,7 +470,7 @@ export default function AbonemenParkir() {
                           {sub.is_active ? "Aktif" : "Expired"}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="space-x-2">
                         <Dialog open={extendId === sub.id} onOpenChange={(open) => !open && setExtendId(null)}>
                           <DialogTrigger asChild>
                             <Button
@@ -499,6 +502,33 @@ export default function AbonemenParkir() {
                             </div>
                           </DialogContent>
                         </Dialog>
+                        {canDelete && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Hapus Data Abonemen?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Data abonemen parkir ini akan dihapus permanen dan tidak dapat dikembalikan.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Batal</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteMutation.mutate(sub.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  {deleteMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                  Hapus
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
