@@ -97,3 +97,25 @@ export function useCreateForeignGuest() {
     },
   });
 }
+
+export function useDeleteForeignGuest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await (supabase as any)
+        .from("foreign_guest_reports")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["foreign-guests"] });
+      toast.success("Data tamu asing berhasil dihapus");
+    },
+    onError: (error) => {
+      toast.error("Gagal menghapus data: " + error.message);
+    },
+  });
+}

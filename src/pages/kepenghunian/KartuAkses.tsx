@@ -9,12 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useAccessCards, useCreateAccessCard, useUpdateAccessCardStatus } from "@/hooks/useAccessCards";
+import { useAccessCards, useCreateAccessCard, useUpdateAccessCardStatus, useDeleteAccessCard } from "@/hooks/useAccessCards";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
-import { CreditCard, Plus, Loader2, Upload, ArrowLeft, Download } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { CreditCard, Plus, Loader2, Upload, ArrowLeft, Download, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, accessCardExportColumns } from "@/lib/exportExcel";
@@ -40,7 +41,9 @@ export default function KartuAkses() {
   const { data: cards, isLoading } = useAccessCards();
   const createMutation = useCreateAccessCard();
   const updateStatusMutation = useUpdateAccessCardStatus();
+  const deleteMutation = useDeleteAccessCard();
   const canExport = isAdmin || isSuperAdmin;
+  const canDelete = isAdmin || isSuperAdmin;
 
   const [searchValue, setSearchValue] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
@@ -372,7 +375,7 @@ export default function KartuAkses() {
                           {statusLabels[c.status]}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="space-x-2">
                         <Dialog open={selectedCard === c.id} onOpenChange={(open) => !open && setSelectedCard(null)}>
                           <DialogTrigger asChild>
                             <Button
@@ -422,6 +425,33 @@ export default function KartuAkses() {
                             </div>
                           </DialogContent>
                         </Dialog>
+                        {canDelete && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Hapus Data Kartu Akses?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Data kartu akses ini akan dihapus permanen dan tidak dapat dikembalikan.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Batal</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteMutation.mutate(c.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  {deleteMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                  Hapus
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

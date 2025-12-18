@@ -10,12 +10,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useGoodsMovement, useCreateGoodsMovement } from "@/hooks/useGoodsMovement";
+import { useGoodsMovement, useCreateGoodsMovement, useDeleteGoodsMovement } from "@/hooks/useGoodsMovement";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
-import { PackageOpen, Plus, Loader2, ArrowDownLeft, ArrowUpRight, QrCode, Upload, ArrowLeft, Download } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { PackageOpen, Plus, Loader2, ArrowDownLeft, ArrowUpRight, QrCode, Upload, ArrowLeft, Download, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, goodsMovementExportColumns } from "@/lib/exportExcel";
@@ -27,7 +28,9 @@ export default function KeluarMasukBarang() {
 
   const { data: movements, isLoading } = useGoodsMovement();
   const createMutation = useCreateGoodsMovement();
+  const deleteMutation = useDeleteGoodsMovement();
   const canExport = isAdmin || isSuperAdmin;
+  const canDelete = isAdmin || isSuperAdmin;
 
   const [searchValue, setSearchValue] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
@@ -121,6 +124,7 @@ export default function KeluarMasukBarang() {
           <TableHead>Deskripsi Barang</TableHead>
           <TableHead>Penanggung Jawab</TableHead>
           <TableHead>QR Code</TableHead>
+          {canDelete && <TableHead>Aksi</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -139,11 +143,40 @@ export default function KeluarMasukBarang() {
                 </Badge>
               )}
             </TableCell>
+            {canDelete && (
+              <TableCell>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Hapus Data Barang?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Data keluar/masuk barang ini akan dihapus permanen dan tidak dapat dikembalikan.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Batal</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => deleteMutation.mutate(m.id)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {deleteMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                        Hapus
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </TableCell>
+            )}
           </TableRow>
         ))}
         {data?.length === 0 && (
           <TableRow>
-            <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+            <TableCell colSpan={canDelete ? 7 : 6} className="text-center text-muted-foreground py-8">
               {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada data"}
             </TableCell>
           </TableRow>

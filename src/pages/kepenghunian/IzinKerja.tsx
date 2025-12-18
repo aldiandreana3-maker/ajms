@@ -9,12 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useWorkPermits, useCreateWorkPermit, useUpdateWorkPermitStatus } from "@/hooks/useWorkPermits";
+import { useWorkPermits, useCreateWorkPermit, useUpdateWorkPermitStatus, useDeleteWorkPermit } from "@/hooks/useWorkPermits";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
-import { ClipboardCheck, Plus, Loader2, Upload, ArrowLeft, Building2, Download } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { ClipboardCheck, Plus, Loader2, Upload, ArrowLeft, Building2, Download, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format, differenceInDays } from "date-fns";
 import { exportToExcel, workPermitExportColumns } from "@/lib/exportExcel";
@@ -33,7 +34,9 @@ export default function IzinKerja() {
   const { data: permits, isLoading } = useWorkPermits();
   const createMutation = useCreateWorkPermit();
   const updateStatusMutation = useUpdateWorkPermitStatus();
+  const deleteMutation = useDeleteWorkPermit();
   const canExport = isAdmin || isSuperAdmin;
+  const canDelete = isAdmin || isSuperAdmin;
 
   const [searchValue, setSearchValue] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
@@ -427,7 +430,7 @@ export default function IzinKerja() {
                           {p.status === "pending" ? "Pending" : p.status === "approved" ? "Disetujui" : "Ditolak"}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="space-x-2">
                         <Dialog open={selectedPermit === p.id} onOpenChange={(open) => !open && setSelectedPermit(null)}>
                           <DialogTrigger asChild>
                             <Button
@@ -476,6 +479,33 @@ export default function IzinKerja() {
                             </div>
                           </DialogContent>
                         </Dialog>
+                        {canDelete && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="destructive" size="sm">
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Hapus Data Izin Kerja?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Data izin kerja ini akan dihapus permanen dan tidak dapat dikembalikan.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Batal</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteMutation.mutate(p.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  {deleteMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                  Hapus
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

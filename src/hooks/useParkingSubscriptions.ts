@@ -134,3 +134,26 @@ export function useExtendParkingSubscription() {
     },
   });
 }
+
+export function useDeleteParkingSubscription() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("parking_subscriptions")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["parking-subscriptions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      toast.success("Data abonemen berhasil dihapus");
+    },
+    onError: (error) => {
+      toast.error("Gagal menghapus data: " + error.message);
+    },
+  });
+}

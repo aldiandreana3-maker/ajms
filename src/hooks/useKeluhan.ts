@@ -120,3 +120,26 @@ export function useUpdateKeluhanStatus() {
     },
   });
 }
+
+export function useDeleteKeluhan() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("keluhan")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["keluhan"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      toast.success("Data keluhan berhasil dihapus");
+    },
+    onError: (error) => {
+      toast.error("Gagal menghapus data: " + error.message);
+    },
+  });
+}

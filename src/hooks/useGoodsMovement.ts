@@ -102,3 +102,25 @@ export function useCreateGoodsMovement() {
     },
   });
 }
+
+export function useDeleteGoodsMovement() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("goods_movement")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["goods-movement"] });
+      toast.success("Data keluar/masuk barang berhasil dihapus");
+    },
+    onError: (error) => {
+      toast.error("Gagal menghapus data: " + error.message);
+    },
+  });
+}

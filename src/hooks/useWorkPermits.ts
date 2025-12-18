@@ -128,3 +128,25 @@ export function useUpdateWorkPermitStatus() {
     },
   });
 }
+
+export function useDeleteWorkPermit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("work_permits")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["work-permits"] });
+      toast.success("Data izin kerja berhasil dihapus");
+    },
+    onError: (error) => {
+      toast.error("Gagal menghapus data: " + error.message);
+    },
+  });
+}
