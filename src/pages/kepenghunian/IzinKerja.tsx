@@ -15,10 +15,13 @@ import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { ClipboardCheck, Plus, Loader2, Upload, ArrowLeft, Building2, Download, Trash2 } from "lucide-react";
+import { ClipboardCheck, Plus, Loader2, ArrowLeft, Building2, Download, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format, differenceInDays } from "date-fns";
 import { exportToExcel, workPermitExportColumns } from "@/lib/exportExcel";
+import { PhotoUpload } from "@/components/shared/PhotoUpload";
+import { PhotoCell } from "@/components/shared/PhotoActions";
+import { useFileUpload } from "@/hooks/useFileUpload";
 
 const statusColors = {
   pending: "bg-warning/20 text-warning border-warning/30",
@@ -35,6 +38,7 @@ export default function IzinKerja() {
   const createMutation = useCreateWorkPermit();
   const updateStatusMutation = useUpdateWorkPermitStatus();
   const deleteMutation = useDeleteWorkPermit();
+  const { uploadFile, uploading } = useFileUpload({ folder: "izin-kerja" });
   const canExport = isAdmin || isSuperAdmin;
   const canDelete = isAdmin || isSuperAdmin;
 
@@ -72,6 +76,7 @@ export default function IzinKerja() {
       sheetName: "Izin Kerja",
       data: exportData,
       columns: workPermitExportColumns,
+      databaseUrl: `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/work_permits`,
     });
   };
 
@@ -91,6 +96,7 @@ export default function IzinKerja() {
     start_date: "",
     end_date: "",
     layout_file: null as File | null,
+    payment_proof: null as File | null,
     payment_method: "",
   });
 
@@ -114,6 +120,12 @@ export default function IzinKerja() {
     e.preventDefault();
     if (!validateDates(form.start_date, form.end_date)) return;
     
+    let documentUrl: string | undefined;
+    if (form.layout_file) {
+      const path = await uploadFile(form.layout_file);
+      if (path) documentUrl = path;
+    }
+    
     await createMutation.mutateAsync({
       vendor_name: form.vendor_name,
       work_description: form.work_description,
@@ -123,6 +135,7 @@ export default function IzinKerja() {
       penghuni_name: form.name,
       unit_number: form.unit_number,
       phone: form.phone,
+      document_url: documentUrl,
     });
     setIsOpen(false);
     setForm({
@@ -135,6 +148,7 @@ export default function IzinKerja() {
       start_date: "",
       end_date: "",
       layout_file: null,
+      payment_proof: null,
       payment_method: "",
     });
   };
@@ -148,13 +162,6 @@ export default function IzinKerja() {
       });
       setSelectedPermit(null);
       setNotes("");
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setForm({ ...form, layout_file: file });
     }
   };
 
@@ -291,31 +298,12 @@ export default function IzinKerja() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Lampiran Layout Renovasi (Opsional)</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
-                    <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      onChange={handleFileChange}
-                      className="hidden"
-                      id="layout-upload"
-                    />
-                    <label htmlFor="layout-upload" className="cursor-pointer">
-                      {form.layout_file ? (
-                        <div className="flex items-center justify-center gap-2 text-sm text-foreground">
-                          <Upload className="w-5 h-5" />
-                          {form.layout_file.name}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                          <Upload className="w-8 h-8" />
-                          <span className="text-sm">Klik untuk upload layout</span>
-                        </div>
-                      )}
-                    </label>
-                  </div>
-                </div>
+                <PhotoUpload
+                  label="Lampiran Layout Renovasi (Opsional)"
+                  value={form.layout_file}
+                  onChange={(file) => setForm({ ...form, layout_file: file })}
+                  accept="image/*,.pdf"
+                />
 
                 <div className="space-y-2">
                   <Label>Metode Pembayaran (Opsional)</Label>
@@ -330,27 +318,11 @@ export default function IzinKerja() {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Upload Bukti Transfer (Opsional)</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) setForm({ ...form, layout_file: file });
-                      }}
-                      className="hidden"
-                      id="transfer-upload"
-                    />
-                    <label htmlFor="transfer-upload" className="cursor-pointer">
-                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                        <Upload className="w-6 h-6" />
-                        <span className="text-sm">Upload bukti transfer</span>
-                      </div>
-                    </label>
-                  </div>
-                </div>
+                <PhotoUpload
+                  label="Upload Bukti Transfer (Opsional)"
+                  value={form.payment_proof}
+                  onChange={(file) => setForm({ ...form, payment_proof: file })}
+                />
 
                 <div className="p-3 bg-info/10 rounded-lg space-y-2">
                   <p className="font-medium text-info text-sm">Pembayaran ke rekening:</p>
@@ -368,8 +340,8 @@ export default function IzinKerja() {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={createMutation.isPending || !!dateError}>
-                  {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                <Button type="submit" className="w-full" disabled={createMutation.isPending || uploading || !!dateError}>
+                  {(createMutation.isPending || uploading) ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                   Ajukan
                 </Button>
               </form>
@@ -409,6 +381,7 @@ export default function IzinKerja() {
                     <TableHead>Pekerjaan</TableHead>
                     <TableHead>Periode</TableHead>
                     <TableHead>Pekerja</TableHead>
+                    <TableHead>Dokumen</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Aksi</TableHead>
                   </TableRow>
@@ -425,6 +398,13 @@ export default function IzinKerja() {
                         {format(new Date(p.start_date), "dd/MM")} - {format(new Date(p.end_date), "dd/MM/yyyy")}
                       </TableCell>
                       <TableCell>{p.worker_count} orang</TableCell>
+                      <TableCell>
+                        <PhotoCell
+                          photos={[
+                            { url: p.document_url, label: "Dokumen" },
+                          ]}
+                        />
+                      </TableCell>
                       <TableCell>
                         <Badge className={statusColors[p.status]}>
                           {p.status === "pending" ? "Pending" : p.status === "approved" ? "Disetujui" : "Ditolak"}

@@ -14,7 +14,7 @@ import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Car, Plus, Calendar, Loader2, Info, ArrowLeft, Download, Trash2, Check } from "lucide-react";
+import { Car, Plus, Loader2, Info, ArrowLeft, Download, Trash2, Check, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, parkingExportColumns } from "@/lib/exportExcel";
@@ -65,6 +65,7 @@ export default function AbonemenParkir() {
       is_active: sub.is_active ? "Aktif" : "Tidak Aktif",
       verification_status: sub.verification_status === "terverifikasi" ? "Terverifikasi" : "Proses",
       rental_status: sub.rental_status === "sewa" ? "Sewa" : "Pemilik",
+      request_type: sub.request_type?.replace(/_/g, " ") || "-",
       created_at: format(new Date(sub.created_at), "dd/MM/yyyy HH:mm:ss"),
     }));
     exportToExcel({
@@ -72,12 +73,15 @@ export default function AbonemenParkir() {
       sheetName: "Abonemen Parkir",
       data: exportData,
       columns: parkingExportColumns,
+      databaseUrl: `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/parking_subscriptions`,
     });
   };
 
+  const handleUnverify = async (id: string) => {
+    await updateVerificationMutation.mutateAsync({ id, verification_status: "proses" });
+  };
+
   const [isOpen, setIsOpen] = useState(false);
-  const [extendId, setExtendId] = useState<string | null>(null);
-  const [extendDate, setExtendDate] = useState("");
 
   const [form, setForm] = useState({
     unit_number: "",
@@ -161,18 +165,6 @@ export default function AbonemenParkir() {
       rental_agreement: null,
       payment_proof: null,
     });
-  };
-
-  const handleExtend = async () => {
-    if (extendId && extendDate) {
-      await extendMutation.mutateAsync({ id: extendId, end_date: extendDate });
-      setExtendId(null);
-      setExtendDate("");
-    }
-  };
-
-  const handleVerify = async (id: string) => {
-    await updateVerificationMutation.mutateAsync({ id, verification_status: "terverifikasi" });
   };
 
   return (
@@ -412,7 +404,6 @@ export default function AbonemenParkir() {
                       <TableHead>Periode</TableHead>
                       <TableHead>Foto</TableHead>
                       <TableHead>Verifikasi</TableHead>
-                      <TableHead>Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -447,84 +438,42 @@ export default function AbonemenParkir() {
                           />
                         </TableCell>
                         <TableCell>
-                          {sub.verification_status === "terverifikasi" ? (
-                            <Badge className="bg-success/20 text-success border-success/30">
-                              Terverifikasi
-                            </Badge>
+                          {canVerify ? (
+                            <div className="flex items-center gap-1">
+                              {sub.verification_status === "terverifikasi" ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive hover:bg-destructive/10"
+                                  onClick={() => handleUnverify(sub.id)}
+                                  disabled={updateVerificationMutation.isPending}
+                                  title="Batalkan verifikasi"
+                                >
+                                  <X className="w-5 h-5" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-success hover:bg-success/10"
+                                  onClick={() => updateVerificationMutation.mutate({ id: sub.id, verification_status: "terverifikasi" })}
+                                  disabled={updateVerificationMutation.isPending}
+                                  title="Verifikasi"
+                                >
+                                  <Check className="w-5 h-5" />
+                                </Button>
+                              )}
+                            </div>
                           ) : (
-                            <Badge className="bg-warning/20 text-warning border-warning/30">
-                              Proses
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="space-x-1">
-                          {canVerify && sub.verification_status !== "terverifikasi" && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-success border-success/30 hover:bg-success/10"
-                              onClick={() => handleVerify(sub.id)}
-                              disabled={updateVerificationMutation.isPending}
-                            >
-                              <Check className="w-4 h-4" />
-                            </Button>
-                          )}
-                          <Dialog open={extendId === sub.id} onOpenChange={(open) => !open && setExtendId(null)}>
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setExtendId(sub.id)}
-                              >
-                                <Calendar className="w-4 h-4" />
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Perpanjang Abonemen</DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <div className="space-y-2">
-                                  <Label>Tanggal Berakhir Baru</Label>
-                                  <Input
-                                    type="date"
-                                    value={extendDate}
-                                    onChange={(e) => setExtendDate(e.target.value)}
-                                  />
-                                </div>
-                                <Button onClick={handleExtend} disabled={extendMutation.isPending} className="w-full">
-                                  {extendMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                  Perpanjang
-                                </Button>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                          {canDelete && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm">
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Hapus Data Abonemen?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Data abonemen parkir ini akan dihapus permanen dan tidak dapat dikembalikan.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Batal</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => deleteMutation.mutate(sub.id)}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  >
-                                    {deleteMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                    Hapus
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            sub.verification_status === "terverifikasi" ? (
+                              <Badge className="bg-success/20 text-success border-success/30">
+                                Terverifikasi
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-warning/20 text-warning border-warning/30">
+                                Proses
+                              </Badge>
+                            )
                           )}
                         </TableCell>
                       </TableRow>

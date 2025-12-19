@@ -76,16 +76,16 @@ export default function KartuAkses() {
       ...c,
       penghuni_name: c.penghuni_name || c.penghuni?.full_name || "-",
       unit_number: c.unit_number || c.units?.unit_number || "-",
-      status: statusLabelsExport[c.status] || c.status,
+      request_type: c.request_type?.replace(/_/g, " ") || c.card_type,
+      quantity_requested: c.quantity_requested || 1,
       created_at: format(new Date(c.created_at), "dd/MM/yyyy HH:mm"),
-      issued_at: c.issued_at ? format(new Date(c.issued_at), "dd/MM/yyyy") : "-",
-      expires_at: c.expires_at ? format(new Date(c.expires_at), "dd/MM/yyyy") : "-",
     }));
     exportToExcel({
       filename: `Kartu_Akses_${format(new Date(), "yyyy-MM-dd")}`,
       sheetName: "Kartu Akses",
       data: exportData,
       columns: accessCardExportColumns,
+      databaseUrl: `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/access_cards`,
     });
   };
 
@@ -317,8 +317,6 @@ export default function KartuAkses() {
                       <TableHead>Keterangan</TableHead>
                       <TableHead>Jumlah</TableHead>
                       <TableHead>Foto</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -340,93 +338,11 @@ export default function KartuAkses() {
                             ]}
                           />
                         </TableCell>
-                        <TableCell>
-                          <Badge className={statusColors[c.status]}>
-                            {statusLabels[c.status]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="space-x-2">
-                          <Dialog open={selectedCard === c.id} onOpenChange={(open) => !open && setSelectedCard(null)}>
-                            <DialogTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedCard(c.id);
-                                  setNewStatus(c.status);
-                                  setNotes(c.notes || "");
-                                }}
-                              >
-                                Update
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Update Status Kartu</DialogTitle>
-                              </DialogHeader>
-                              <div className="space-y-4">
-                                <div className="space-y-2">
-                                  <Label>Status</Label>
-                                  <Select value={newStatus} onValueChange={(v) => setNewStatus(v as "active" | "inactive" | "lost" | "damaged")}>
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="active">Aktif</SelectItem>
-                                      <SelectItem value="inactive">Nonaktif</SelectItem>
-                                      <SelectItem value="lost">Hilang</SelectItem>
-                                      <SelectItem value="damaged">Rusak</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div className="space-y-2">
-                                  <Label>Catatan</Label>
-                                  <Textarea
-                                    value={notes}
-                                    onChange={(e) => setNotes(e.target.value)}
-                                    placeholder="Catatan tambahan..."
-                                  />
-                                </div>
-                                <Button onClick={handleUpdateStatus} disabled={updateStatusMutation.isPending} className="w-full">
-                                  {updateStatusMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                  Update Status
-                                </Button>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
-                          {canDelete && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="destructive" size="sm">
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Hapus Data Kartu Akses?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Data kartu akses ini akan dihapus permanen dan tidak dapat dikembalikan.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Batal</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => deleteMutation.mutate(c.id)}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  >
-                                    {deleteMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                    Hapus
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </TableCell>
                       </TableRow>
                     ))}
                     {filteredData.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                           {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada kartu akses"}
                         </TableCell>
                       </TableRow>

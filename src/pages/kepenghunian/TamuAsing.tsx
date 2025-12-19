@@ -65,6 +65,7 @@ export default function TamuAsing() {
       sheetName: "Tamu Asing",
       data: exportData,
       columns: foreignGuestExportColumns,
+      databaseUrl: `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/foreign_guest_reports`,
     });
   };
 
