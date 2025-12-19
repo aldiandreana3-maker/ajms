@@ -15,10 +15,13 @@ import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { MessageSquareWarning, Plus, Loader2, Upload, ImageIcon, Video, ArrowLeft, Download, Trash2 } from "lucide-react";
+import { MessageSquareWarning, Plus, Loader2, ArrowLeft, Download, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, keluhanExportColumns } from "@/lib/exportExcel";
+import { PhotoUpload } from "@/components/shared/PhotoUpload";
+import { PhotoCell } from "@/components/shared/PhotoActions";
+import { useFileUpload } from "@/hooks/useFileUpload";
 
 const statusColors = {
   pending: "bg-warning/20 text-warning border-warning/30",
@@ -34,6 +37,7 @@ export default function KeluhanPenghuni() {
   const createMutation = useCreateKeluhan();
   const updateStatusMutation = useUpdateKeluhanStatus();
   const deleteMutation = useDeleteKeluhan();
+  const { uploadFile, uploading } = useFileUpload({ folder: "keluhan" });
   const canExport = isAdmin || isSuperAdmin;
   const canDelete = isAdmin || isSuperAdmin;
 
@@ -71,6 +75,7 @@ export default function KeluhanPenghuni() {
       sheetName: "Keluhan Penghuni",
       data: exportData,
       columns: keluhanExportColumns,
+      databaseUrl: `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/keluhan`,
     });
   };
 
@@ -89,12 +94,20 @@ export default function KeluhanPenghuni() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    let photoUrl: string | undefined;
+    if (form.media_file) {
+      const path = await uploadFile(form.media_file);
+      if (path) photoUrl = path;
+    }
+    
     await createMutation.mutateAsync({
       subject: `Keluhan dari ${form.penghuni_name}`,
       description: form.keluhan,
       penghuni_name: form.penghuni_name,
       unit_number: form.unit_number,
       phone: form.phone,
+      photo_url: photoUrl,
     });
     setIsOpen(false);
     setForm({ penghuni_name: "", unit_number: "", phone: "", keluhan: "", media_file: null });
@@ -109,13 +122,6 @@ export default function KeluhanPenghuni() {
       });
       setSelectedKeluhan(null);
       setResponse("");
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setForm({ ...form, media_file: file });
     }
   };
 
@@ -204,36 +210,16 @@ export default function KeluhanPenghuni() {
 
                 <div className="space-y-2">
                   <Label>Lampiran Foto/Video (Opsional)</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
-                    <input
-                      type="file"
-                      accept="image/*,video/*"
-                      onChange={handleFileChange}
-                      className="hidden"
-                      id="media-upload"
-                    />
-                    <label htmlFor="media-upload" className="cursor-pointer">
-                      {form.media_file ? (
-                        <div className="flex items-center justify-center gap-2 text-sm text-foreground">
-                          {form.media_file.type.startsWith("video") ? (
-                            <Video className="w-5 h-5" />
-                          ) : (
-                            <ImageIcon className="w-5 h-5" />
-                          )}
-                          {form.media_file.name}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                          <Upload className="w-8 h-8" />
-                          <span className="text-sm">Klik untuk upload foto atau video</span>
-                        </div>
-                      )}
-                    </label>
-                  </div>
+                  <PhotoUpload
+                    label="Upload Foto/Video"
+                    value={form.media_file}
+                    onChange={(file) => setForm({ ...form, media_file: file })}
+                    accept="image/*,video/*"
+                  />
                 </div>
 
-                <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                <Button type="submit" className="w-full" disabled={createMutation.isPending || uploading}>
+                  {(createMutation.isPending || uploading) ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                   Simpan
                 </Button>
               </form>
@@ -272,6 +258,7 @@ export default function KeluhanPenghuni() {
                     <TableHead>Penghuni</TableHead>
                     <TableHead>Unit</TableHead>
                     <TableHead>Subjek</TableHead>
+                    <TableHead>Foto</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Aksi</TableHead>
                   </TableRow>
@@ -287,6 +274,13 @@ export default function KeluhanPenghuni() {
                           <p className="font-medium">{k.subject}</p>
                           <p className="text-sm text-muted-foreground line-clamp-1">{k.description}</p>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <PhotoCell
+                          photos={[
+                            { url: k.photo_url, label: "Foto" },
+                          ]}
+                        />
                       </TableCell>
                       <TableCell>
                         <Badge className={statusColors[k.status]}>
@@ -374,7 +368,7 @@ export default function KeluhanPenghuni() {
                   ))}
                   {filteredData.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                         {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada keluhan"}
                       </TableCell>
                     </TableRow>

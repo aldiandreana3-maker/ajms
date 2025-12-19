@@ -69,6 +69,7 @@ export default function KeluarMasukBarang() {
       sheetName: "Keluar Masuk Barang",
       data: exportData,
       columns: goodsMovementExportColumns,
+      databaseUrl: `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/goods_movement`,
     });
   };
 

@@ -5,9 +5,10 @@ interface ExportConfig {
   sheetName: string;
   data: Record<string, any>[];
   columns: { header: string; key: string; width?: number }[];
+  databaseUrl?: string;
 }
 
-export function exportToExcel({ filename, sheetName, data, columns }: ExportConfig) {
+export function exportToExcel({ filename, sheetName, data, columns, databaseUrl }: ExportConfig) {
   // Transform data to use custom headers
   const transformedData = data.map((row) => {
     const newRow: Record<string, any> = {};
@@ -28,21 +29,30 @@ export function exportToExcel({ filename, sheetName, data, columns }: ExportConf
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
 
+  // Add database link sheet if provided
+  if (databaseUrl) {
+    const linkData = [{ "Link Database": databaseUrl }];
+    const linkSheet = XLSX.utils.json_to_sheet(linkData);
+    linkSheet["!cols"] = [{ wch: 80 }];
+    XLSX.utils.book_append_sheet(workbook, linkSheet, "Link Database");
+  }
+
   // Generate file and download
   XLSX.writeFile(workbook, `${filename}.xlsx`);
 }
 
 // Export configs for each Kepenghunian service
 export const parkingExportColumns = [
-  { header: "Nama Penghuni", key: "vehicle_brand", width: 20 },
+  { header: "Nama Penghuni", key: "penghuni_name", width: 20 },
   { header: "Unit", key: "unit_number", width: 10 },
+  { header: "Telepon", key: "phone", width: 15 },
   { header: "Jenis Kendaraan", key: "vehicle_type", width: 15 },
+  { header: "Kartu Member", key: "member_card", width: 18 },
   { header: "No. Polisi", key: "vehicle_number", width: 15 },
-  { header: "Warna", key: "vehicle_color", width: 15 },
-  { header: "Tanggal Mulai", key: "start_date", width: 15 },
-  { header: "Tanggal Akhir", key: "end_date", width: 15 },
-  { header: "Biaya Bulanan", key: "monthly_fee", width: 15 },
-  { header: "Status", key: "is_active", width: 10 },
+  { header: "Jenis Pengajuan", key: "request_type", width: 18 },
+  { header: "Periode", key: "period_type", width: 12 },
+  { header: "Status Sewa", key: "rental_status", width: 12 },
+  { header: "Verifikasi", key: "verification_status", width: 15 },
   { header: "Dibuat", key: "created_at", width: 20 },
 ];
 
@@ -85,12 +95,8 @@ export const accessCardExportColumns = [
   { header: "Tanggal", key: "created_at", width: 20 },
   { header: "Nama Penghuni", key: "penghuni_name", width: 20 },
   { header: "Unit", key: "unit_number", width: 10 },
-  { header: "Nomor Kartu", key: "card_number", width: 20 },
-  { header: "Tipe Kartu", key: "card_type", width: 15 },
-  { header: "Status", key: "status", width: 12 },
-  { header: "Diterbitkan", key: "issued_at", width: 18 },
-  { header: "Kadaluarsa", key: "expires_at", width: 18 },
-  { header: "Catatan", key: "notes", width: 25 },
+  { header: "Keterangan", key: "request_type", width: 15 },
+  { header: "Jumlah", key: "quantity_requested", width: 10 },
 ];
 
 export const foreignGuestExportColumns = [
