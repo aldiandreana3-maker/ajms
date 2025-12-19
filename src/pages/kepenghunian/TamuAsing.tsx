@@ -8,16 +8,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useForeignGuests, useCreateForeignGuest, useDeleteForeignGuest } from "@/hooks/useForeignGuests";
+import { useFileUpload } from "@/hooks/useFileUpload";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Globe, Plus, Loader2, Upload, ArrowLeft, Download, Trash2 } from "lucide-react";
+import { Globe, Plus, Loader2, ArrowLeft, Download, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, foreignGuestExportColumns } from "@/lib/exportExcel";
 import { PhotoCell } from "@/components/shared/PhotoActions";
+import { PhotoUpload } from "@/components/shared/PhotoUpload";
 
 export default function TamuAsing() {
   const navigate = useNavigate();
@@ -26,6 +28,7 @@ export default function TamuAsing() {
   const { data: guests, isLoading } = useForeignGuests();
   const createMutation = useCreateForeignGuest();
   const deleteMutation = useDeleteForeignGuest();
+  const { uploadFile, uploading } = useFileUpload({ folder: "foreign-guests" });
   const canExport = isAdmin || isSuperAdmin;
   const canDelete = isAdmin || isSuperAdmin;
 
@@ -84,6 +87,12 @@ export default function TamuAsing() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.gender) return;
+
+    let passportPhotoUrl: string | undefined;
+    if (form.passport_photo) {
+      const path = await uploadFile(form.passport_photo);
+      if (path) passportPhotoUrl = path;
+    }
     
     await createMutation.mutateAsync({
       full_name: form.full_name,
@@ -93,9 +102,11 @@ export default function TamuAsing() {
       nationality: form.nationality,
       passport_number: form.passport_number,
       passport_expiry: form.passport_expiry,
+      passport_photo_url: passportPhotoUrl,
       check_in_date: form.check_in_date,
       check_out_date: form.check_out_date,
       unit_number: form.unit_number,
+      penghuni_name: form.penghuni_name,
     });
     setIsOpen(false);
     setForm({
@@ -258,31 +269,12 @@ export default function TamuAsing() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Foto Halaman Biodata Paspor <span className="text-destructive">*</span></Label>
-                    <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                        id="passport-upload"
-                      />
-                      <label htmlFor="passport-upload" className="cursor-pointer">
-                        {form.passport_photo ? (
-                          <div className="flex items-center justify-center gap-2 text-sm text-foreground">
-                            <Upload className="w-5 h-5" />
-                            {form.passport_photo.name}
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                            <Upload className="w-8 h-8" />
-                            <span className="text-sm">Klik untuk upload foto paspor</span>
-                          </div>
-                        )}
-                      </label>
-                    </div>
-                  </div>
+                  <PhotoUpload
+                    label="Foto Halaman Biodata Paspor"
+                    value={form.passport_photo}
+                    onChange={(file) => setForm({ ...form, passport_photo: file })}
+                    required
+                  />
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -305,8 +297,8 @@ export default function TamuAsing() {
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-                    {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  <Button type="submit" className="w-full" disabled={createMutation.isPending || uploading}>
+                    {(createMutation.isPending || uploading) ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                     Simpan Laporan
                   </Button>
                 </form>

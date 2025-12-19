@@ -49,6 +49,10 @@ interface CreateParkingInput {
   request_type?: string;
   period_type?: string;
   rental_status?: string;
+  ktp_photo_url?: string;
+  stnk_photo_url?: string;
+  rental_agreement_url?: string;
+  payment_proof_url?: string;
 }
 
 interface UpdateParkingInput {
@@ -105,6 +109,10 @@ export function useCreateParkingSubscription() {
           request_type: input.request_type,
           period_type: input.period_type,
           rental_status: input.rental_status,
+          ktp_photo_url: input.ktp_photo_url,
+          stnk_photo_url: input.stnk_photo_url,
+          rental_agreement_url: input.rental_agreement_url,
+          payment_proof_url: input.payment_proof_url,
         })
         .select()
         .single();

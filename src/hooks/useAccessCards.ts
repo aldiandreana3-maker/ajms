@@ -36,6 +36,9 @@ interface CreateAccessCardInput {
   unit_number?: string;
   request_type?: string;
   quantity_requested?: number;
+  ktp_photo_url?: string;
+  surat_kuasa_url?: string;
+  payment_proof_url?: string;
 }
 
 export function useAccessCards() {
@@ -80,6 +83,9 @@ export function useCreateAccessCard() {
           unit_number: input.unit_number,
           request_type: input.request_type,
           quantity_requested: input.quantity_requested || 1,
+          ktp_photo_url: input.ktp_photo_url,
+          surat_kuasa_url: input.surat_kuasa_url,
+          payment_proof_url: input.payment_proof_url,
         })
         .select()
         .single();
