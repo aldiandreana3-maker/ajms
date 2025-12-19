@@ -19,6 +19,7 @@ import { CreditCard, Plus, Loader2, Upload, ArrowLeft, Download, Trash2 } from "
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, accessCardExportColumns } from "@/lib/exportExcel";
+import { PhotoCell } from "@/components/shared/PhotoActions";
 
 const statusColors = {
   active: "bg-success/20 text-success border-success/30",
@@ -359,6 +360,7 @@ export default function KartuAkses() {
                       <TableHead>Nama Penghuni</TableHead>
                       <TableHead>Keterangan</TableHead>
                       <TableHead>Jumlah</TableHead>
+                      <TableHead>Foto</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Aksi</TableHead>
                     </TableRow>
@@ -373,6 +375,15 @@ export default function KartuAkses() {
                         <TableCell>{c.penghuni_name || c.penghuni?.full_name || "-"}</TableCell>
                         <TableCell className="capitalize">{c.request_type?.replace(/_/g, " ") || c.card_type}</TableCell>
                         <TableCell>{c.quantity_requested || 1}</TableCell>
+                        <TableCell>
+                          <PhotoCell
+                            photos={[
+                              { url: c.ktp_photo_url, label: "KTP" },
+                              { url: c.surat_kuasa_url, label: "Surat Kuasa" },
+                              { url: c.payment_proof_url, label: "Bukti Bayar" },
+                            ]}
+                          />
+                        </TableCell>
                         <TableCell>
                           <Badge className={statusColors[c.status]}>
                             {statusLabels[c.status]}
@@ -459,7 +470,7 @@ export default function KartuAkses() {
                     ))}
                     {filteredData.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                           {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada kartu akses"}
                         </TableCell>
                       </TableRow>

@@ -17,6 +17,7 @@ import { Globe, Plus, Loader2, Upload, ArrowLeft, Download, Trash2 } from "lucid
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, foreignGuestExportColumns } from "@/lib/exportExcel";
+import { PhotoCell } from "@/components/shared/PhotoActions";
 
 export default function TamuAsing() {
   const navigate = useNavigate();
@@ -349,6 +350,7 @@ export default function TamuAsing() {
                       <TableHead>Kewarganegaraan</TableHead>
                       <TableHead>No. Paspor</TableHead>
                       <TableHead>Masa Berlaku</TableHead>
+                      <TableHead>Foto Paspor</TableHead>
                       <TableHead>Check In</TableHead>
                       <TableHead>Check Out</TableHead>
                       {canDelete && <TableHead>Aksi</TableHead>}
@@ -373,6 +375,11 @@ export default function TamuAsing() {
                         <TableCell>{g.nationality}</TableCell>
                         <TableCell className="font-mono text-sm">{g.passport_number}</TableCell>
                         <TableCell>{format(new Date(g.passport_expiry), "dd/MM/yyyy")}</TableCell>
+                        <TableCell>
+                          <PhotoCell
+                            photos={[{ url: g.passport_photo_url, label: "Paspor" }]}
+                          />
+                        </TableCell>
                         <TableCell>{format(new Date(g.check_in_date), "dd/MM/yyyy")}</TableCell>
                         <TableCell>{format(new Date(g.check_out_date), "dd/MM/yyyy")}</TableCell>
                         {canDelete && (
@@ -408,7 +415,7 @@ export default function TamuAsing() {
                     ))}
                     {filteredData.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={canDelete ? 11 : 10} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={canDelete ? 12 : 11} className="text-center text-muted-foreground py-8">
                           {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada data tamu asing"}
                         </TableCell>
                       </TableRow>
