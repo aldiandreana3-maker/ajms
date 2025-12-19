@@ -16,7 +16,7 @@ import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { PackageOpen, Plus, Loader2, ArrowDownLeft, ArrowUpRight, QrCode, Upload, ArrowLeft, Download, Trash2 } from "lucide-react";
+import { PackageOpen, Plus, Loader2, ArrowDownLeft, ArrowUpRight, Upload, ArrowLeft, Download, Trash2, Image } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, goodsMovementExportColumns } from "@/lib/exportExcel";
@@ -34,6 +34,7 @@ export default function KeluarMasukBarang() {
 
   const [searchValue, setSearchValue] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const filteredData = useMemo(() => {
     if (!movements) return [];
@@ -123,7 +124,7 @@ export default function KeluarMasukBarang() {
           <TableHead>Penghuni</TableHead>
           <TableHead>Deskripsi Barang</TableHead>
           <TableHead>Penanggung Jawab</TableHead>
-          <TableHead>QR Code</TableHead>
+          <TableHead>Foto</TableHead>
           {canDelete && <TableHead>Aksi</TableHead>}
         </TableRow>
       </TableHeader>
@@ -136,11 +137,17 @@ export default function KeluarMasukBarang() {
             <TableCell>{m.item_description}</TableCell>
             <TableCell>{m.carrier_name || "-"}</TableCell>
             <TableCell>
-              {m.qr_code && (
-                <Badge variant="outline" className="font-mono text-xs">
-                  <QrCode className="w-3 h-3 mr-1" />
-                  {m.qr_code.substring(0, 10)}...
-                </Badge>
+              {m.photo_url ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPreviewImage(m.photo_url)}
+                >
+                  <Image className="w-4 h-4 mr-1" />
+                  Lihat
+                </Button>
+              ) : (
+                <span className="text-muted-foreground text-sm">-</span>
               )}
             </TableCell>
             {canDelete && (
@@ -398,6 +405,18 @@ export default function KeluarMasukBarang() {
             )}
           </CardContent>
         </Card>
+
+        {/* Image Preview Dialog */}
+        <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Preview Foto</DialogTitle>
+            </DialogHeader>
+            {previewImage && (
+              <img src={previewImage} alt="Preview" className="w-full h-auto rounded-lg" />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );
