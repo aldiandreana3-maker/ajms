@@ -14,11 +14,13 @@ import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Car, Plus, Calendar, Loader2, Upload, Info, ArrowLeft, Download, Trash2, Check } from "lucide-react";
+import { Car, Plus, Calendar, Loader2, Info, ArrowLeft, Download, Trash2, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, parkingExportColumns } from "@/lib/exportExcel";
 import { PhotoCell } from "@/components/shared/PhotoActions";
+import { PhotoUpload } from "@/components/shared/PhotoUpload";
+import { useFileUpload } from "@/hooks/useFileUpload";
 
 export default function AbonemenParkir() {
   const navigate = useNavigate();
@@ -29,6 +31,7 @@ export default function AbonemenParkir() {
   const extendMutation = useExtendParkingSubscription();
   const deleteMutation = useDeleteParkingSubscription();
   const updateVerificationMutation = useUpdateParkingVerification();
+  const { uploadFile, uploading } = useFileUpload({ folder: "parking" });
   const canExport = isAdmin || isSuperAdmin;
   const canDelete = isAdmin || isSuperAdmin;
   const canVerify = isAdmin || isSuperAdmin;
@@ -101,6 +104,29 @@ export default function AbonemenParkir() {
       ? new Date(today.getTime() + 24 * 60 * 60 * 1000)
       : new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
 
+    // Upload photos
+    let ktpUrl: string | undefined;
+    let stnkUrl: string | undefined;
+    let rentalUrl: string | undefined;
+    let paymentUrl: string | undefined;
+
+    if (form.ktp_photo) {
+      const path = await uploadFile(form.ktp_photo);
+      if (path) ktpUrl = path;
+    }
+    if (form.stnk_photo) {
+      const path = await uploadFile(form.stnk_photo);
+      if (path) stnkUrl = path;
+    }
+    if (form.rental_agreement) {
+      const path = await uploadFile(form.rental_agreement);
+      if (path) rentalUrl = path;
+    }
+    if (form.payment_proof) {
+      const path = await uploadFile(form.payment_proof);
+      if (path) paymentUrl = path;
+    }
+
     await createMutation.mutateAsync({
       vehicle_type: form.vehicle_type,
       vehicle_number: form.vehicle_number,
@@ -114,6 +140,10 @@ export default function AbonemenParkir() {
       request_type: form.request_type,
       period_type: form.period_type,
       rental_status: form.rental_status,
+      ktp_photo_url: ktpUrl,
+      stnk_photo_url: stnkUrl,
+      rental_agreement_url: rentalUrl,
+      payment_proof_url: paymentUrl,
     });
     setIsOpen(false);
     setForm({
@@ -295,125 +325,35 @@ export default function AbonemenParkir() {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Upload KTP {isNewRegistration && <span className="text-destructive">*</span>}</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) setForm({ ...form, ktp_photo: file });
-                      }}
-                      className="hidden"
-                      id="ktp-upload"
-                    />
-                    <label htmlFor="ktp-upload" className="cursor-pointer">
-                      {form.ktp_photo ? (
-                        <div className="flex items-center justify-center gap-2 text-sm text-foreground">
-                          <Upload className="w-5 h-5" />
-                          {form.ktp_photo.name}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                          <Upload className="w-6 h-6" />
-                          <span className="text-sm">Upload KTP</span>
-                        </div>
-                      )}
-                    </label>
-                  </div>
-                </div>
+                <PhotoUpload
+                  label={`Upload KTP${isNewRegistration ? " *" : ""}`}
+                  value={form.ktp_photo}
+                  onChange={(file) => setForm({ ...form, ktp_photo: file })}
+                  required={isNewRegistration}
+                />
 
                 {isNewRegistration && (
                   <>
-                    <div className="space-y-2">
-                      <Label>Foto Surat Kendaraan (STNK) <span className="text-destructive">*</span></Label>
-                      <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) setForm({ ...form, stnk_photo: file });
-                          }}
-                          className="hidden"
-                          id="stnk-upload"
-                        />
-                        <label htmlFor="stnk-upload" className="cursor-pointer">
-                          {form.stnk_photo ? (
-                            <div className="flex items-center justify-center gap-2 text-sm text-foreground">
-                              <Upload className="w-5 h-5" />
-                              {form.stnk_photo.name}
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                              <Upload className="w-6 h-6" />
-                              <span className="text-sm">Upload STNK</span>
-                            </div>
-                          )}
-                        </label>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Upload Perjanjian Sewa <span className="text-destructive">*</span></Label>
-                      <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) setForm({ ...form, rental_agreement: file });
-                          }}
-                          className="hidden"
-                          id="rental-upload"
-                        />
-                        <label htmlFor="rental-upload" className="cursor-pointer">
-                          {form.rental_agreement ? (
-                            <div className="flex items-center justify-center gap-2 text-sm text-foreground">
-                              <Upload className="w-5 h-5" />
-                              {form.rental_agreement.name}
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                              <Upload className="w-6 h-6" />
-                              <span className="text-sm">Upload perjanjian sewa</span>
-                            </div>
-                          )}
-                        </label>
-                      </div>
-                    </div>
+                    <PhotoUpload
+                      label="Foto STNK"
+                      value={form.stnk_photo}
+                      onChange={(file) => setForm({ ...form, stnk_photo: file })}
+                      required
+                    />
+                    <PhotoUpload
+                      label="Perjanjian Sewa"
+                      value={form.rental_agreement}
+                      onChange={(file) => setForm({ ...form, rental_agreement: file })}
+                      required
+                    />
                   </>
                 )}
 
-                <div className="space-y-2">
-                  <Label>Upload Bukti Bayar</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) setForm({ ...form, payment_proof: file });
-                      }}
-                      className="hidden"
-                      id="payment-upload"
-                    />
-                    <label htmlFor="payment-upload" className="cursor-pointer">
-                      {form.payment_proof ? (
-                        <div className="flex items-center justify-center gap-2 text-sm text-foreground">
-                          <Upload className="w-5 h-5" />
-                          {form.payment_proof.name}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                          <Upload className="w-6 h-6" />
-                          <span className="text-sm">Upload bukti bayar</span>
-                        </div>
-                      )}
-                    </label>
-                  </div>
-                </div>
+                <PhotoUpload
+                  label="Bukti Pembayaran"
+                  value={form.payment_proof}
+                  onChange={(file) => setForm({ ...form, payment_proof: file })}
+                />
 
                 <div className="p-3 bg-info/10 rounded-lg flex items-start gap-2">
                   <Info className="w-4 h-4 text-info mt-0.5" />

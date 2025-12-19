@@ -34,6 +34,7 @@ interface CreateForeignGuestInput {
   check_in_date: string;
   check_out_date: string;
   unit_number?: string;
+  penghuni_name?: string;
 }
 
 export function useForeignGuests() {
@@ -80,6 +81,7 @@ export function useCreateForeignGuest() {
           check_in_date: input.check_in_date,
           check_out_date: input.check_out_date,
           unit_number: input.unit_number,
+          penghuni_name: input.penghuni_name,
           recorded_by: sessionData.session.user.id,
         })
         .select()

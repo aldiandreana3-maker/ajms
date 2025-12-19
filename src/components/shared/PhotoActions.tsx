@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Eye, Download, Image } from "lucide-react";
-import { useState } from "react";
+import { Eye, Download, Image, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PhotoActionsProps {
   photoUrl: string | null | undefined;
@@ -9,8 +10,37 @@ interface PhotoActionsProps {
   size?: "sm" | "default";
 }
 
+// Helper to get signed URL for storage paths
+async function getDisplayUrl(photoUrl: string): Promise<string> {
+  // If it's already a full URL (http/https), return as-is
+  if (photoUrl.startsWith("http://") || photoUrl.startsWith("https://")) {
+    return photoUrl;
+  }
+  // Otherwise, treat as storage path and get signed URL
+  const { data, error } = await supabase.storage
+    .from("kepenghunian-files")
+    .createSignedUrl(photoUrl, 3600);
+  if (error || !data?.signedUrl) {
+    console.error("Failed to get signed URL:", error);
+    return photoUrl;
+  }
+  return data.signedUrl;
+}
+
 export function PhotoActions({ photoUrl, label = "Foto", size = "sm" }: PhotoActionsProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [displayUrl, setDisplayUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (photoUrl && isOpen) {
+      setLoading(true);
+      getDisplayUrl(photoUrl).then((url) => {
+        setDisplayUrl(url);
+        setLoading(false);
+      });
+    }
+  }, [photoUrl, isOpen]);
 
   if (!photoUrl) {
     return <span className="text-muted-foreground text-sm">-</span>;
@@ -18,19 +48,21 @@ export function PhotoActions({ photoUrl, label = "Foto", size = "sm" }: PhotoAct
 
   const handleDownload = async () => {
     try {
-      const response = await fetch(photoUrl);
+      const url = await getDisplayUrl(photoUrl);
+      const response = await fetch(url);
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const blobUrl = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
+      a.href = blobUrl;
       a.download = `${label.replace(/\s/g, "_")}_${Date.now()}.jpg`;
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(blobUrl);
       document.body.removeChild(a);
     } catch (error) {
       // Fallback: open in new tab
-      window.open(photoUrl, "_blank");
+      const url = await getDisplayUrl(photoUrl);
+      window.open(url, "_blank");
     }
   };
 
@@ -64,12 +96,18 @@ export function PhotoActions({ photoUrl, label = "Foto", size = "sm" }: PhotoAct
             </DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4">
-            <img
-              src={photoUrl}
-              alt={label}
-              className="w-full h-auto rounded-lg max-h-[70vh] object-contain"
-            />
-            <Button onClick={handleDownload} className="w-full sm:w-auto">
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <img
+                src={displayUrl || ""}
+                alt={label}
+                className="w-full h-auto rounded-lg max-h-[70vh] object-contain"
+              />
+            )}
+            <Button onClick={handleDownload} className="w-full sm:w-auto" disabled={loading}>
               <Download className="w-4 h-4 mr-2" />
               Download {label}
             </Button>
@@ -90,8 +128,20 @@ interface PhotoCellProps {
 export function PhotoCell({ photos }: PhotoCellProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<{ url: string; label: string } | null>(null);
+  const [displayUrl, setDisplayUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   
   const validPhotos = photos.filter((p) => p.url);
+
+  useEffect(() => {
+    if (selectedPhoto && isOpen) {
+      setLoading(true);
+      getDisplayUrl(selectedPhoto.url).then((url) => {
+        setDisplayUrl(url);
+        setLoading(false);
+      });
+    }
+  }, [selectedPhoto, isOpen]);
 
   if (validPhotos.length === 0) {
     return <span className="text-muted-foreground text-sm">-</span>;
@@ -99,7 +149,8 @@ export function PhotoCell({ photos }: PhotoCellProps) {
 
   const handleDownload = async (url: string, label: string) => {
     try {
-      const response = await fetch(url);
+      const resolvedUrl = await getDisplayUrl(url);
+      const response = await fetch(resolvedUrl);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -110,7 +161,8 @@ export function PhotoCell({ photos }: PhotoCellProps) {
       window.URL.revokeObjectURL(blobUrl);
       document.body.removeChild(a);
     } catch (error) {
-      window.open(url, "_blank");
+      const resolvedUrl = await getDisplayUrl(url);
+      window.open(resolvedUrl, "_blank");
     }
   };
 
@@ -124,6 +176,7 @@ export function PhotoCell({ photos }: PhotoCellProps) {
             size="sm"
             onClick={() => {
               setSelectedPhoto({ url: photo.url!, label: photo.label });
+              setDisplayUrl(null);
               setIsOpen(true);
             }}
             className="h-6 px-2 text-xs"
@@ -144,14 +197,21 @@ export function PhotoCell({ photos }: PhotoCellProps) {
           </DialogHeader>
           {selectedPhoto && (
             <div className="flex flex-col items-center gap-4">
-              <img
-                src={selectedPhoto.url}
-                alt={selectedPhoto.label}
-                className="w-full h-auto rounded-lg max-h-[70vh] object-contain"
-              />
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : (
+                <img
+                  src={displayUrl || ""}
+                  alt={selectedPhoto.label}
+                  className="w-full h-auto rounded-lg max-h-[70vh] object-contain"
+                />
+              )}
               <Button 
                 onClick={() => handleDownload(selectedPhoto.url, selectedPhoto.label)} 
                 className="w-full sm:w-auto"
+                disabled={loading}
               >
                 <Download className="w-4 h-4 mr-2" />
                 Download {selectedPhoto.label}

@@ -33,6 +33,7 @@ interface CreateGoodsMovementInput {
   carrier_name?: string;
   carrier_id?: string;
   photo_url?: string;
+  ktp_photo_url?: string;
   penghuni_name?: string;
   unit_number?: string;
   phone?: string;
@@ -81,6 +82,7 @@ export function useCreateGoodsMovement() {
           carrier_name: input.carrier_name,
           carrier_id: input.carrier_id,
           photo_url: input.photo_url,
+          ktp_photo_url: input.ktp_photo_url,
           qr_code,
           recorded_by: sessionData.session.user.id,
           penghuni_name: input.penghuni_name,
