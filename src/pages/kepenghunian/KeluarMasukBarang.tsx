@@ -16,11 +16,13 @@ import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { PackageOpen, Plus, Loader2, ArrowDownLeft, ArrowUpRight, Upload, ArrowLeft, Download, Trash2 } from "lucide-react";
+import { PackageOpen, Plus, Loader2, ArrowDownLeft, ArrowUpRight, ArrowLeft, Download, Trash2, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, goodsMovementExportColumns } from "@/lib/exportExcel";
 import { PhotoCell } from "@/components/shared/PhotoActions";
+import { PhotoUpload } from "@/components/shared/PhotoUpload";
+import { useFileUpload } from "@/hooks/useFileUpload";
 
 export default function KeluarMasukBarang() {
   const navigate = useNavigate();
@@ -30,6 +32,7 @@ export default function KeluarMasukBarang() {
   const { data: movements, isLoading } = useGoodsMovement();
   const createMutation = useCreateGoodsMovement();
   const deleteMutation = useDeleteGoodsMovement();
+  const { uploadFile, uploading } = useFileUpload({ folder: "keluar-masuk-barang" });
   const canExport = isAdmin || isSuperAdmin;
   const canDelete = isAdmin || isSuperAdmin;
 
@@ -75,6 +78,7 @@ export default function KeluarMasukBarang() {
     unit_number: "",
     carrier_name: "",
     ktp_photo: null as File | null,
+    item_photo: null as File | null,
     phone: "",
     rental_status: "",
     movement_type: "in" as "in" | "out",
@@ -83,6 +87,18 @@ export default function KeluarMasukBarang() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Upload files to storage
+    let ktpPhotoUrl: string | null = null;
+    let itemPhotoUrl: string | null = null;
+    
+    if (form.ktp_photo) {
+      ktpPhotoUrl = await uploadFile(form.ktp_photo);
+    }
+    if (form.item_photo) {
+      itemPhotoUrl = await uploadFile(form.item_photo);
+    }
+    
     await createMutation.mutateAsync({
       movement_type: form.movement_type,
       item_description: form.item_description,
@@ -91,6 +107,8 @@ export default function KeluarMasukBarang() {
       unit_number: form.unit_number,
       phone: form.phone,
       rental_status: form.rental_status,
+      ktp_photo_url: ktpPhotoUrl,
+      photo_url: itemPhotoUrl,
     });
     setIsOpen(false);
     setForm({
@@ -98,6 +116,7 @@ export default function KeluarMasukBarang() {
       unit_number: "",
       carrier_name: "",
       ktp_photo: null,
+      item_photo: null,
       phone: "",
       rental_status: "",
       movement_type: "in",
@@ -105,12 +124,6 @@ export default function KeluarMasukBarang() {
     });
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setForm({ ...form, ktp_photo: file });
-    }
-  };
 
   const inMovements = filteredData.filter((m) => m.movement_type === "in");
   const outMovements = filteredData.filter((m) => m.movement_type === "out");
@@ -258,31 +271,12 @@ export default function KeluarMasukBarang() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Upload Foto KTP <span className="text-destructive">*</span></Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="hidden"
-                      id="ktp-upload"
-                    />
-                    <label htmlFor="ktp-upload" className="cursor-pointer">
-                      {form.ktp_photo ? (
-                        <div className="flex items-center justify-center gap-2 text-sm text-foreground">
-                          <Upload className="w-5 h-5" />
-                          {form.ktp_photo.name}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                          <Upload className="w-8 h-8" />
-                          <span className="text-sm">Klik untuk upload foto KTP</span>
-                        </div>
-                      )}
-                    </label>
-                  </div>
-                </div>
+                <PhotoUpload
+                  label="Upload Foto KTP"
+                  value={form.ktp_photo}
+                  onChange={(file) => setForm({ ...form, ktp_photo: file })}
+                  required
+                />
 
                 <div className="space-y-2">
                   <Label>Nomor Telepon <span className="text-destructive">*</span></Label>
@@ -341,8 +335,14 @@ export default function KeluarMasukBarang() {
                   />
                 </div>
 
-                <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                <PhotoUpload
+                  label="Foto Barang (Opsional)"
+                  value={form.item_photo}
+                  onChange={(file) => setForm({ ...form, item_photo: file })}
+                />
+
+                <Button type="submit" className="w-full" disabled={createMutation.isPending || uploading}>
+                  {(createMutation.isPending || uploading) ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                   Simpan & Generate QR
                 </Button>
               </form>

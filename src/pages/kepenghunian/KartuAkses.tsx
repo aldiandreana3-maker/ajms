@@ -15,11 +15,13 @@ import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { CreditCard, Plus, Loader2, Upload, ArrowLeft, Download, Trash2 } from "lucide-react";
+import { CreditCard, Plus, Loader2, ArrowLeft, Download, Trash2, Upload } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, accessCardExportColumns } from "@/lib/exportExcel";
 import { PhotoCell } from "@/components/shared/PhotoActions";
+import { PhotoUpload } from "@/components/shared/PhotoUpload";
+import { useFileUpload } from "@/hooks/useFileUpload";
 
 const statusColors = {
   active: "bg-success/20 text-success border-success/30",
@@ -43,6 +45,7 @@ export default function KartuAkses() {
   const createMutation = useCreateAccessCard();
   const updateStatusMutation = useUpdateAccessCardStatus();
   const deleteMutation = useDeleteAccessCard();
+  const { uploadFile, uploading } = useFileUpload({ folder: "kartu-akses" });
   const canExport = isAdmin || isSuperAdmin;
   const canDelete = isAdmin || isSuperAdmin;
 
@@ -110,6 +113,22 @@ export default function KartuAkses() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Upload files to storage
+    let ktpPhotoUrl: string | null = null;
+    let suratKuasaUrl: string | null = null;
+    let paymentProofUrl: string | null = null;
+    
+    if (form.ktp_photo) {
+      ktpPhotoUrl = await uploadFile(form.ktp_photo);
+    }
+    if (form.surat_kuasa) {
+      suratKuasaUrl = await uploadFile(form.surat_kuasa);
+    }
+    if (form.payment_proof) {
+      paymentProofUrl = await uploadFile(form.payment_proof);
+    }
+    
     await createMutation.mutateAsync({
       card_number: generateCardNumber(),
       card_type: form.request_type || "resident",
@@ -117,6 +136,9 @@ export default function KartuAkses() {
       unit_number: form.unit_number,
       request_type: form.request_type,
       quantity_requested: parseInt(form.card_count) || 1,
+      ktp_photo_url: ktpPhotoUrl,
+      surat_kuasa_url: suratKuasaUrl,
+      payment_proof_url: paymentProofUrl,
     });
     setIsOpen(false);
     setForm({
@@ -230,96 +252,30 @@ export default function KartuAkses() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Upload KTP <span className="text-destructive">*</span></Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) setForm({ ...form, ktp_photo: file });
-                      }}
-                      className="hidden"
-                      id="ktp-upload"
-                    />
-                    <label htmlFor="ktp-upload" className="cursor-pointer">
-                      {form.ktp_photo ? (
-                        <div className="flex items-center justify-center gap-2 text-sm text-foreground">
-                          <Upload className="w-5 h-5" />
-                          {form.ktp_photo.name}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                          <Upload className="w-8 h-8" />
-                          <span className="text-sm">Klik untuk upload KTP</span>
-                        </div>
-                      )}
-                    </label>
-                  </div>
-                </div>
+                <PhotoUpload
+                  label="Upload KTP"
+                  value={form.ktp_photo}
+                  onChange={(file) => setForm({ ...form, ktp_photo: file })}
+                  required
+                />
 
-                <div className="space-y-2">
-                  <Label>Foto Surat Kuasa (Opsional)</Label>
+                <div className="space-y-1">
                   <p className="text-xs text-muted-foreground">Jika penghuni dikuasakan</p>
-                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) setForm({ ...form, surat_kuasa: file });
-                      }}
-                      className="hidden"
-                      id="surat-kuasa-upload"
-                    />
-                    <label htmlFor="surat-kuasa-upload" className="cursor-pointer">
-                      {form.surat_kuasa ? (
-                        <div className="flex items-center justify-center gap-2 text-sm text-foreground">
-                          <Upload className="w-5 h-5" />
-                          {form.surat_kuasa.name}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                          <Upload className="w-6 h-6" />
-                          <span className="text-sm">Upload surat kuasa</span>
-                        </div>
-                      )}
-                    </label>
-                  </div>
+                  <PhotoUpload
+                    label="Foto Surat Kuasa (Opsional)"
+                    value={form.surat_kuasa}
+                    onChange={(file) => setForm({ ...form, surat_kuasa: file })}
+                  />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Upload Bukti Pembayaran (Opsional)</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) setForm({ ...form, payment_proof: file });
-                      }}
-                      className="hidden"
-                      id="payment-upload"
-                    />
-                    <label htmlFor="payment-upload" className="cursor-pointer">
-                      {form.payment_proof ? (
-                        <div className="flex items-center justify-center gap-2 text-sm text-foreground">
-                          <Upload className="w-5 h-5" />
-                          {form.payment_proof.name}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                          <Upload className="w-6 h-6" />
-                          <span className="text-sm">Upload bukti pembayaran</span>
-                        </div>
-                      )}
-                    </label>
-                  </div>
-                </div>
+                <PhotoUpload
+                  label="Upload Bukti Pembayaran (Opsional)"
+                  value={form.payment_proof}
+                  onChange={(file) => setForm({ ...form, payment_proof: file })}
+                />
 
-                <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                <Button type="submit" className="w-full" disabled={createMutation.isPending || uploading}>
+                  {(createMutation.isPending || uploading) ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                   Registrasi Kartu
                 </Button>
               </form>
