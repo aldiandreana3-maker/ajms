@@ -435,6 +435,7 @@ export type Database = {
           passport_expiry: string
           passport_number: string
           passport_photo_url: string | null
+          penghuni_name: string | null
           recorded_by: string | null
           unit_id: string | null
           unit_number: string | null
@@ -453,6 +454,7 @@ export type Database = {
           passport_expiry: string
           passport_number: string
           passport_photo_url?: string | null
+          penghuni_name?: string | null
           recorded_by?: string | null
           unit_id?: string | null
           unit_number?: string | null
@@ -471,6 +473,7 @@ export type Database = {
           passport_expiry?: string
           passport_number?: string
           passport_photo_url?: string | null
+          penghuni_name?: string | null
           recorded_by?: string | null
           unit_id?: string | null
           unit_number?: string | null
@@ -676,6 +679,7 @@ export type Database = {
           penghuni_name: string | null
           period_type: string | null
           phone: string | null
+          rental_status: string | null
           request_type: string | null
           start_date: string
           unit_id: string | null
@@ -685,6 +689,7 @@ export type Database = {
           vehicle_color: string | null
           vehicle_number: string
           vehicle_type: string
+          verification_status: string | null
         }
         Insert: {
           agent_name?: string | null
@@ -698,6 +703,7 @@ export type Database = {
           penghuni_name?: string | null
           period_type?: string | null
           phone?: string | null
+          rental_status?: string | null
           request_type?: string | null
           start_date: string
           unit_id?: string | null
@@ -707,6 +713,7 @@ export type Database = {
           vehicle_color?: string | null
           vehicle_number: string
           vehicle_type: string
+          verification_status?: string | null
         }
         Update: {
           agent_name?: string | null
@@ -720,6 +727,7 @@ export type Database = {
           penghuni_name?: string | null
           period_type?: string | null
           phone?: string | null
+          rental_status?: string | null
           request_type?: string | null
           start_date?: string
           unit_id?: string | null
@@ -729,6 +737,7 @@ export type Database = {
           vehicle_color?: string | null
           vehicle_number?: string
           vehicle_type?: string
+          verification_status?: string | null
         }
         Relationships: [
           {

@@ -54,7 +54,7 @@ export default function TamuAsing() {
       ...g,
       unit_number: g.unit_number || g.units?.unit_number || "-",
       gender: genderMap[g.gender] || g.gender,
-      created_at: format(new Date(g.created_at), "dd/MM/yyyy HH:mm"),
+      created_at: format(new Date(g.created_at), "dd/MM/yyyy HH:mm:ss"),
     }));
     exportToExcel({
       filename: `Tamu_Asing_${format(new Date(), "yyyy-MM-dd")}`,
@@ -66,6 +66,7 @@ export default function TamuAsing() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [form, setForm] = useState({
+    penghuni_name: "",
     full_name: "",
     unit_number: "",
     birth_place: "",
@@ -97,6 +98,7 @@ export default function TamuAsing() {
     });
     setIsOpen(false);
     setForm({
+      penghuni_name: "",
       full_name: "",
       unit_number: "",
       birth_place: "",
@@ -161,21 +163,31 @@ export default function TamuAsing() {
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label>Nama Lengkap Orang Asing <span className="text-destructive">*</span></Label>
+                    <Label>Tower Lantai Unit <span className="text-destructive">*</span></Label>
                     <Input
-                      value={form.full_name}
-                      onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                      placeholder="Masukkan nama lengkap"
+                      value={form.unit_number}
+                      onChange={(e) => setForm({ ...form, unit_number: e.target.value })}
+                      placeholder="Contoh: A0520, B1205"
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Alamat Tower & Unit <span className="text-destructive">*</span></Label>
+                    <Label>Nama Penghuni (Pemilik/Penyewa) <span className="text-destructive">*</span></Label>
                     <Input
-                      value={form.unit_number}
-                      onChange={(e) => setForm({ ...form, unit_number: e.target.value })}
-                      placeholder="Contoh: A0520, B1205"
+                      value={form.penghuni_name}
+                      onChange={(e) => setForm({ ...form, penghuni_name: e.target.value })}
+                      placeholder="Nama pemilik/penyewa unit"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Nama Lengkap Orang Asing <span className="text-destructive">*</span></Label>
+                    <Input
+                      value={form.full_name}
+                      onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                      placeholder="Masukkan nama lengkap WNA"
                       required
                     />
                   </div>
@@ -215,7 +227,7 @@ export default function TamuAsing() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Kewarganegaraan <span className="text-destructive">*</span></Label>
+                    <Label>Kewarganegaraan Orang Asing <span className="text-destructive">*</span></Label>
                     <Input
                       value={form.nationality}
                       onChange={(e) => setForm({ ...form, nationality: e.target.value })}
@@ -235,7 +247,7 @@ export default function TamuAsing() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Masa Berlaku <span className="text-destructive">*</span></Label>
+                      <Label>Masa Berlaku Paspor <span className="text-destructive">*</span></Label>
                       <Input
                         type="date"
                         value={form.passport_expiry}
@@ -325,72 +337,85 @@ export default function TamuAsing() {
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nama</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Kewarganegaraan</TableHead>
-                    <TableHead>No. Paspor</TableHead>
-                    <TableHead>Check In</TableHead>
-                    <TableHead>Check Out</TableHead>
-                    {canDelete && <TableHead>Aksi</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredData.map((g) => (
-                    <TableRow key={g.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{g.full_name}</p>
-                          <p className="text-sm text-muted-foreground capitalize">{g.gender}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>{g.unit_number || g.units?.unit_number || "-"}</TableCell>
-                      <TableCell>{g.nationality}</TableCell>
-                      <TableCell className="font-mono">{g.passport_number}</TableCell>
-                      <TableCell>{format(new Date(g.check_in_date), "dd/MM/yyyy")}</TableCell>
-                      <TableCell>{format(new Date(g.check_out_date), "dd/MM/yyyy")}</TableCell>
-                      {canDelete && (
-                        <TableCell>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm">
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Hapus Data Tamu Asing?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Data tamu asing ini akan dihapus permanen dan tidak dapat dikembalikan.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Batal</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteMutation.mutate(g.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  {deleteMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                  Hapus
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  ))}
-                  {filteredData.length === 0 && (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={canDelete ? 7 : 6} className="text-center text-muted-foreground py-8">
-                        {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada data tamu asing"}
-                      </TableCell>
+                      <TableHead>Timestamp</TableHead>
+                      <TableHead>Unit</TableHead>
+                      <TableHead>Nama WNA</TableHead>
+                      <TableHead>TTL</TableHead>
+                      <TableHead>JK</TableHead>
+                      <TableHead>Kewarganegaraan</TableHead>
+                      <TableHead>No. Paspor</TableHead>
+                      <TableHead>Masa Berlaku</TableHead>
+                      <TableHead>Check In</TableHead>
+                      <TableHead>Check Out</TableHead>
+                      {canDelete && <TableHead>Aksi</TableHead>}
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredData.map((g) => (
+                      <TableRow key={g.id}>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {format(new Date(g.created_at), "dd/MM/yyyy HH:mm:ss")}
+                        </TableCell>
+                        <TableCell>{g.unit_number || g.units?.unit_number || "-"}</TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{g.full_name}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {g.birth_place}, {format(new Date(g.birth_date), "dd/MM/yyyy")}
+                        </TableCell>
+                        <TableCell className="capitalize">{g.gender === "pria" ? "L" : "P"}</TableCell>
+                        <TableCell>{g.nationality}</TableCell>
+                        <TableCell className="font-mono text-sm">{g.passport_number}</TableCell>
+                        <TableCell>{format(new Date(g.passport_expiry), "dd/MM/yyyy")}</TableCell>
+                        <TableCell>{format(new Date(g.check_in_date), "dd/MM/yyyy")}</TableCell>
+                        <TableCell>{format(new Date(g.check_out_date), "dd/MM/yyyy")}</TableCell>
+                        {canDelete && (
+                          <TableCell>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Hapus Data Tamu Asing?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Data tamu asing ini akan dihapus permanen dan tidak dapat dikembalikan.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteMutation.mutate(g.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    {deleteMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                    Hapus
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                    {filteredData.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={canDelete ? 11 : 10} className="text-center text-muted-foreground py-8">
+                          {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada data tamu asing"}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

@@ -8,13 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useParkingSubscriptions, useCreateParkingSubscription, useExtendParkingSubscription, useDeleteParkingSubscription } from "@/hooks/useParkingSubscriptions";
+import { useParkingSubscriptions, useCreateParkingSubscription, useExtendParkingSubscription, useDeleteParkingSubscription, useUpdateParkingVerification } from "@/hooks/useParkingSubscriptions";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Car, Plus, Calendar, Loader2, Upload, Info, ArrowLeft, Download, Trash2 } from "lucide-react";
+import { Car, Plus, Calendar, Loader2, Upload, Info, ArrowLeft, Download, Trash2, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, parkingExportColumns } from "@/lib/exportExcel";
@@ -27,8 +27,10 @@ export default function AbonemenParkir() {
   const createMutation = useCreateParkingSubscription();
   const extendMutation = useExtendParkingSubscription();
   const deleteMutation = useDeleteParkingSubscription();
+  const updateVerificationMutation = useUpdateParkingVerification();
   const canExport = isAdmin || isSuperAdmin;
   const canDelete = isAdmin || isSuperAdmin;
+  const canVerify = isAdmin || isSuperAdmin;
 
   const [searchValue, setSearchValue] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
@@ -43,7 +45,8 @@ export default function AbonemenParkir() {
           sub.vehicle_number?.toLowerCase().includes(search) ||
           sub.vehicle_type?.toLowerCase().includes(search) ||
           sub.penghuni_name?.toLowerCase().includes(search) ||
-          sub.unit_number?.toLowerCase().includes(search)
+          sub.unit_number?.toLowerCase().includes(search) ||
+          sub.member_card?.toLowerCase().includes(search)
       );
     }
     return filtered;
@@ -56,7 +59,9 @@ export default function AbonemenParkir() {
       unit_number: sub.unit_number || sub.units?.unit_number || "-",
       penghuni_name: sub.penghuni_name || "-",
       is_active: sub.is_active ? "Aktif" : "Tidak Aktif",
-      created_at: format(new Date(sub.created_at), "dd/MM/yyyy HH:mm"),
+      verification_status: sub.verification_status === "terverifikasi" ? "Terverifikasi" : "Proses",
+      rental_status: sub.rental_status === "sewa" ? "Sewa" : "Pemilik",
+      created_at: format(new Date(sub.created_at), "dd/MM/yyyy HH:mm:ss"),
     }));
     exportToExcel({
       filename: `Abonemen_Parkir_${format(new Date(), "yyyy-MM-dd")}`,
@@ -73,7 +78,7 @@ export default function AbonemenParkir() {
   const [form, setForm] = useState({
     unit_number: "",
     penghuni_name: "",
-    agent_name: "",
+    rental_status: "",
     phone: "",
     vehicle_type: "",
     member_card: "",
@@ -104,16 +109,16 @@ export default function AbonemenParkir() {
       penghuni_name: form.penghuni_name,
       unit_number: form.unit_number,
       phone: form.phone,
-      agent_name: form.agent_name,
       member_card: form.member_card,
       request_type: form.request_type,
       period_type: form.period_type,
+      rental_status: form.rental_status,
     });
     setIsOpen(false);
     setForm({
       unit_number: "",
       penghuni_name: "",
-      agent_name: "",
+      rental_status: "",
       phone: "",
       vehicle_type: "",
       member_card: "",
@@ -133,6 +138,10 @@ export default function AbonemenParkir() {
       setExtendId(null);
       setExtendDate("");
     }
+  };
+
+  const handleVerify = async (id: string) => {
+    await updateVerificationMutation.mutateAsync({ id, verification_status: "terverifikasi" });
   };
 
   return (
@@ -198,14 +207,16 @@ export default function AbonemenParkir() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Nama Agent (Jika Penyewa) <span className="text-destructive">*</span></Label>
-                  <Input
-                    value={form.agent_name}
-                    onChange={(e) => setForm({ ...form, agent_name: e.target.value })}
-                    placeholder="Ketik 0 jika pemilik"
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">Jika pemilik, ketik 0</p>
+                  <Label>Keterangan Sewa / Pemilik <span className="text-destructive">*</span></Label>
+                  <Select value={form.rental_status} onValueChange={(v) => setForm({ ...form, rental_status: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pemilik">Pemilik</SelectItem>
+                      <SelectItem value="sewa">Sewa</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
@@ -271,46 +282,49 @@ export default function AbonemenParkir() {
 
                 <div className="space-y-2">
                   <Label>Harian / Bulanan <span className="text-destructive">*</span></Label>
-                  <Input
-                    value={form.period_type}
-                    onChange={(e) => setForm({ ...form, period_type: e.target.value })}
-                    placeholder="Ketik: harian / bulanan (jika hilang/rusak ketik 0)"
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">Jika hilang / rusak, ketik 0</p>
+                  <Select value={form.period_type} onValueChange={(v) => setForm({ ...form, period_type: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih periode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="harian">Harian</SelectItem>
+                      <SelectItem value="bulanan">Bulanan</SelectItem>
+                      <SelectItem value="0">Hilang / Rusak (ketik 0)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Upload KTP {isNewRegistration && <span className="text-destructive">*</span>}</Label>
+                  <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setForm({ ...form, ktp_photo: file });
+                      }}
+                      className="hidden"
+                      id="ktp-upload"
+                    />
+                    <label htmlFor="ktp-upload" className="cursor-pointer">
+                      {form.ktp_photo ? (
+                        <div className="flex items-center justify-center gap-2 text-sm text-foreground">
+                          <Upload className="w-5 h-5" />
+                          {form.ktp_photo.name}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <Upload className="w-6 h-6" />
+                          <span className="text-sm">Upload KTP</span>
+                        </div>
+                      )}
+                    </label>
+                  </div>
                 </div>
 
                 {isNewRegistration && (
                   <>
-                    <div className="space-y-2">
-                      <Label>Upload KTP <span className="text-destructive">*</span></Label>
-                      <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) setForm({ ...form, ktp_photo: file });
-                          }}
-                          className="hidden"
-                          id="ktp-upload"
-                        />
-                        <label htmlFor="ktp-upload" className="cursor-pointer">
-                          {form.ktp_photo ? (
-                            <div className="flex items-center justify-center gap-2 text-sm text-foreground">
-                              <Upload className="w-5 h-5" />
-                              {form.ktp_photo.name}
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                              <Upload className="w-6 h-6" />
-                              <span className="text-sm">Upload KTP</span>
-                            </div>
-                          )}
-                        </label>
-                      </div>
-                    </div>
-
                     <div className="space-y-2">
                       <Label>Foto Surat Kendaraan (STNK) <span className="text-destructive">*</span></Label>
                       <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
@@ -372,7 +386,7 @@ export default function AbonemenParkir() {
                 )}
 
                 <div className="space-y-2">
-                  <Label>Upload Bukti Bayar (Opsional)</Label>
+                  <Label>Upload Bukti Bayar</Label>
                   <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
                     <input
                       type="file"
@@ -434,113 +448,145 @@ export default function AbonemenParkir() {
               onSearchChange={setSearchValue}
               dateFilter={dateFilter}
               onDateFilterChange={setDateFilter}
-              searchPlaceholder="Cari plat, unit, nama..."
+              searchPlaceholder="Cari plat, unit, nama, kartu member..."
             />
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tanggal</TableHead>
-                    <TableHead>Nama</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Kendaraan</TableHead>
-                    <TableHead>Plat</TableHead>
-                    <TableHead>Periode</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredData.map((sub) => (
-                    <TableRow key={sub.id}>
-                      <TableCell>{format(new Date(sub.created_at), "dd/MM/yyyy")}</TableCell>
-                      <TableCell>{sub.penghuni_name || "-"}</TableCell>
-                      <TableCell>{sub.unit_number || sub.units?.unit_number || "-"}</TableCell>
-                      <TableCell className="capitalize">{sub.vehicle_type}</TableCell>
-                      <TableCell className="font-mono">{sub.vehicle_number}</TableCell>
-                      <TableCell>
-                        {format(new Date(sub.start_date), "dd/MM")} - {format(new Date(sub.end_date), "dd/MM/yyyy")}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={sub.is_active ? "default" : "secondary"}>
-                          {sub.is_active ? "Aktif" : "Expired"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="space-x-2">
-                        <Dialog open={extendId === sub.id} onOpenChange={(open) => !open && setExtendId(null)}>
-                          <DialogTrigger asChild>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Timestamp</TableHead>
+                      <TableHead>Unit</TableHead>
+                      <TableHead>Nama</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Telepon</TableHead>
+                      <TableHead>Kendaraan</TableHead>
+                      <TableHead>Kartu Member</TableHead>
+                      <TableHead>Plat</TableHead>
+                      <TableHead>Pengajuan</TableHead>
+                      <TableHead>Periode</TableHead>
+                      <TableHead>Verifikasi</TableHead>
+                      <TableHead>Aksi</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredData.map((sub) => (
+                      <TableRow key={sub.id}>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {format(new Date(sub.created_at), "dd/MM/yyyy HH:mm:ss")}
+                        </TableCell>
+                        <TableCell>{sub.unit_number || sub.units?.unit_number || "-"}</TableCell>
+                        <TableCell>{sub.penghuni_name || "-"}</TableCell>
+                        <TableCell className="capitalize">
+                          <Badge variant={sub.rental_status === "sewa" ? "secondary" : "outline"}>
+                            {sub.rental_status === "sewa" ? "Sewa" : "Pemilik"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{sub.phone || "-"}</TableCell>
+                        <TableCell className="capitalize">{sub.vehicle_type}</TableCell>
+                        <TableCell className="font-mono text-xs">{sub.member_card || "-"}</TableCell>
+                        <TableCell className="font-mono">{sub.vehicle_number}</TableCell>
+                        <TableCell className="capitalize text-sm">
+                          {sub.request_type?.replace(/_/g, " ") || "-"}
+                        </TableCell>
+                        <TableCell className="capitalize">{sub.period_type || "-"}</TableCell>
+                        <TableCell>
+                          {sub.verification_status === "terverifikasi" ? (
+                            <Badge className="bg-success/20 text-success border-success/30">
+                              Terverifikasi
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-warning/20 text-warning border-warning/30">
+                              Proses
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="space-x-1">
+                          {canVerify && sub.verification_status !== "terverifikasi" && (
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => setExtendId(sub.id)}
+                              className="text-success border-success/30 hover:bg-success/10"
+                              onClick={() => handleVerify(sub.id)}
+                              disabled={updateVerificationMutation.isPending}
                             >
-                              <Calendar className="w-4 h-4 mr-1" />
-                              Perpanjang
+                              <Check className="w-4 h-4" />
                             </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Perpanjang Abonemen</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div className="space-y-2">
-                                <Label>Tanggal Berakhir Baru</Label>
-                                <Input
-                                  type="date"
-                                  value={extendDate}
-                                  onChange={(e) => setExtendDate(e.target.value)}
-                                />
+                          )}
+                          <Dialog open={extendId === sub.id} onOpenChange={(open) => !open && setExtendId(null)}>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setExtendId(sub.id)}
+                              >
+                                <Calendar className="w-4 h-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Perpanjang Abonemen</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <Label>Tanggal Berakhir Baru</Label>
+                                  <Input
+                                    type="date"
+                                    value={extendDate}
+                                    onChange={(e) => setExtendDate(e.target.value)}
+                                  />
+                                </div>
+                                <Button onClick={handleExtend} disabled={extendMutation.isPending} className="w-full">
+                                  {extendMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                  Perpanjang
+                                </Button>
                               </div>
-                              <Button onClick={handleExtend} disabled={extendMutation.isPending} className="w-full">
-                                {extendMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                Perpanjang
-                              </Button>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                        {canDelete && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm">
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Hapus Data Abonemen?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Data abonemen parkir ini akan dihapus permanen dan tidak dapat dikembalikan.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Batal</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteMutation.mutate(sub.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  {deleteMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                  Hapus
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredData.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
-                        {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada abonemen parkir"}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                            </DialogContent>
+                          </Dialog>
+                          {canDelete && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Hapus Data Abonemen?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Data abonemen parkir ini akan dihapus permanen dan tidak dapat dikembalikan.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteMutation.mutate(sub.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    {deleteMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                    Hapus
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredData.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
+                          {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada abonemen parkir"}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

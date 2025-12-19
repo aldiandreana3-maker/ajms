@@ -184,21 +184,21 @@ export default function KartuAkses() {
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Nama Pemilik <span className="text-destructive">*</span></Label>
+                  <Label>Tower Lantai Unit <span className="text-destructive">*</span></Label>
                   <Input
-                    value={form.owner_name}
-                    onChange={(e) => setForm({ ...form, owner_name: e.target.value })}
-                    placeholder="Masukkan nama pemilik"
+                    value={form.unit_number}
+                    onChange={(e) => setForm({ ...form, unit_number: e.target.value })}
+                    placeholder="Contoh: A0520, B1205"
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Tower & Nomor Unit <span className="text-destructive">*</span></Label>
+                  <Label>Nama Penghuni <span className="text-destructive">*</span></Label>
                   <Input
-                    value={form.unit_number}
-                    onChange={(e) => setForm({ ...form, unit_number: e.target.value })}
-                    placeholder="Contoh: A0520, B1205"
+                    value={form.owner_name}
+                    onChange={(e) => setForm({ ...form, owner_name: e.target.value })}
+                    placeholder="Masukkan nama penghuni"
                     required
                   />
                 </div>
@@ -350,120 +350,123 @@ export default function KartuAkses() {
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>No. Kartu</TableHead>
-                    <TableHead>Penghuni</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Keterangan</TableHead>
-                    <TableHead>Diterbitkan</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredData.map((c) => (
-                    <TableRow key={c.id}>
-                      <TableCell className="font-mono">{c.card_number}</TableCell>
-                      <TableCell>{c.penghuni_name || c.penghuni?.full_name || "-"}</TableCell>
-                      <TableCell>{c.unit_number || c.units?.unit_number || "-"}</TableCell>
-                      <TableCell className="capitalize">{c.card_type}</TableCell>
-                      <TableCell>{format(new Date(c.issued_at), "dd/MM/yyyy")}</TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[c.status]}>
-                          {statusLabels[c.status]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="space-x-2">
-                        <Dialog open={selectedCard === c.id} onOpenChange={(open) => !open && setSelectedCard(null)}>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedCard(c.id);
-                                setNewStatus(c.status);
-                                setNotes(c.notes || "");
-                              }}
-                            >
-                              Update
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Update Status Kartu</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div className="space-y-2">
-                                <Label>Status</Label>
-                                <Select value={newStatus} onValueChange={(v) => setNewStatus(v as "active" | "inactive" | "lost" | "damaged")}>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="active">Aktif</SelectItem>
-                                    <SelectItem value="inactive">Nonaktif</SelectItem>
-                                    <SelectItem value="lost">Hilang</SelectItem>
-                                    <SelectItem value="damaged">Rusak</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Catatan</Label>
-                                <Textarea
-                                  value={notes}
-                                  onChange={(e) => setNotes(e.target.value)}
-                                  placeholder="Alasan perubahan status..."
-                                  rows={3}
-                                />
-                              </div>
-                              <Button onClick={handleUpdateStatus} disabled={updateStatusMutation.isPending} className="w-full">
-                                {updateStatusMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                Simpan
-                              </Button>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                        {canDelete && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm">
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Hapus Data Kartu Akses?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Data kartu akses ini akan dihapus permanen dan tidak dapat dikembalikan.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Batal</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteMutation.mutate(c.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  {deleteMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                  Hapus
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredData.length === 0 && (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                        {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada kartu akses terdaftar"}
-                      </TableCell>
+                      <TableHead>Timestamp</TableHead>
+                      <TableHead>Unit</TableHead>
+                      <TableHead>Nama Penghuni</TableHead>
+                      <TableHead>Keterangan</TableHead>
+                      <TableHead>Jumlah</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Aksi</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredData.map((c) => (
+                      <TableRow key={c.id}>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {format(new Date(c.created_at), "dd/MM/yyyy HH:mm:ss")}
+                        </TableCell>
+                        <TableCell>{c.unit_number || c.units?.unit_number || "-"}</TableCell>
+                        <TableCell>{c.penghuni_name || c.penghuni?.full_name || "-"}</TableCell>
+                        <TableCell className="capitalize">{c.request_type?.replace(/_/g, " ") || c.card_type}</TableCell>
+                        <TableCell>{c.quantity_requested || 1}</TableCell>
+                        <TableCell>
+                          <Badge className={statusColors[c.status]}>
+                            {statusLabels[c.status]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="space-x-2">
+                          <Dialog open={selectedCard === c.id} onOpenChange={(open) => !open && setSelectedCard(null)}>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedCard(c.id);
+                                  setNewStatus(c.status);
+                                  setNotes(c.notes || "");
+                                }}
+                              >
+                                Update
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Update Status Kartu</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <Label>Status</Label>
+                                  <Select value={newStatus} onValueChange={(v) => setNewStatus(v as "active" | "inactive" | "lost" | "damaged")}>
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="active">Aktif</SelectItem>
+                                      <SelectItem value="inactive">Nonaktif</SelectItem>
+                                      <SelectItem value="lost">Hilang</SelectItem>
+                                      <SelectItem value="damaged">Rusak</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Catatan</Label>
+                                  <Textarea
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                    placeholder="Catatan tambahan..."
+                                  />
+                                </div>
+                                <Button onClick={handleUpdateStatus} disabled={updateStatusMutation.isPending} className="w-full">
+                                  {updateStatusMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                  Update Status
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                          {canDelete && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Hapus Data Kartu Akses?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Data kartu akses ini akan dihapus permanen dan tidak dapat dikembalikan.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteMutation.mutate(c.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    {deleteMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                    Hapus
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredData.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                          {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada kartu akses"}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

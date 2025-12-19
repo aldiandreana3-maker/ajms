@@ -23,6 +23,8 @@ interface ParkingSubscription {
   member_card: string | null;
   request_type: string | null;
   period_type: string | null;
+  verification_status: string | null;
+  rental_status: string | null;
   penghuni?: { full_name: string } | null;
   units?: { unit_number: string } | null;
 }
@@ -42,6 +44,12 @@ interface CreateParkingInput {
   member_card?: string;
   request_type?: string;
   period_type?: string;
+  rental_status?: string;
+}
+
+interface UpdateParkingInput {
+  id: string;
+  verification_status: string;
 }
 
 export function useParkingSubscriptions() {
@@ -92,6 +100,7 @@ export function useCreateParkingSubscription() {
           member_card: input.member_card,
           request_type: input.request_type,
           period_type: input.period_type,
+          rental_status: input.rental_status,
         })
         .select()
         .single();
@@ -131,6 +140,31 @@ export function useExtendParkingSubscription() {
     },
     onError: (error) => {
       toast.error("Gagal memperpanjang abonemen: " + error.message);
+    },
+  });
+}
+
+export function useUpdateParkingVerification() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, verification_status }: UpdateParkingInput) => {
+      const { data, error } = await supabase
+        .from("parking_subscriptions")
+        .update({ verification_status })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["parking-subscriptions"] });
+      toast.success("Status verifikasi berhasil diperbarui");
+    },
+    onError: (error) => {
+      toast.error("Gagal memperbarui status: " + error.message);
     },
   });
 }
