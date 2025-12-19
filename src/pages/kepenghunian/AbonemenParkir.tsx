@@ -18,6 +18,7 @@ import { Car, Plus, Calendar, Loader2, Upload, Info, ArrowLeft, Download, Trash2
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, parkingExportColumns } from "@/lib/exportExcel";
+import { PhotoCell } from "@/components/shared/PhotoActions";
 
 export default function AbonemenParkir() {
   const navigate = useNavigate();
@@ -469,6 +470,7 @@ export default function AbonemenParkir() {
                       <TableHead>Plat</TableHead>
                       <TableHead>Pengajuan</TableHead>
                       <TableHead>Periode</TableHead>
+                      <TableHead>Foto</TableHead>
                       <TableHead>Verifikasi</TableHead>
                       <TableHead>Aksi</TableHead>
                     </TableRow>
@@ -494,6 +496,16 @@ export default function AbonemenParkir() {
                           {sub.request_type?.replace(/_/g, " ") || "-"}
                         </TableCell>
                         <TableCell className="capitalize">{sub.period_type || "-"}</TableCell>
+                        <TableCell>
+                          <PhotoCell
+                            photos={[
+                              { url: sub.ktp_photo_url, label: "KTP" },
+                              { url: sub.stnk_photo_url, label: "STNK" },
+                              { url: sub.rental_agreement_url, label: "Sewa" },
+                              { url: sub.payment_proof_url, label: "Bukti" },
+                            ]}
+                          />
+                        </TableCell>
                         <TableCell>
                           {sub.verification_status === "terverifikasi" ? (
                             <Badge className="bg-success/20 text-success border-success/30">
@@ -579,7 +591,7 @@ export default function AbonemenParkir() {
                     ))}
                     {filteredData.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={12} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={13} className="text-center text-muted-foreground py-8">
                           {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada abonemen parkir"}
                         </TableCell>
                       </TableRow>

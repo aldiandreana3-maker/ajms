@@ -16,10 +16,11 @@ import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { PackageOpen, Plus, Loader2, ArrowDownLeft, ArrowUpRight, Upload, ArrowLeft, Download, Trash2, Image } from "lucide-react";
+import { PackageOpen, Plus, Loader2, ArrowDownLeft, ArrowUpRight, Upload, ArrowLeft, Download, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, goodsMovementExportColumns } from "@/lib/exportExcel";
+import { PhotoCell } from "@/components/shared/PhotoActions";
 
 export default function KeluarMasukBarang() {
   const navigate = useNavigate();
@@ -34,7 +35,6 @@ export default function KeluarMasukBarang() {
 
   const [searchValue, setSearchValue] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const filteredData = useMemo(() => {
     if (!movements) return [];
@@ -137,18 +137,12 @@ export default function KeluarMasukBarang() {
             <TableCell>{m.item_description}</TableCell>
             <TableCell>{m.carrier_name || "-"}</TableCell>
             <TableCell>
-              {m.photo_url ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPreviewImage(m.photo_url)}
-                >
-                  <Image className="w-4 h-4 mr-1" />
-                  Lihat
-                </Button>
-              ) : (
-                <span className="text-muted-foreground text-sm">-</span>
-              )}
+              <PhotoCell
+                photos={[
+                  { url: m.ktp_photo_url, label: "KTP" },
+                  { url: m.photo_url, label: "Barang" },
+                ]}
+              />
             </TableCell>
             {canDelete && (
               <TableCell>
@@ -405,18 +399,6 @@ export default function KeluarMasukBarang() {
             )}
           </CardContent>
         </Card>
-
-        {/* Image Preview Dialog */}
-        <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Preview Foto</DialogTitle>
-            </DialogHeader>
-            {previewImage && (
-              <img src={previewImage} alt="Preview" className="w-full h-auto rounded-lg" />
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
     </MainLayout>
   );

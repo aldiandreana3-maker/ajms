@@ -58,12 +58,15 @@ export type Database = {
           expires_at: string | null
           id: string
           issued_at: string | null
+          ktp_photo_url: string | null
           notes: string | null
+          payment_proof_url: string | null
           penghuni_id: string | null
           penghuni_name: string | null
           quantity_requested: number | null
           request_type: string | null
           status: Database["public"]["Enums"]["card_status"] | null
+          surat_kuasa_url: string | null
           unit_id: string | null
           unit_number: string | null
           updated_at: string | null
@@ -75,12 +78,15 @@ export type Database = {
           expires_at?: string | null
           id?: string
           issued_at?: string | null
+          ktp_photo_url?: string | null
           notes?: string | null
+          payment_proof_url?: string | null
           penghuni_id?: string | null
           penghuni_name?: string | null
           quantity_requested?: number | null
           request_type?: string | null
           status?: Database["public"]["Enums"]["card_status"] | null
+          surat_kuasa_url?: string | null
           unit_id?: string | null
           unit_number?: string | null
           updated_at?: string | null
@@ -92,12 +98,15 @@ export type Database = {
           expires_at?: string | null
           id?: string
           issued_at?: string | null
+          ktp_photo_url?: string | null
           notes?: string | null
+          payment_proof_url?: string | null
           penghuni_id?: string | null
           penghuni_name?: string | null
           quantity_requested?: number | null
           request_type?: string | null
           status?: Database["public"]["Enums"]["card_status"] | null
+          surat_kuasa_url?: string | null
           unit_id?: string | null
           unit_number?: string | null
           updated_at?: string | null
@@ -496,6 +505,7 @@ export type Database = {
           created_at: string | null
           id: string
           item_description: string
+          ktp_photo_url: string | null
           movement_type: string
           penghuni_id: string | null
           penghuni_name: string | null
@@ -514,6 +524,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           item_description: string
+          ktp_photo_url?: string | null
           movement_type: string
           penghuni_id?: string | null
           penghuni_name?: string | null
@@ -532,6 +543,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           item_description?: string
+          ktp_photo_url?: string | null
           movement_type?: string
           penghuni_id?: string | null
           penghuni_name?: string | null
@@ -673,15 +685,19 @@ export type Database = {
           end_date: string
           id: string
           is_active: boolean | null
+          ktp_photo_url: string | null
           member_card: string | null
           monthly_fee: number | null
+          payment_proof_url: string | null
           penghuni_id: string | null
           penghuni_name: string | null
           period_type: string | null
           phone: string | null
+          rental_agreement_url: string | null
           rental_status: string | null
           request_type: string | null
           start_date: string
+          stnk_photo_url: string | null
           unit_id: string | null
           unit_number: string | null
           updated_at: string | null
@@ -697,15 +713,19 @@ export type Database = {
           end_date: string
           id?: string
           is_active?: boolean | null
+          ktp_photo_url?: string | null
           member_card?: string | null
           monthly_fee?: number | null
+          payment_proof_url?: string | null
           penghuni_id?: string | null
           penghuni_name?: string | null
           period_type?: string | null
           phone?: string | null
+          rental_agreement_url?: string | null
           rental_status?: string | null
           request_type?: string | null
           start_date: string
+          stnk_photo_url?: string | null
           unit_id?: string | null
           unit_number?: string | null
           updated_at?: string | null
@@ -721,15 +741,19 @@ export type Database = {
           end_date?: string
           id?: string
           is_active?: boolean | null
+          ktp_photo_url?: string | null
           member_card?: string | null
           monthly_fee?: number | null
+          payment_proof_url?: string | null
           penghuni_id?: string | null
           penghuni_name?: string | null
           period_type?: string | null
           phone?: string | null
+          rental_agreement_url?: string | null
           rental_status?: string | null
           request_type?: string | null
           start_date?: string
+          stnk_photo_url?: string | null
           unit_id?: string | null
           unit_number?: string | null
           updated_at?: string | null

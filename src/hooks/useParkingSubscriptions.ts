@@ -25,6 +25,10 @@ interface ParkingSubscription {
   period_type: string | null;
   verification_status: string | null;
   rental_status: string | null;
+  ktp_photo_url: string | null;
+  stnk_photo_url: string | null;
+  rental_agreement_url: string | null;
+  payment_proof_url: string | null;
   penghuni?: { full_name: string } | null;
   units?: { unit_number: string } | null;
 }

@@ -13,6 +13,7 @@ interface GoodsMovement {
   carrier_id: string | null;
   qr_code: string | null;
   photo_url: string | null;
+  ktp_photo_url: string | null;
   recorded_by: string | null;
   created_at: string;
   penghuni_name: string | null;

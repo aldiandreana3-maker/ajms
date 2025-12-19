@@ -18,6 +18,9 @@ interface AccessCard {
   unit_number: string | null;
   request_type: string | null;
   quantity_requested: number | null;
+  ktp_photo_url: string | null;
+  surat_kuasa_url: string | null;
+  payment_proof_url: string | null;
   penghuni?: { full_name: string } | null;
   units?: { unit_number: string } | null;
 }
