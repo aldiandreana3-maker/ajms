@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/imageCompression";
 
 interface UseFileUploadOptions {
   bucket?: string;
   folder?: string;
+  compressImages?: boolean;
 }
 
 export function useFileUpload(options: UseFileUploadOptions = {}) {
-  const { bucket = "kepenghunian-files", folder = "" } = options;
+  const { bucket = "kepenghunian-files", folder = "", compressImages = true } = options;
   const [uploading, setUploading] = useState(false);
 
   const uploadFile = async (file: File): Promise<string | null> => {
@@ -21,8 +23,18 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
         return null;
       }
 
+      // Compress image if enabled and file is an image
+      let fileToUpload = file;
+      if (compressImages && file.type.startsWith("image/")) {
+        try {
+          fileToUpload = await compressImage(file);
+        } catch (compressionError) {
+          console.warn("Image compression failed, using original:", compressionError);
+        }
+      }
+
       const userId = sessionData.session.user.id;
-      const fileExt = file.name.split(".").pop();
+      const fileExt = fileToUpload.name.split(".").pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
       const filePath = folder
         ? `${userId}/${folder}/${fileName}`
@@ -30,7 +42,7 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
 
       const { error: uploadError } = await supabase.storage
         .from(bucket)
-        .upload(filePath, file, {
+        .upload(filePath, fileToUpload, {
           cacheControl: "3600",
           upsert: false,
         });
