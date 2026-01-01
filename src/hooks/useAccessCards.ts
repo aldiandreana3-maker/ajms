@@ -86,6 +86,7 @@ export function useCreateAccessCard() {
           ktp_photo_url: input.ktp_photo_url,
           surat_kuasa_url: input.surat_kuasa_url,
           payment_proof_url: input.payment_proof_url,
+          created_by: sessionData.session.user.id,
         })
         .select()
         .single();

@@ -81,6 +81,7 @@ export function useCreateWorkPermit() {
           penghuni_name: input.penghuni_name,
           unit_number: input.unit_number,
           phone: input.phone,
+          created_by: sessionData.session.user.id,
         })
         .select()
         .single();

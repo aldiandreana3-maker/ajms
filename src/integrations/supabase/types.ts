@@ -55,6 +55,7 @@ export type Database = {
           card_number: string
           card_type: string | null
           created_at: string | null
+          created_by: string | null
           expires_at: string | null
           id: string
           issued_at: string | null
@@ -75,6 +76,7 @@ export type Database = {
           card_number: string
           card_type?: string | null
           created_at?: string | null
+          created_by?: string | null
           expires_at?: string | null
           id?: string
           issued_at?: string | null
@@ -95,6 +97,7 @@ export type Database = {
           card_number?: string
           card_type?: string | null
           created_at?: string | null
+          created_by?: string | null
           expires_at?: string | null
           id?: string
           issued_at?: string | null
@@ -576,6 +579,7 @@ export type Database = {
       keluhan: {
         Row: {
           created_at: string | null
+          created_by: string | null
           description: string
           handled_by: string | null
           id: string
@@ -592,6 +596,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           description: string
           handled_by?: string | null
           id?: string
@@ -608,6 +613,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           description?: string
           handled_by?: string | null
           id?: string
@@ -682,6 +688,7 @@ export type Database = {
         Row: {
           agent_name: string | null
           created_at: string | null
+          created_by: string | null
           end_date: string
           id: string
           is_active: boolean | null
@@ -710,6 +717,7 @@ export type Database = {
         Insert: {
           agent_name?: string | null
           created_at?: string | null
+          created_by?: string | null
           end_date: string
           id?: string
           is_active?: boolean | null
@@ -738,6 +746,7 @@ export type Database = {
         Update: {
           agent_name?: string | null
           created_at?: string | null
+          created_by?: string | null
           end_date?: string
           id?: string
           is_active?: boolean | null
@@ -987,6 +996,7 @@ export type Database = {
         Row: {
           approved_by: string | null
           created_at: string | null
+          created_by: string | null
           document_url: string | null
           end_date: string
           id: string
@@ -1006,6 +1016,7 @@ export type Database = {
         Insert: {
           approved_by?: string | null
           created_at?: string | null
+          created_by?: string | null
           document_url?: string | null
           end_date: string
           id?: string
@@ -1025,6 +1036,7 @@ export type Database = {
         Update: {
           approved_by?: string | null
           created_at?: string | null
+          created_by?: string | null
           document_url?: string | null
           end_date?: string
           id?: string

@@ -113,6 +113,7 @@ export function useCreateParkingSubscription() {
           stnk_photo_url: input.stnk_photo_url,
           rental_agreement_url: input.rental_agreement_url,
           payment_proof_url: input.payment_proof_url,
+          created_by: sessionData.session.user.id,
         })
         .select()
         .single();
