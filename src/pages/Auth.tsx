@@ -190,6 +190,10 @@ export default function Auth() {
                     "Masuk"
                   )}
                 </Button>
+                <p className="text-xs text-muted-foreground text-center mt-3">
+                  <span className="font-medium">Lupa Password?</span> Silakan hubungi Super Admin untuk reset password. 
+                  Password baru hanya dapat dibuat setelah mendapat persetujuan Super Admin.
+                </p>
               </form>
             </TabsContent>
             
