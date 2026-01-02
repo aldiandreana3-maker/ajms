@@ -147,7 +147,7 @@ export default function Auth() {
         console.error("Error submitting reset request:", error);
         toast.error("Gagal mengirim permintaan. Silakan coba lagi.");
       } else {
-        toast.success("Permintaan reset password telah dikirim ke Super Admin!");
+        toast.success("Permintaan reset password telah dikirim ke Badan Pengelola!");
         setForgotPasswordOpen(false);
         setForgotEmail("");
         setForgotFullName("");
@@ -245,7 +245,7 @@ export default function Auth() {
                     <DialogHeader>
                       <DialogTitle>Lupa Password</DialogTitle>
                       <DialogDescription>
-                        Masukkan email dan nama lengkap Anda. Permintaan akan dikirim ke Super Admin untuk diproses.
+                        Masukkan email dan nama lengkap Anda. Permintaan akan dikirim ke Badan Pengelola untuk diproses.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 mt-4">
