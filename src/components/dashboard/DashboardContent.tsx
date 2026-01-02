@@ -125,16 +125,6 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
           <p className="text-muted-foreground">Ringkasan data apartemen hari ini</p>
         </div>
         <div className="flex items-center gap-3">
-          {/* Orange Login/Register Button - Only shown when NOT logged in */}
-          {!user && (
-            <button
-              onClick={() => navigate("/auth")}
-              className="inline-flex items-center gap-2 px-8 py-3 bg-login-orange text-white rounded-full font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
-            >
-              <LogIn className="w-5 h-5" />
-              Login / Daftar
-            </button>
-          )}
           <button
             onClick={onOpenKepenghunian}
             className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-accent text-accent-foreground rounded-xl font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
