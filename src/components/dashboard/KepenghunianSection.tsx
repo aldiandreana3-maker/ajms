@@ -7,6 +7,7 @@ import {
   CreditCard,
   Globe,
   ArrowLeft,
+  Wrench,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -56,6 +57,13 @@ const services = [
     description: "Catat data tamu warga negara asing",
     color: "info",
     path: "/kepenghunian/tamu-asing",
+  },
+  {
+    icon: Wrench,
+    title: "Work Order",
+    description: "Kelola work order dan perawatan",
+    color: "warning",
+    path: "/kepenghunian/work-order",
   },
 ];
 

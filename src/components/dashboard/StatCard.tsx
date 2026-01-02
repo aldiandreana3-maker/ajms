@@ -1,6 +1,7 @@
 import { LucideIcon, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface StatCardProps {
   title: string;
@@ -14,6 +15,7 @@ interface StatCardProps {
   delay?: number;
   canEdit?: boolean;
   onEdit?: () => void;
+  linkTo?: string;
 }
 
 const variantStyles = {
@@ -41,21 +43,35 @@ export function StatCard({
   delay = 0,
   canEdit = false,
   onEdit,
+  linkTo,
 }: StatCardProps) {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    if (linkTo) {
+      navigate(linkTo);
+    }
+  };
+
   return (
     <div
       className={cn(
         "rounded-xl border p-5 shadow-card transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-slide-up relative",
-        variantStyles[variant]
+        variantStyles[variant],
+        linkTo && "cursor-pointer"
       )}
       style={{ animationDelay: `${delay}ms` }}
+      onClick={handleClick}
     >
       {canEdit && onEdit && (
         <Button
           variant="ghost"
           size="icon"
           className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-primary"
-          onClick={onEdit}
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit();
+          }}
           title="Edit jumlah"
         >
           <Pencil className="w-4 h-4" />
