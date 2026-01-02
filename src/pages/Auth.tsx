@@ -6,9 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Building2, Eye, EyeOff, Loader2 } from "lucide-react";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 
 const loginSchema = z.object({
   email: z.string().email("Email tidak valid"),
@@ -25,12 +27,21 @@ const signupSchema = z.object({
   path: ["confirmPassword"],
 });
 
+const forgotPasswordSchema = z.object({
+  email: z.string().email("Email tidak valid"),
+  fullName: z.string().min(2, "Nama minimal 2 karakter"),
+});
+
 export default function Auth() {
   const navigate = useNavigate();
   const { user, signIn, signUp, isLoading: authLoading } = useAuth();
   
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotFullName, setForgotFullName] = useState("");
+  const [isSendingRequest, setIsSendingRequest] = useState(false);
   
   // Login form
   const [loginEmail, setLoginEmail] = useState("");
@@ -116,6 +127,40 @@ export default function Auth() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    setIsSendingRequest(true);
+    try {
+      const validated = forgotPasswordSchema.parse({
+        email: forgotEmail,
+        fullName: forgotFullName,
+      });
+
+      const { error } = await supabase
+        .from("password_reset_requests")
+        .insert({
+          email: validated.email,
+          full_name: validated.fullName,
+          status: "pending",
+        });
+
+      if (error) {
+        console.error("Error submitting reset request:", error);
+        toast.error("Gagal mengirim permintaan. Silakan coba lagi.");
+      } else {
+        toast.success("Permintaan reset password telah dikirim ke Super Admin!");
+        setForgotPasswordOpen(false);
+        setForgotEmail("");
+        setForgotFullName("");
+      }
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(err.errors[0].message);
+      }
+    } finally {
+      setIsSendingRequest(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -190,10 +235,60 @@ export default function Auth() {
                     "Masuk"
                   )}
                 </Button>
-                <p className="text-xs text-muted-foreground text-center mt-3">
-                  <span className="font-medium">Lupa Password?</span> Silakan hubungi Super Admin untuk reset password. 
-                  Password baru hanya dapat dibuat setelah mendapat persetujuan Super Admin.
-                </p>
+                <Dialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen}>
+                  <DialogTrigger asChild>
+                    <button type="button" className="w-full text-xs text-primary hover:underline text-center mt-3">
+                      Lupa Password?
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Lupa Password</DialogTitle>
+                      <DialogDescription>
+                        Masukkan email dan nama lengkap Anda. Permintaan akan dikirim ke Super Admin untuk diproses.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="forgot-name">Nama Lengkap</Label>
+                        <Input
+                          id="forgot-name"
+                          type="text"
+                          placeholder="Nama lengkap Anda"
+                          value={forgotFullName}
+                          onChange={(e) => setForgotFullName(e.target.value)}
+                          disabled={isSendingRequest}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="forgot-email">Email</Label>
+                        <Input
+                          id="forgot-email"
+                          type="email"
+                          placeholder="email@example.com"
+                          value={forgotEmail}
+                          onChange={(e) => setForgotEmail(e.target.value)}
+                          disabled={isSendingRequest}
+                        />
+                      </div>
+                      <Button 
+                        type="button" 
+                        className="w-full" 
+                        onClick={handleForgotPassword}
+                        disabled={isSendingRequest}
+                      >
+                        {isSendingRequest ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Mengirim...
+                          </>
+                        ) : (
+                          "Kirim Permintaan"
+                        )}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </form>
             </TabsContent>
             
