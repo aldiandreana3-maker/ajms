@@ -88,10 +88,10 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
 
   // BLUE category stats (from actual data - user accumulated)
   const blueCategoryStats = [
-    { title: "Kartu Akses", value: stats?.accessCards?.toString() || "0", icon: CreditCard, variant: "default" as const },
-    { title: "Total Keluhan", value: stats?.totalKeluhan?.toString() || "0", icon: MessageSquareWarning, variant: "warning" as const },
-    { title: "Work Order", value: stats?.totalWorkOrders?.toString() || "0", icon: Wrench, variant: "default" as const },
-    { title: "Abonemen Parkir", value: stats?.parkingSubscriptions?.toString() || "0", icon: Car, variant: "accent" as const },
+    { title: "Kartu Akses", value: stats?.accessCards?.toString() || "0", icon: CreditCard, variant: "default" as const, linkTo: "/kepenghunian/kartu-akses" },
+    { title: "Total Keluhan", value: stats?.totalKeluhan?.toString() || "0", icon: MessageSquareWarning, variant: "warning" as const, linkTo: "/kepenghunian/keluhan" },
+    { title: "Work Order", value: stats?.totalWorkOrders?.toString() || "0", icon: Wrench, variant: "default" as const, linkTo: "/kepenghunian/work-order" },
+    { title: "Abonemen Parkir", value: stats?.parkingSubscriptions?.toString() || "0", icon: Car, variant: "accent" as const, linkTo: "/kepenghunian/abonemen-parkir" },
   ];
 
   const formattedNews = newsData?.map((n, index) => ({
@@ -152,7 +152,7 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
         ))}
       </div>
 
-      {/* Stats Grid - BLUE Category (User Data) */}
+      {/* Stats Grid - BLUE Category (User Data) - Clickable */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {blueCategoryStats.map((stat, index) => (
           <StatCard key={stat.title} {...stat} delay={(index + 3) * 100} />
