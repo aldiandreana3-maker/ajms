@@ -1126,7 +1126,19 @@ export type Database = {
       is_staff_or_above: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "super_admin" | "admin" | "staff" | "agent" | "penghuni"
+      app_role:
+        | "super_admin"
+        | "admin"
+        | "staff"
+        | "agent"
+        | "penghuni"
+        | "staff_tro"
+        | "staff_finance"
+        | "staff_hrd_ga"
+        | "staff_engineering"
+        | "staff_outsourcing_cleaning"
+        | "staff_outsourcing_security"
+        | "staff_outsourcing_parkir"
       bill_type:
         | "ipl"
         | "kebersihan"
@@ -1269,7 +1281,20 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "admin", "staff", "agent", "penghuni"],
+      app_role: [
+        "super_admin",
+        "admin",
+        "staff",
+        "agent",
+        "penghuni",
+        "staff_tro",
+        "staff_finance",
+        "staff_hrd_ga",
+        "staff_engineering",
+        "staff_outsourcing_cleaning",
+        "staff_outsourcing_security",
+        "staff_outsourcing_parkir",
+      ],
       bill_type: [
         "ipl",
         "kebersihan",
