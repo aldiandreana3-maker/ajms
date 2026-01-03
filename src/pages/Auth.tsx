@@ -32,6 +32,11 @@ const forgotPasswordSchema = z.object({
   fullName: z.string().min(2, "Nama minimal 2 karakter"),
 });
 
+const forgotEmailSchema = z.object({
+  fullName: z.string().min(2, "Nama minimal 2 karakter"),
+  phone: z.string().min(10, "Nomor telepon minimal 10 digit"),
+});
+
 export default function Auth() {
   const navigate = useNavigate();
   const { user, signIn, signUp, isLoading: authLoading } = useAuth();
@@ -39,8 +44,10 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+  const [forgotEmailOpen, setForgotEmailOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotFullName, setForgotFullName] = useState("");
+  const [forgotPhone, setForgotPhone] = useState("");
   const [isSendingRequest, setIsSendingRequest] = useState(false);
   
   // Login form
@@ -141,6 +148,7 @@ export default function Auth() {
           email: validated.email,
           full_name: validated.fullName,
           status: "pending",
+          notes: "Permintaan reset password",
         });
 
       if (error) {
@@ -151,6 +159,41 @@ export default function Auth() {
         setForgotPasswordOpen(false);
         setForgotEmail("");
         setForgotFullName("");
+      }
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(err.errors[0].message);
+      }
+    } finally {
+      setIsSendingRequest(false);
+    }
+  };
+
+  const handleForgotEmail = async () => {
+    setIsSendingRequest(true);
+    try {
+      const validated = forgotEmailSchema.parse({
+        fullName: forgotFullName,
+        phone: forgotPhone,
+      });
+
+      const { error } = await supabase
+        .from("password_reset_requests")
+        .insert({
+          email: `lupa-email-${Date.now()}@temp.com`,
+          full_name: validated.fullName,
+          status: "pending",
+          notes: `Permintaan lupa email. Nomor telepon: ${validated.phone}`,
+        });
+
+      if (error) {
+        console.error("Error submitting email request:", error);
+        toast.error("Gagal mengirim permintaan. Silakan coba lagi.");
+      } else {
+        toast.success("Permintaan bantuan email telah dikirim ke Badan Pengelola!");
+        setForgotEmailOpen(false);
+        setForgotFullName("");
+        setForgotPhone("");
       }
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -235,60 +278,119 @@ export default function Auth() {
                     "Masuk"
                   )}
                 </Button>
-                <Dialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen}>
-                  <DialogTrigger asChild>
-                    <button type="button" className="w-full text-xs text-primary hover:underline text-center mt-3">
-                      Lupa Password?
-                    </button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Lupa Password</DialogTitle>
-                      <DialogDescription>
-                        Masukkan email dan nama lengkap Anda. Permintaan akan dikirim ke Badan Pengelola untuk diproses.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="forgot-name">Nama Lengkap</Label>
-                        <Input
-                          id="forgot-name"
-                          type="text"
-                          placeholder="Nama lengkap Anda"
-                          value={forgotFullName}
-                          onChange={(e) => setForgotFullName(e.target.value)}
+                <div className="flex items-center justify-center gap-4 mt-3">
+                  <Dialog open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen}>
+                    <DialogTrigger asChild>
+                      <button type="button" className="text-xs text-primary hover:underline">
+                        Lupa Password?
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Lupa Password</DialogTitle>
+                        <DialogDescription>
+                          Masukkan email dan nama lengkap Anda. Permintaan akan dikirim ke Badan Pengelola untuk diproses.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 mt-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="forgot-name">Nama Lengkap</Label>
+                          <Input
+                            id="forgot-name"
+                            type="text"
+                            placeholder="Nama lengkap Anda"
+                            value={forgotFullName}
+                            onChange={(e) => setForgotFullName(e.target.value)}
+                            disabled={isSendingRequest}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="forgot-email">Email</Label>
+                          <Input
+                            id="forgot-email"
+                            type="email"
+                            placeholder="email@example.com"
+                            value={forgotEmail}
+                            onChange={(e) => setForgotEmail(e.target.value)}
+                            disabled={isSendingRequest}
+                          />
+                        </div>
+                        <Button 
+                          type="button" 
+                          className="w-full" 
+                          onClick={handleForgotPassword}
                           disabled={isSendingRequest}
-                        />
+                        >
+                          {isSendingRequest ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Mengirim...
+                            </>
+                          ) : (
+                            "Kirim Permintaan"
+                          )}
+                        </Button>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="forgot-email">Email</Label>
-                        <Input
-                          id="forgot-email"
-                          type="email"
-                          placeholder="email@example.com"
-                          value={forgotEmail}
-                          onChange={(e) => setForgotEmail(e.target.value)}
+                    </DialogContent>
+                  </Dialog>
+
+                  <span className="text-xs text-muted-foreground">|</span>
+
+                  <Dialog open={forgotEmailOpen} onOpenChange={setForgotEmailOpen}>
+                    <DialogTrigger asChild>
+                      <button type="button" className="text-xs text-primary hover:underline">
+                        Lupa Email?
+                      </button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Lupa Email</DialogTitle>
+                        <DialogDescription>
+                          Masukkan nama lengkap dan nomor telepon Anda. Permintaan akan dikirim ke Badan Pengelola untuk membantu menemukan email akun Anda.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 mt-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="forgot-email-name">Nama Lengkap</Label>
+                          <Input
+                            id="forgot-email-name"
+                            type="text"
+                            placeholder="Nama lengkap Anda"
+                            value={forgotFullName}
+                            onChange={(e) => setForgotFullName(e.target.value)}
+                            disabled={isSendingRequest}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="forgot-phone">Nomor Telepon</Label>
+                          <Input
+                            id="forgot-phone"
+                            type="tel"
+                            placeholder="08xxxxxxxxxx"
+                            value={forgotPhone}
+                            onChange={(e) => setForgotPhone(e.target.value)}
+                            disabled={isSendingRequest}
+                          />
+                        </div>
+                        <Button 
+                          type="button" 
+                          className="w-full" 
+                          onClick={handleForgotEmail}
                           disabled={isSendingRequest}
-                        />
+                        >
+                          {isSendingRequest ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Mengirim...
+                            </>
+                          ) : (
+                            "Kirim Permintaan"
+                          )}
+                        </Button>
                       </div>
-                      <Button 
-                        type="button" 
-                        className="w-full" 
-                        onClick={handleForgotPassword}
-                        disabled={isSendingRequest}
-                      >
-                        {isSendingRequest ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Mengirim...
-                          </>
-                        ) : (
-                          "Kirim Permintaan"
-                        )}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </form>
             </TabsContent>
             
