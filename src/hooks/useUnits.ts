@@ -1,20 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-interface Unit {
+export interface Unit {
   id: string;
   unit_number: string;
   floor: number | null;
   building: string | null;
   type: string | null;
   area_sqm: number | null;
-  status: string;
-  created_at: string;
-  updated_at: string;
+  status: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export function useUnits() {
-  return useQuery({
+  const query = useQuery({
     queryKey: ["units"],
     queryFn: async (): Promise<Unit[]> => {
       const { data, error } = await supabase
@@ -26,4 +26,11 @@ export function useUnits() {
       return data as Unit[];
     },
   });
+
+  return {
+    units: query.data,
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
+  };
 }

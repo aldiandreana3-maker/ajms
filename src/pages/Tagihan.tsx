@@ -36,7 +36,7 @@ const statusColors = {
 export default function Tagihan() {
   const { isAdmin } = useAuth();
   const { data: bills, isLoading } = useBills();
-  const { data: units } = useUnits();
+  const { units } = useUnits();
   const createMutation = useCreateBill();
   const payMutation = useUpdateBillPayment();
   const generateMutation = useGenerateMonthlyBills();
