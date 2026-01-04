@@ -46,6 +46,20 @@ const roleColors: Record<string, string> = {
   staff_outsourcing_parkir: "bg-amber-500/20 text-amber-600 border-amber-500/30",
 };
 
+// Roles available for selection (without duplicate admin and staff)
+const selectableRoles = [
+  { value: "super_admin", label: "Super Admin" },
+  { value: "agent", label: "Agent" },
+  { value: "staff_tro", label: "Staff TRO" },
+  { value: "staff_finance", label: "Staff Finance" },
+  { value: "staff_hrd_ga", label: "Staff HRD/GA" },
+  { value: "staff_engineering", label: "Staff Engineering" },
+  { value: "staff_outsourcing_cleaning", label: "Staff Outsourcing Cleaning" },
+  { value: "staff_outsourcing_security", label: "Staff Outsourcing Security" },
+  { value: "staff_outsourcing_parkir", label: "Staff Outsourcing Parkir" },
+  { value: "penghuni", label: "Penghuni" },
+];
+
 export default function ManajemenUser() {
   const { isSuperAdmin, user: currentUser } = useAuth();
   const { data: users, isLoading } = useUsers();
@@ -181,19 +195,12 @@ export default function ManajemenUser() {
                                     <SelectTrigger>
                                       <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="super_admin">Super Admin</SelectItem>
-                                      <SelectItem value="admin">Admin</SelectItem>
-                                      <SelectItem value="staff">Staff</SelectItem>
-                                      <SelectItem value="agent">Agent</SelectItem>
-                                      <SelectItem value="staff_tro">Staff TRO</SelectItem>
-                                      <SelectItem value="staff_finance">Staff Finance</SelectItem>
-                                      <SelectItem value="staff_hrd_ga">Staff HRD/GA</SelectItem>
-                                      <SelectItem value="staff_engineering">Staff Engineering</SelectItem>
-                                      <SelectItem value="staff_outsourcing_cleaning">Staff Outsourcing Cleaning</SelectItem>
-                                      <SelectItem value="staff_outsourcing_security">Staff Outsourcing Security</SelectItem>
-                                      <SelectItem value="staff_outsourcing_parkir">Staff Outsourcing Parkir</SelectItem>
-                                      <SelectItem value="penghuni">Penghuni</SelectItem>
+                                    <SelectContent position="popper" side="bottom" align="start" className="max-h-60 overflow-y-auto">
+                                      {selectableRoles.map((role) => (
+                                        <SelectItem key={role.value} value={role.value}>
+                                          {role.label}
+                                        </SelectItem>
+                                      ))}
                                     </SelectContent>
                                   </Select>
                                 </div>
