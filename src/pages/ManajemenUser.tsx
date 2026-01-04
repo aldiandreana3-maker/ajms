@@ -14,7 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Users, Loader2, Shield, UserCheck, UserX } from "lucide-react";
 import { format } from "date-fns";
 
-type AppRole = "super_admin" | "admin" | "staff" | "agent" | "penghuni";
+type AppRole = "super_admin" | "admin" | "staff" | "agent" | "penghuni" | "staff_tro" | "staff_finance" | "staff_hrd_ga" | "staff_engineering" | "staff_outsourcing_cleaning" | "staff_outsourcing_security" | "staff_outsourcing_parkir";
 
 const roleLabels: Record<string, string> = {
   super_admin: "Super Admin",
@@ -22,6 +22,13 @@ const roleLabels: Record<string, string> = {
   staff: "Staff",
   agent: "Agent",
   penghuni: "Penghuni",
+  staff_tro: "Staff TRO",
+  staff_finance: "Staff Finance",
+  staff_hrd_ga: "Staff HRD/GA",
+  staff_engineering: "Staff Engineering",
+  staff_outsourcing_cleaning: "Staff Outsourcing Cleaning",
+  staff_outsourcing_security: "Staff Outsourcing Security",
+  staff_outsourcing_parkir: "Staff Outsourcing Parkir",
 };
 
 const roleColors: Record<string, string> = {
@@ -30,6 +37,13 @@ const roleColors: Record<string, string> = {
   staff: "bg-info/20 text-info border-info/30",
   agent: "bg-warning/20 text-warning border-warning/30",
   penghuni: "bg-muted text-muted-foreground border-muted",
+  staff_tro: "bg-cyan-500/20 text-cyan-600 border-cyan-500/30",
+  staff_finance: "bg-emerald-500/20 text-emerald-600 border-emerald-500/30",
+  staff_hrd_ga: "bg-violet-500/20 text-violet-600 border-violet-500/30",
+  staff_engineering: "bg-orange-500/20 text-orange-600 border-orange-500/30",
+  staff_outsourcing_cleaning: "bg-teal-500/20 text-teal-600 border-teal-500/30",
+  staff_outsourcing_security: "bg-rose-500/20 text-rose-600 border-rose-500/30",
+  staff_outsourcing_parkir: "bg-amber-500/20 text-amber-600 border-amber-500/30",
 };
 
 export default function ManajemenUser() {
@@ -172,6 +186,13 @@ export default function ManajemenUser() {
                                       <SelectItem value="admin">Admin</SelectItem>
                                       <SelectItem value="staff">Staff</SelectItem>
                                       <SelectItem value="agent">Agent</SelectItem>
+                                      <SelectItem value="staff_tro">Staff TRO</SelectItem>
+                                      <SelectItem value="staff_finance">Staff Finance</SelectItem>
+                                      <SelectItem value="staff_hrd_ga">Staff HRD/GA</SelectItem>
+                                      <SelectItem value="staff_engineering">Staff Engineering</SelectItem>
+                                      <SelectItem value="staff_outsourcing_cleaning">Staff Outsourcing Cleaning</SelectItem>
+                                      <SelectItem value="staff_outsourcing_security">Staff Outsourcing Security</SelectItem>
+                                      <SelectItem value="staff_outsourcing_parkir">Staff Outsourcing Parkir</SelectItem>
                                       <SelectItem value="penghuni">Penghuni</SelectItem>
                                     </SelectContent>
                                   </Select>
