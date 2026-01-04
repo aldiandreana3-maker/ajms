@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 
 const AgentBerkantor = () => {
   const { data: agents, isLoading } = useAgents();
-  const { data: units } = useUnits();
+  const { units } = useUnits();
   const createMutation = useCreateAgent();
   const updateMutation = useUpdateAgent();
   const deleteMutation = useDeleteAgent();

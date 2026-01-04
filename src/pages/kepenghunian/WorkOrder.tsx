@@ -86,7 +86,7 @@ export default function WorkOrder() {
   const navigate = useNavigate();
   const { user, isStaff } = useAuth();
   const { data: workOrders, isLoading } = useWorkOrders();
-  const { data: units } = useUnits();
+  const { units } = useUnits();
   const createWorkOrder = useCreateWorkOrder();
   const updateStatus = useUpdateWorkOrderStatus();
   const deleteWorkOrder = useDeleteWorkOrder();

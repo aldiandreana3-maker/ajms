@@ -1,4 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -8,12 +9,20 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Receipt,
   Newspaper,
   Shield,
+  FolderKanban,
+  UserCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 // Menu items with isSuperAdminOnly flag for red indicator
 const menuItems = [
@@ -24,6 +33,11 @@ const menuItems = [
   { icon: FileBarChart, label: "Laporan Keuangan", path: "/laporan-keuangan", isSuperAdminOnly: true },
   { icon: Receipt, label: "Tagihan", path: "/tagihan", isSuperAdminOnly: true },
   { icon: Newspaper, label: "Berita", path: "/berita", isSuperAdminOnly: true },
+];
+
+// Kepengelolaan submenu items
+const kepengelolaanItems = [
+  { icon: UserCheck, label: "Data Penghuni", path: "/kepengelolaan/data-penghuni" },
 ];
 
 const adminMenuItems = [
@@ -38,7 +52,12 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, isSuperAdmin } = useAuth();
+  const { signOut, isSuperAdmin, isAdmin } = useAuth();
+  const [kepengelolaanOpen, setKepengelolaanOpen] = useState(
+    location.pathname.startsWith("/kepengelolaan")
+  );
+  
+  const canAccessKepengelolaan = isSuperAdmin || isAdmin;
 
   const handleLogout = async () => {
     await signOut();
@@ -102,6 +121,68 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             </NavLink>
           );
         })}
+
+        {/* Kepengelolaan Menu */}
+        {canAccessKepengelolaan && (
+          <>
+            {!collapsed && (
+              <div className="pt-4 pb-2">
+                <span className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider px-3">
+                  Kepengelolaan
+                </span>
+              </div>
+            )}
+            {collapsed ? (
+              // Collapsed view - show icons only
+              kepengelolaanItems.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group",
+                      isActive
+                        ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    )}
+                  >
+                    <item.icon className="w-5 h-5 flex-shrink-0 mx-auto" />
+                  </NavLink>
+                );
+              })
+            ) : (
+              // Expanded view - show collapsible menu
+              <Collapsible open={kepengelolaanOpen} onOpenChange={setKepengelolaanOpen}>
+                <CollapsibleTrigger className="flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 w-full text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+                  <FolderKanban className="w-5 h-5 flex-shrink-0" />
+                  <span className="font-medium text-sm truncate flex-1 text-left">Kepengelolaan</span>
+                  <ChevronDown className={cn("w-4 h-4 transition-transform", kepengelolaanOpen && "rotate-180")} />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="pl-4">
+                  {kepengelolaanItems.map((item) => {
+                    const isActive = location.pathname === item.path;
+                    return (
+                      <NavLink
+                        key={item.path}
+                        to={item.path}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group",
+                          isActive
+                            ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        )}
+                      >
+                        <item.icon className="w-4 h-4 flex-shrink-0" />
+                        <span className="font-medium text-sm truncate">{item.label}</span>
+                      </NavLink>
+                    );
+                  })}
+                </CollapsibleContent>
+              </Collapsible>
+            )}
+          </>
+        )}
 
         {/* Admin Menu */}
         {isSuperAdmin && (
