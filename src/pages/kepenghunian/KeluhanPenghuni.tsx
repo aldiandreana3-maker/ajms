@@ -13,6 +13,7 @@ import { useKeluhan, useCreateKeluhan, useUpdateKeluhanStatus, useDeleteKeluhan 
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
+import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { MessageSquareWarning, Plus, Loader2, ArrowLeft, Download, Trash2 } from "lucide-react";
@@ -43,6 +44,18 @@ export default function KeluhanPenghuni() {
 
   const [searchValue, setSearchValue] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const handleSearchChange = (value: string) => {
+    setSearchValue(value);
+    setCurrentPage(1);
+  };
+
+  const handleDateFilterChange = (value: DateFilterType) => {
+    setDateFilter(value);
+    setCurrentPage(1);
+  };
 
   const filteredData = useMemo(() => {
     if (!keluhan) return [];
@@ -59,6 +72,8 @@ export default function KeluhanPenghuni() {
     }
     return filtered;
   }, [keluhan, searchValue, dateFilter]);
+
+  const paginatedData = usePagination(filteredData, itemsPerPage, currentPage);
 
   const handleExport = () => {
     if (!filteredData.length) return;
@@ -241,9 +256,9 @@ export default function KeluhanPenghuni() {
           <CardContent>
             <DataFilterBar
               searchValue={searchValue}
-              onSearchChange={setSearchValue}
+              onSearchChange={handleSearchChange}
               dateFilter={dateFilter}
-              onDateFilterChange={setDateFilter}
+              onDateFilterChange={handleDateFilterChange}
               searchPlaceholder="Cari keluhan, nama, unit..."
             />
             {isLoading ? (
@@ -251,130 +266,139 @@ export default function KeluhanPenghuni() {
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tanggal</TableHead>
-                    <TableHead>Penghuni</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Subjek</TableHead>
-                    <TableHead>Foto</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredData.map((k) => (
-                    <TableRow key={k.id}>
-                      <TableCell>{format(new Date(k.created_at), "dd/MM/yyyy")}</TableCell>
-                      <TableCell>{k.penghuni_name || k.penghuni?.full_name || "-"}</TableCell>
-                      <TableCell>{k.unit_number || k.units?.unit_number || "-"}</TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{k.subject}</p>
-                          <p className="text-sm text-muted-foreground line-clamp-1">{k.description}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <PhotoCell
-                          photos={[
-                            { url: k.photo_url, label: "Foto" },
-                          ]}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[k.status]}>
-                          {k.status === "pending" ? "Pending" : k.status === "proses" ? "Proses" : "Selesai"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="space-x-2">
-                        <Dialog open={selectedKeluhan === k.id} onOpenChange={(open) => !open && setSelectedKeluhan(null)}>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedKeluhan(k.id);
-                                setNewStatus(k.status);
-                                setResponse(k.response || "");
-                              }}
-                            >
-                              Update Status
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Update Status Keluhan</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div className="space-y-2">
-                                <Label>Status</Label>
-                                <Select value={newStatus} onValueChange={(v) => setNewStatus(v as "pending" | "proses" | "selesai")}>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="pending">Pending</SelectItem>
-                                    <SelectItem value="proses">Proses</SelectItem>
-                                    <SelectItem value="selesai">Selesai</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Respons/Catatan</Label>
-                                <Textarea
-                                  value={response}
-                                  onChange={(e) => setResponse(e.target.value)}
-                                  placeholder="Tambahkan respons atau catatan..."
-                                  rows={3}
-                                />
-                              </div>
-                              <Button onClick={handleUpdateStatus} disabled={updateStatusMutation.isPending} className="w-full">
-                                {updateStatusMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                Simpan
-                              </Button>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                        {canDelete && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm">
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Hapus Data Keluhan?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Data keluhan ini akan dihapus permanen dan tidak dapat dikembalikan.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Batal</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteMutation.mutate(k.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  {deleteMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                  Hapus
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredData.length === 0 && (
+              <>
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                        {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada keluhan"}
-                      </TableCell>
+                      <TableHead>Tanggal</TableHead>
+                      <TableHead>Penghuni</TableHead>
+                      <TableHead>Unit</TableHead>
+                      <TableHead>Subjek</TableHead>
+                      <TableHead>Foto</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Aksi</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedData.map((k) => (
+                      <TableRow key={k.id}>
+                        <TableCell>{format(new Date(k.created_at), "dd/MM/yyyy")}</TableCell>
+                        <TableCell>{k.penghuni_name || k.penghuni?.full_name || "-"}</TableCell>
+                        <TableCell>{k.unit_number || k.units?.unit_number || "-"}</TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{k.subject}</p>
+                            <p className="text-sm text-muted-foreground line-clamp-1">{k.description}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <PhotoCell
+                            photos={[
+                              { url: k.photo_url, label: "Foto" },
+                            ]}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={statusColors[k.status]}>
+                            {k.status === "pending" ? "Pending" : k.status === "proses" ? "Proses" : "Selesai"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="space-x-2">
+                          <Dialog open={selectedKeluhan === k.id} onOpenChange={(open) => !open && setSelectedKeluhan(null)}>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedKeluhan(k.id);
+                                  setNewStatus(k.status);
+                                  setResponse(k.response || "");
+                                }}
+                              >
+                                Update Status
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Update Status Keluhan</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <Label>Status</Label>
+                                  <Select value={newStatus} onValueChange={(v) => setNewStatus(v as "pending" | "proses" | "selesai")}>
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="pending">Pending</SelectItem>
+                                      <SelectItem value="proses">Proses</SelectItem>
+                                      <SelectItem value="selesai">Selesai</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Respons/Catatan</Label>
+                                  <Textarea
+                                    value={response}
+                                    onChange={(e) => setResponse(e.target.value)}
+                                    placeholder="Tambahkan respons atau catatan..."
+                                    rows={3}
+                                  />
+                                </div>
+                                <Button onClick={handleUpdateStatus} disabled={updateStatusMutation.isPending} className="w-full">
+                                  {updateStatusMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                  Simpan
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                          {canDelete && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Hapus Data Keluhan?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Data keluhan ini akan dihapus permanen dan tidak dapat dikembalikan.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteMutation.mutate(k.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    {deleteMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                    Hapus
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredData.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                          {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada keluhan"}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+                <TablePagination
+                  currentPage={currentPage}
+                  totalItems={filteredData.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                  onItemsPerPageChange={setItemsPerPage}
+                />
+              </>
             )}
           </CardContent>
         </Card>

@@ -12,6 +12,7 @@ import { useParkingSubscriptions, useCreateParkingSubscription, useExtendParking
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
+import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/contexts/AuthContext";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -41,6 +42,18 @@ export default function AbonemenParkir() {
 
   const [searchValue, setSearchValue] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const handleSearchChange = (value: string) => {
+    setSearchValue(value);
+    setCurrentPage(1);
+  };
+
+  const handleDateFilterChange = (value: DateFilterType) => {
+    setDateFilter(value);
+    setCurrentPage(1);
+  };
   const [receiptDialog, setReceiptDialog] = useState<{ open: boolean; data: typeof subscriptions extends (infer T)[] ? T : never | null }>({ open: false, data: null });
 
   const handlePrintReceipt = () => {
@@ -114,6 +127,8 @@ export default function AbonemenParkir() {
     }
     return filtered;
   }, [subscriptions, searchValue, dateFilter]);
+
+  const paginatedData = usePagination(filteredData, itemsPerPage, currentPage);
 
   const handleExport = () => {
     if (!filteredData.length) return;
@@ -437,9 +452,9 @@ export default function AbonemenParkir() {
           <CardContent>
             <DataFilterBar
               searchValue={searchValue}
-              onSearchChange={setSearchValue}
+              onSearchChange={handleSearchChange}
               dateFilter={dateFilter}
-              onDateFilterChange={setDateFilter}
+              onDateFilterChange={handleDateFilterChange}
               searchPlaceholder="Cari plat, unit, nama, kartu member..."
             />
             {isLoading ? (
@@ -468,7 +483,7 @@ export default function AbonemenParkir() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredData.map((sub) => (
+                    {paginatedData.map((sub) => (
                       <TableRow key={sub.id}>
                         <TableCell className="whitespace-nowrap text-sm">
                           {format(new Date(sub.created_at), "dd/MM/yyyy HH:mm:ss")}
@@ -576,6 +591,13 @@ export default function AbonemenParkir() {
                     )}
                   </TableBody>
                 </Table>
+                <TablePagination
+                  currentPage={currentPage}
+                  totalItems={filteredData.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                  onItemsPerPageChange={setItemsPerPage}
+                />
               </div>
             )}
           </CardContent>

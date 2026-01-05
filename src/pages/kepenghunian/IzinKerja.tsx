@@ -13,6 +13,7 @@ import { useWorkPermits, useCreateWorkPermit, useUpdateWorkPermitStatus, useDele
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
+import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { ClipboardCheck, Plus, Loader2, ArrowLeft, Building2, Download, Trash2 } from "lucide-react";
@@ -44,6 +45,18 @@ export default function IzinKerja() {
 
   const [searchValue, setSearchValue] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const handleSearchChange = (value: string) => {
+    setSearchValue(value);
+    setCurrentPage(1);
+  };
+
+  const handleDateFilterChange = (value: DateFilterType) => {
+    setDateFilter(value);
+    setCurrentPage(1);
+  };
 
   const filteredData = useMemo(() => {
     if (!permits) return [];
@@ -60,6 +73,8 @@ export default function IzinKerja() {
     }
     return filtered;
   }, [permits, searchValue, dateFilter]);
+
+  const paginatedData = usePagination(filteredData, itemsPerPage, currentPage);
 
   const handleExport = () => {
     if (!filteredData.length) return;
@@ -363,9 +378,9 @@ export default function IzinKerja() {
           <CardContent>
             <DataFilterBar
               searchValue={searchValue}
-              onSearchChange={setSearchValue}
+              onSearchChange={handleSearchChange}
               dateFilter={dateFilter}
-              onDateFilterChange={setDateFilter}
+              onDateFilterChange={handleDateFilterChange}
               searchPlaceholder="Cari vendor, pekerjaan, unit..."
             />
             {isLoading ? (
@@ -373,131 +388,140 @@ export default function IzinKerja() {
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Vendor</TableHead>
-                    <TableHead>Pekerjaan</TableHead>
-                    <TableHead>Periode</TableHead>
-                    <TableHead>Pekerja</TableHead>
-                    <TableHead>Dokumen</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredData.map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell>{p.unit_number || p.units?.unit_number || "-"}</TableCell>
-                      <TableCell>{p.vendor_name}</TableCell>
-                      <TableCell className="max-w-xs">
-                        <p className="line-clamp-2">{p.work_description}</p>
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(p.start_date), "dd/MM")} - {format(new Date(p.end_date), "dd/MM/yyyy")}
-                      </TableCell>
-                      <TableCell>{p.worker_count} orang</TableCell>
-                      <TableCell>
-                        <PhotoCell
-                          photos={[
-                            { url: p.document_url, label: "Dokumen" },
-                          ]}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[p.status]}>
-                          {p.status === "pending" ? "Pending" : p.status === "approved" ? "Disetujui" : "Ditolak"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="space-x-2">
-                        <Dialog open={selectedPermit === p.id} onOpenChange={(open) => !open && setSelectedPermit(null)}>
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedPermit(p.id);
-                                setNewStatus(p.status);
-                                setNotes(p.notes || "");
-                              }}
-                            >
-                              Review
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Review Izin Kerja</DialogTitle>
-                            </DialogHeader>
-                            <div className="space-y-4">
-                              <div className="space-y-2">
-                                <Label>Status</Label>
-                                <Select value={newStatus} onValueChange={(v) => setNewStatus(v as "pending" | "approved" | "rejected")}>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="pending">Pending</SelectItem>
-                                    <SelectItem value="approved">Disetujui</SelectItem>
-                                    <SelectItem value="rejected">Ditolak</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="space-y-2">
-                                <Label>Catatan</Label>
-                                <Textarea
-                                  value={notes}
-                                  onChange={(e) => setNotes(e.target.value)}
-                                  placeholder="Alasan atau catatan..."
-                                  rows={3}
-                                />
-                              </div>
-                              <Button onClick={handleUpdateStatus} disabled={updateStatusMutation.isPending} className="w-full">
-                                {updateStatusMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                Simpan
-                              </Button>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                        {canDelete && (
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="destructive" size="sm">
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Hapus Data Izin Kerja?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Data izin kerja ini akan dihapus permanen dan tidak dapat dikembalikan.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Batal</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteMutation.mutate(p.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  {deleteMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                                  Hapus
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredData.length === 0 && (
+              <>
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                        {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada pengajuan izin kerja"}
-                      </TableCell>
+                      <TableHead>Unit</TableHead>
+                      <TableHead>Vendor</TableHead>
+                      <TableHead>Pekerjaan</TableHead>
+                      <TableHead>Periode</TableHead>
+                      <TableHead>Pekerja</TableHead>
+                      <TableHead>Dokumen</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Aksi</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedData.map((p) => (
+                      <TableRow key={p.id}>
+                        <TableCell>{p.unit_number || p.units?.unit_number || "-"}</TableCell>
+                        <TableCell>{p.vendor_name}</TableCell>
+                        <TableCell className="max-w-xs">
+                          <p className="line-clamp-2">{p.work_description}</p>
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(p.start_date), "dd/MM")} - {format(new Date(p.end_date), "dd/MM/yyyy")}
+                        </TableCell>
+                        <TableCell>{p.worker_count} orang</TableCell>
+                        <TableCell>
+                          <PhotoCell
+                            photos={[
+                              { url: p.document_url, label: "Dokumen" },
+                            ]}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={statusColors[p.status]}>
+                            {p.status === "pending" ? "Pending" : p.status === "approved" ? "Disetujui" : "Ditolak"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="space-x-2">
+                          <Dialog open={selectedPermit === p.id} onOpenChange={(open) => !open && setSelectedPermit(null)}>
+                            <DialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedPermit(p.id);
+                                  setNewStatus(p.status);
+                                  setNotes(p.notes || "");
+                                }}
+                              >
+                                Review
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Review Izin Kerja</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <Label>Status</Label>
+                                  <Select value={newStatus} onValueChange={(v) => setNewStatus(v as "pending" | "approved" | "rejected")}>
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="pending">Pending</SelectItem>
+                                      <SelectItem value="approved">Disetujui</SelectItem>
+                                      <SelectItem value="rejected">Ditolak</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label>Catatan</Label>
+                                  <Textarea
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                    placeholder="Tambahkan catatan..."
+                                    rows={3}
+                                  />
+                                </div>
+                                <Button onClick={handleUpdateStatus} disabled={updateStatusMutation.isPending} className="w-full">
+                                  {updateStatusMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                  Simpan
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                          {canDelete && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="destructive" size="sm">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Hapus Data Izin Kerja?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Data izin kerja ini akan dihapus permanen dan tidak dapat dikembalikan.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteMutation.mutate(p.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    {deleteMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                                    Hapus
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {filteredData.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                          {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada pengajuan izin kerja"}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+                <TablePagination
+                  currentPage={currentPage}
+                  totalItems={filteredData.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                  onItemsPerPageChange={setItemsPerPage}
+                />
+              </>
             )}
           </CardContent>
         </Card>
