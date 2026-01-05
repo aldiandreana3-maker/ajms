@@ -93,7 +93,7 @@ export default function DataPenghuni() {
       return;
     }
     const exportData = penghuni.map((p) => ({
-      unit_number: p.units?.unit_number || "-",
+      unit_number: p.unit_number || p.units?.unit_number || "-",
       full_name: p.full_name,
       phone: p.phone || "-",
       email: p.email || "-",
@@ -159,7 +159,7 @@ export default function DataPenghuni() {
         phone: penghuniData.phone || "",
         email: penghuniData.email || "",
         ktp_number: penghuniData.ktp_number || "",
-        unit_number: penghuniData.units?.unit_number || "",
+        unit_number: penghuniData.unit_number || penghuniData.units?.unit_number || "",
         is_owner: penghuniData.is_owner || false,
         is_active: penghuniData.is_active ?? true,
       });
@@ -214,7 +214,8 @@ export default function DataPenghuni() {
       p.phone?.toLowerCase().includes(searchLower) ||
       p.email?.toLowerCase().includes(searchLower) ||
       p.ktp_number?.toLowerCase().includes(searchLower) ||
-      p.units?.unit_number?.toLowerCase().includes(searchLower)
+      p.units?.unit_number?.toLowerCase().includes(searchLower) ||
+      p.unit_number?.toLowerCase().includes(searchLower)
     );
   });
 
@@ -407,7 +408,7 @@ export default function DataPenghuni() {
                     {filteredPenghuni.map((p) => (
                       <TableRow key={p.id}>
                         <TableCell className="font-medium">
-                          {p.units?.unit_number || "-"}
+                          {p.unit_number || p.units?.unit_number || "-"}
                         </TableCell>
                         <TableCell>{p.full_name}</TableCell>
                         <TableCell>{p.phone || "-"}</TableCell>

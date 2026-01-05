@@ -115,6 +115,7 @@ export default function WorkOrder() {
       const matchSearch =
         order.title.toLowerCase().includes(searchValue.toLowerCase()) ||
         order.units?.unit_number?.toLowerCase().includes(searchValue.toLowerCase()) ||
+        order.unit_number?.toLowerCase().includes(searchValue.toLowerCase()) ||
         order.description?.toLowerCase().includes(searchValue.toLowerCase());
 
       return matchSearch;
@@ -126,7 +127,7 @@ export default function WorkOrder() {
       created_at: order.created_at
         ? new Date(order.created_at).toLocaleDateString("id-ID")
         : "-",
-      unit_number: order.units?.unit_number || "-",
+      unit_number: order.unit_number || order.units?.unit_number || "-",
       title: order.title,
       description: order.description || "-",
       priority: order.priority || "medium",
@@ -336,7 +337,7 @@ export default function WorkOrder() {
                               )
                             : "-"}
                         </TableCell>
-                        <TableCell>{order.units?.unit_number || "-"}</TableCell>
+                        <TableCell>{order.unit_number || order.units?.unit_number || "-"}</TableCell>
                         <TableCell className="font-medium">
                           {order.title}
                         </TableCell>

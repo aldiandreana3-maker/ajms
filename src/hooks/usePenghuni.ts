@@ -5,6 +5,7 @@ export interface Penghuni {
   id: string;
   user_id: string | null;
   unit_id: string | null;
+  unit_number: string | null;
   full_name: string;
   email: string | null;
   phone: string | null;
@@ -65,10 +66,18 @@ export function usePenghuni() {
         unitId = unitData?.id || undefined;
       }
 
-      const { unit_number, ...insertData } = data;
       const { data: result, error } = await supabase
         .from("penghuni")
-        .insert({ ...insertData, unit_id: unitId })
+        .insert({ 
+          full_name: data.full_name,
+          email: data.email,
+          phone: data.phone,
+          ktp_number: data.ktp_number,
+          is_owner: data.is_owner,
+          is_active: data.is_active,
+          unit_id: unitId,
+          unit_number: data.unit_number || null,
+        })
         .select()
         .single();
 
@@ -93,10 +102,18 @@ export function usePenghuni() {
         unitId = unitData?.id || undefined;
       }
 
-      const { unit_number, ...updateData } = data;
       const { data: result, error } = await supabase
         .from("penghuni")
-        .update({ ...updateData, unit_id: unitId })
+        .update({ 
+          full_name: data.full_name,
+          email: data.email,
+          phone: data.phone,
+          ktp_number: data.ktp_number,
+          is_owner: data.is_owner,
+          is_active: data.is_active,
+          unit_id: unitId,
+          unit_number: data.unit_number || null,
+        })
         .eq("id", id)
         .select()
         .single();
