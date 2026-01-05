@@ -15,7 +15,7 @@ import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/contexts/AuthContext";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Car, Plus, Loader2, Info, ArrowLeft, Download, Trash2, Check, X } from "lucide-react";
+import { Car, Plus, Loader2, Info, ArrowLeft, Download, Trash2, Check, X, FileText, Printer } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, parkingExportColumns } from "@/lib/exportExcel";
@@ -41,6 +41,62 @@ export default function AbonemenParkir() {
 
   const [searchValue, setSearchValue] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
+  const [receiptDialog, setReceiptDialog] = useState<{ open: boolean; data: typeof subscriptions extends (infer T)[] ? T : never | null }>({ open: false, data: null });
+
+  const handlePrintReceipt = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow || !receiptDialog.data) return;
+    
+    const sub = receiptDialog.data;
+    const verifiedDate = sub.updated_at ? format(new Date(sub.updated_at), "dd/MM/yyyy") : "-";
+    const verifiedTime = sub.updated_at ? format(new Date(sub.updated_at), "HH:mm:ss") : "-";
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Kwitansi Perpanjangan Abonemen Parkir</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; max-width: 400px; margin: 0 auto; }
+          .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+          .header h1 { font-size: 18px; margin: 0; }
+          .header p { margin: 5px 0 0; font-size: 12px; color: #666; }
+          .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #ccc; }
+          .label { font-weight: bold; color: #333; }
+          .value { text-align: right; }
+          .footer { margin-top: 20px; text-align: center; font-size: 11px; color: #666; }
+          .status { padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+          .status.verified { background: #22c55e; color: white; }
+          .status.pending { background: #f59e0b; color: white; }
+          @media print { body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>KWITANSI PERPANJANGAN</h1>
+          <p>Abonemen Parkir</p>
+        </div>
+        <div class="row"><span class="label">Tanggal Verifikasi:</span><span class="value">${verifiedDate}</span></div>
+        <div class="row"><span class="label">Jam Verifikasi:</span><span class="value">${verifiedTime}</span></div>
+        <div class="row"><span class="label">Nama Penghuni:</span><span class="value">${sub.penghuni_name || "-"}</span></div>
+        <div class="row"><span class="label">Unit:</span><span class="value">${sub.unit_number || sub.units?.unit_number || "-"}</span></div>
+        <div class="row"><span class="label">Nomor Plat:</span><span class="value">${sub.vehicle_number}</span></div>
+        <div class="row"><span class="label">Kartu Member:</span><span class="value">${sub.member_card || "-"}</span></div>
+        <div class="row"><span class="label">Jenis Kendaraan:</span><span class="value" style="text-transform:capitalize;">${sub.vehicle_type}</span></div>
+        <div class="row"><span class="label">Nomor Telepon:</span><span class="value">${sub.phone || "-"}</span></div>
+        <div class="row"><span class="label">Status:</span><span class="value" style="text-transform:capitalize;">${sub.rental_status === "sewa" ? "Sewa" : "Pemilik"}</span></div>
+        <div class="row"><span class="label">Periode:</span><span class="value" style="text-transform:capitalize;">${sub.period_type || "-"}</span></div>
+        <div class="row"><span class="label">Jenis Pengajuan:</span><span class="value" style="text-transform:capitalize;">${sub.request_type?.replace(/_/g, " ") || "-"}</span></div>
+        <div class="row"><span class="label">Status Verifikasi:</span><span class="value"><span class="status ${sub.verification_status === "terverifikasi" ? "verified" : "pending"}">${sub.verification_status === "terverifikasi" ? "Terverifikasi" : "Proses"}</span></span></div>
+        <div class="footer">
+          <p>Dicetak pada: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}</p>
+        </div>
+        <script>window.onload = function() { window.print(); }</script>
+      </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
 
   const filteredData = useMemo(() => {
     if (!subscriptions) return [];
@@ -407,6 +463,8 @@ export default function AbonemenParkir() {
                       <TableHead>Periode</TableHead>
                       <TableHead>Foto</TableHead>
                       <TableHead>Verifikasi</TableHead>
+                      <TableHead>Kwitansi</TableHead>
+                      {isSuperAdmin && <TableHead>Aksi</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -469,11 +527,49 @@ export default function AbonemenParkir() {
                             )
                           )}
                         </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setReceiptDialog({ open: true, data: sub })}
+                            title="Lihat Kwitansi"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                        {isSuperAdmin && (
+                          <TableCell>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Hapus Abonemen?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Apakah Anda yakin ingin menghapus data abonemen parkir untuk plat {sub.vehicle_number}? Tindakan ini tidak dapat dibatalkan.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteMutation.mutate(sub.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Hapus
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                     {filteredData.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={13} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={isSuperAdmin ? 14 : 13} className="text-center text-muted-foreground py-8">
                           {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada abonemen parkir"}
                         </TableCell>
                       </TableRow>
@@ -484,6 +580,81 @@ export default function AbonemenParkir() {
             )}
           </CardContent>
         </Card>
+
+        {/* Receipt Dialog */}
+        <Dialog open={receiptDialog.open} onOpenChange={(open) => setReceiptDialog({ open, data: open ? receiptDialog.data : null })}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Kwitansi Perpanjangan
+              </DialogTitle>
+            </DialogHeader>
+            {receiptDialog.data && (
+              <div className="space-y-4">
+                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                  <div className="flex justify-between border-b border-border pb-2">
+                    <span className="text-muted-foreground">Tanggal Verifikasi</span>
+                    <span className="font-medium">{receiptDialog.data.updated_at ? format(new Date(receiptDialog.data.updated_at), "dd/MM/yyyy") : "-"}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-border pb-2">
+                    <span className="text-muted-foreground">Jam Verifikasi</span>
+                    <span className="font-medium">{receiptDialog.data.updated_at ? format(new Date(receiptDialog.data.updated_at), "HH:mm:ss") : "-"}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-border pb-2">
+                    <span className="text-muted-foreground">Nama Penghuni</span>
+                    <span className="font-medium">{receiptDialog.data.penghuni_name || "-"}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-border pb-2">
+                    <span className="text-muted-foreground">Unit</span>
+                    <span className="font-medium">{receiptDialog.data.unit_number || receiptDialog.data.units?.unit_number || "-"}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-border pb-2">
+                    <span className="text-muted-foreground">Nomor Plat</span>
+                    <span className="font-medium font-mono">{receiptDialog.data.vehicle_number}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-border pb-2">
+                    <span className="text-muted-foreground">Kartu Member</span>
+                    <span className="font-medium font-mono">{receiptDialog.data.member_card || "-"}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-border pb-2">
+                    <span className="text-muted-foreground">Jenis Kendaraan</span>
+                    <span className="font-medium capitalize">{receiptDialog.data.vehicle_type}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-border pb-2">
+                    <span className="text-muted-foreground">Nomor Telepon</span>
+                    <span className="font-medium">{receiptDialog.data.phone || "-"}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-border pb-2">
+                    <span className="text-muted-foreground">Status</span>
+                    <Badge variant={receiptDialog.data.rental_status === "sewa" ? "secondary" : "outline"}>
+                      {receiptDialog.data.rental_status === "sewa" ? "Sewa" : "Pemilik"}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between border-b border-border pb-2">
+                    <span className="text-muted-foreground">Periode Perpanjangan</span>
+                    <span className="font-medium capitalize">{receiptDialog.data.period_type || "-"}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-border pb-2">
+                    <span className="text-muted-foreground">Jenis Pengajuan</span>
+                    <span className="font-medium capitalize">{receiptDialog.data.request_type?.replace(/_/g, " ") || "-"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Status Verifikasi</span>
+                    <Badge variant={receiptDialog.data.verification_status === "terverifikasi" ? "default" : "secondary"} 
+                      className={receiptDialog.data.verification_status === "terverifikasi" ? "bg-success" : ""}>
+                      {receiptDialog.data.verification_status === "terverifikasi" ? "Terverifikasi" : "Proses"}
+                    </Badge>
+                  </div>
+                </div>
+                <Button onClick={handlePrintReceipt} className="w-full">
+                  <Printer className="w-4 h-4 mr-2" />
+                  Cetak / Download Kwitansi
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );
