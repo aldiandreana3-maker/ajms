@@ -841,6 +841,7 @@ export type Database = {
           move_out_date: string | null
           phone: string | null
           unit_id: string | null
+          unit_number: string | null
           updated_at: string | null
           user_id: string | null
         }
@@ -856,6 +857,7 @@ export type Database = {
           move_out_date?: string | null
           phone?: string | null
           unit_id?: string | null
+          unit_number?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -871,6 +873,7 @@ export type Database = {
           move_out_date?: string | null
           phone?: string | null
           unit_id?: string | null
+          unit_number?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -986,6 +989,7 @@ export type Database = {
           status: Database["public"]["Enums"]["work_order_status"] | null
           title: string
           unit_id: string | null
+          unit_number: string | null
           updated_at: string | null
         }
         Insert: {
@@ -999,6 +1003,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["work_order_status"] | null
           title: string
           unit_id?: string | null
+          unit_number?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1012,6 +1017,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["work_order_status"] | null
           title?: string
           unit_id?: string | null
+          unit_number?: string | null
           updated_at?: string | null
         }
         Relationships: [

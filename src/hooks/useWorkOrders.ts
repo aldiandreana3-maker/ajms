@@ -6,6 +6,7 @@ export interface WorkOrder {
   id: string;
   keluhan_id: string | null;
   unit_id: string | null;
+  unit_number: string | null;
   title: string;
   description: string | null;
   status: "pending" | "in_progress" | "completed";
@@ -70,12 +71,15 @@ export function useCreateWorkOrder() {
         unitId = unitData?.id || null;
       }
 
-      const { unit_number, ...insertInput } = input;
       const { data, error } = await supabase
         .from("work_orders")
         .insert({
-          ...insertInput,
+          title: input.title,
+          description: input.description || null,
+          keluhan_id: input.keluhan_id || null,
+          priority: input.priority || 'medium',
           unit_id: unitId,
+          unit_number: input.unit_number || null,
           status: "pending",
         })
         .select()
