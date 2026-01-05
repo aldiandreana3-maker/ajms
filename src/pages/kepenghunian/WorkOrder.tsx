@@ -42,6 +42,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Plus, Loader2, Trash2, Edit, Download } from "lucide-react";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
+import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnits } from "@/hooks/useUnits";
@@ -96,6 +97,18 @@ export default function WorkOrder() {
   const [newStatus, setNewStatus] = useState<"pending" | "in_progress" | "completed">("pending");
   const [searchValue, setSearchValue] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const handleSearchChange = (value: string) => {
+    setSearchValue(value);
+    setCurrentPage(1);
+  };
+
+  const handleDateFilterChange = (value: DateFilterType) => {
+    setDateFilter(value);
+    setCurrentPage(1);
+  };
 
   const [form, setForm] = useState({
     title: "",
@@ -121,6 +134,8 @@ export default function WorkOrder() {
       return matchSearch;
     });
   }, [workOrders, searchValue, dateFilter]);
+
+  const paginatedData = usePagination(filteredData, itemsPerPage, currentPage);
 
   const handleExport = () => {
     const exportData = filteredData.map((order) => ({
@@ -287,9 +302,9 @@ export default function WorkOrder() {
             <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
               <DataFilterBar
                 searchValue={searchValue}
-                onSearchChange={setSearchValue}
+                onSearchChange={handleSearchChange}
                 dateFilter={dateFilter}
-                onDateFilterChange={setDateFilter}
+                onDateFilterChange={handleDateFilterChange}
                 searchPlaceholder="Cari judul, unit..."
               />
               <Button variant="outline" onClick={handleExport} className="gap-2">
@@ -328,7 +343,7 @@ export default function WorkOrder() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredData.map((order) => (
+                    paginatedData.map((order) => (
                       <TableRow key={order.id}>
                         <TableCell>
                           {order.created_at
@@ -471,6 +486,13 @@ export default function WorkOrder() {
                 </TableBody>
               </Table>
             </div>
+            <TablePagination
+              currentPage={currentPage}
+              totalItems={filteredData.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
           </CardContent>
         </Card>
       </div>

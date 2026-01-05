@@ -12,6 +12,7 @@ import { useFileUpload } from "@/hooks/useFileUpload";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
+import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Globe, Plus, Loader2, ArrowLeft, Download, Trash2 } from "lucide-react";
@@ -34,6 +35,18 @@ export default function TamuAsing() {
 
   const [searchValue, setSearchValue] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const handleSearchChange = (value: string) => {
+    setSearchValue(value);
+    setCurrentPage(1);
+  };
+
+  const handleDateFilterChange = (value: DateFilterType) => {
+    setDateFilter(value);
+    setCurrentPage(1);
+  };
 
   const filteredData = useMemo(() => {
     if (!guests) return [];
@@ -50,6 +63,8 @@ export default function TamuAsing() {
     }
     return filtered;
   }, [guests, searchValue, dateFilter]);
+
+  const paginatedData = usePagination(filteredData, itemsPerPage, currentPage);
 
   const handleExport = () => {
     if (!filteredData.length) return;
@@ -321,9 +336,9 @@ export default function TamuAsing() {
           <CardContent>
             <DataFilterBar
               searchValue={searchValue}
-              onSearchChange={setSearchValue}
+              onSearchChange={handleSearchChange}
               dateFilter={dateFilter}
-              onDateFilterChange={setDateFilter}
+              onDateFilterChange={handleDateFilterChange}
               searchPlaceholder="Cari nama, paspor, negara..."
             />
             {isLoading ? (
@@ -350,7 +365,7 @@ export default function TamuAsing() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredData.map((g) => (
+                    {paginatedData.map((g) => (
                       <TableRow key={g.id}>
                         <TableCell className="whitespace-nowrap text-sm">
                           {format(new Date(g.created_at), "dd/MM/yyyy HH:mm:ss")}
@@ -415,6 +430,13 @@ export default function TamuAsing() {
                     )}
                   </TableBody>
                 </Table>
+                <TablePagination
+                  currentPage={currentPage}
+                  totalItems={filteredData.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                  onItemsPerPageChange={setItemsPerPage}
+                />
               </div>
             )}
           </CardContent>

@@ -14,6 +14,7 @@ import { useGoodsMovement, useCreateGoodsMovement, useDeleteGoodsMovement } from
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
+import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { PackageOpen, Plus, Loader2, ArrowDownLeft, ArrowUpRight, ArrowLeft, Download, Trash2, Upload } from "lucide-react";
@@ -38,6 +39,18 @@ export default function KeluarMasukBarang() {
 
   const [searchValue, setSearchValue] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const handleSearchChange = (value: string) => {
+    setSearchValue(value);
+    setCurrentPage(1);
+  };
+
+  const handleDateFilterChange = (value: DateFilterType) => {
+    setDateFilter(value);
+    setCurrentPage(1);
+  };
 
   const filteredData = useMemo(() => {
     if (!movements) return [];
@@ -54,6 +67,8 @@ export default function KeluarMasukBarang() {
     }
     return filtered;
   }, [movements, searchValue, dateFilter]);
+
+  const paginatedData = usePagination(filteredData, itemsPerPage, currentPage);
 
   const handleExport = () => {
     if (!filteredData.length) return;
@@ -126,8 +141,11 @@ export default function KeluarMasukBarang() {
   };
 
 
+  const paginatedAll = usePagination(filteredData, itemsPerPage, currentPage);
   const inMovements = filteredData.filter((m) => m.movement_type === "in");
   const outMovements = filteredData.filter((m) => m.movement_type === "out");
+  const paginatedIn = usePagination(inMovements, itemsPerPage, currentPage);
+  const paginatedOut = usePagination(outMovements, itemsPerPage, currentPage);
 
   const MovementTable = ({ data }: { data: typeof movements }) => (
     <Table>
@@ -365,9 +383,9 @@ export default function KeluarMasukBarang() {
           <CardContent>
             <DataFilterBar
               searchValue={searchValue}
-              onSearchChange={setSearchValue}
+              onSearchChange={handleSearchChange}
               dateFilter={dateFilter}
-              onDateFilterChange={setDateFilter}
+              onDateFilterChange={handleDateFilterChange}
               searchPlaceholder="Cari barang, nama, unit..."
             />
             {isLoading ? (
@@ -375,28 +393,51 @@ export default function KeluarMasukBarang() {
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
               </div>
             ) : (
-              <Tabs defaultValue="all">
-                <TabsList>
-                  <TabsTrigger value="all">Semua ({filteredData.length})</TabsTrigger>
-                  <TabsTrigger value="in" className="text-success">
-                    <ArrowDownLeft className="w-4 h-4 mr-1" />
-                    Masuk ({inMovements.length})
-                  </TabsTrigger>
-                  <TabsTrigger value="out" className="text-warning">
-                    <ArrowUpRight className="w-4 h-4 mr-1" />
-                    Keluar ({outMovements.length})
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="all" className="mt-4">
-                  <MovementTable data={filteredData} />
-                </TabsContent>
-                <TabsContent value="in" className="mt-4">
-                  <MovementTable data={inMovements} />
-                </TabsContent>
-                <TabsContent value="out" className="mt-4">
-                  <MovementTable data={outMovements} />
-                </TabsContent>
-              </Tabs>
+              <>
+                <Tabs defaultValue="all" onValueChange={() => setCurrentPage(1)}>
+                  <TabsList>
+                    <TabsTrigger value="all">Semua ({filteredData.length})</TabsTrigger>
+                    <TabsTrigger value="in" className="text-success">
+                      <ArrowDownLeft className="w-4 h-4 mr-1" />
+                      Masuk ({inMovements.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="out" className="text-warning">
+                      <ArrowUpRight className="w-4 h-4 mr-1" />
+                      Keluar ({outMovements.length})
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="all" className="mt-4">
+                    <MovementTable data={paginatedAll} />
+                    <TablePagination
+                      currentPage={currentPage}
+                      totalItems={filteredData.length}
+                      itemsPerPage={itemsPerPage}
+                      onPageChange={setCurrentPage}
+                      onItemsPerPageChange={setItemsPerPage}
+                    />
+                  </TabsContent>
+                  <TabsContent value="in" className="mt-4">
+                    <MovementTable data={paginatedIn} />
+                    <TablePagination
+                      currentPage={currentPage}
+                      totalItems={inMovements.length}
+                      itemsPerPage={itemsPerPage}
+                      onPageChange={setCurrentPage}
+                      onItemsPerPageChange={setItemsPerPage}
+                    />
+                  </TabsContent>
+                  <TabsContent value="out" className="mt-4">
+                    <MovementTable data={paginatedOut} />
+                    <TablePagination
+                      currentPage={currentPage}
+                      totalItems={outMovements.length}
+                      itemsPerPage={itemsPerPage}
+                      onPageChange={setCurrentPage}
+                      onItemsPerPageChange={setItemsPerPage}
+                    />
+                  </TabsContent>
+                </Tabs>
+              </>
             )}
           </CardContent>
         </Card>

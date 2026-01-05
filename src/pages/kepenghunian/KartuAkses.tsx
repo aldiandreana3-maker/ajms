@@ -13,6 +13,7 @@ import { useAccessCards, useCreateAccessCard, useUpdateAccessCardStatus, useDele
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
+import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { CreditCard, Plus, Loader2, ArrowLeft, Download, Trash2, Upload } from "lucide-react";
@@ -51,6 +52,18 @@ export default function KartuAkses() {
 
   const [searchValue, setSearchValue] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const handleSearchChange = (value: string) => {
+    setSearchValue(value);
+    setCurrentPage(1);
+  };
+
+  const handleDateFilterChange = (value: DateFilterType) => {
+    setDateFilter(value);
+    setCurrentPage(1);
+  };
 
   const filteredData = useMemo(() => {
     if (!cards) return [];
@@ -67,6 +80,8 @@ export default function KartuAkses() {
     }
     return filtered;
   }, [cards, searchValue, dateFilter]);
+
+  const paginatedData = usePagination(filteredData, itemsPerPage, currentPage);
 
   const statusLabelsExport = { active: "Aktif", inactive: "Nonaktif", lost: "Hilang", damaged: "Rusak" };
 
@@ -297,9 +312,9 @@ export default function KartuAkses() {
           <CardContent>
             <DataFilterBar
               searchValue={searchValue}
-              onSearchChange={setSearchValue}
+              onSearchChange={handleSearchChange}
               dateFilter={dateFilter}
-              onDateFilterChange={setDateFilter}
+              onDateFilterChange={handleDateFilterChange}
               searchPlaceholder="Cari kartu, nama, unit..."
             />
             {isLoading ? (
@@ -320,7 +335,7 @@ export default function KartuAkses() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredData.map((c) => (
+                    {paginatedData.map((c) => (
                       <TableRow key={c.id}>
                         <TableCell className="whitespace-nowrap text-sm">
                           {format(new Date(c.created_at), "dd/MM/yyyy HH:mm:ss")}
@@ -349,6 +364,13 @@ export default function KartuAkses() {
                     )}
                   </TableBody>
                 </Table>
+                <TablePagination
+                  currentPage={currentPage}
+                  totalItems={filteredData.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                  onItemsPerPageChange={setItemsPerPage}
+                />
               </div>
             )}
           </CardContent>
