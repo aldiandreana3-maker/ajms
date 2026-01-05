@@ -20,7 +20,8 @@ export interface Penghuni {
 
 interface CreatePenghuniData {
   full_name: string;
-  unit_id: string;
+  unit_id?: string;
+  unit_number?: string;
   email?: string;
   phone?: string;
   ktp_number?: string;
@@ -53,9 +54,21 @@ export function usePenghuni() {
 
   const createPenghuni = useMutation({
     mutationFn: async (data: CreatePenghuniData) => {
+      // If unit_number provided, find unit_id
+      let unitId = data.unit_id;
+      if (data.unit_number && !data.unit_id) {
+        const { data: unitData } = await supabase
+          .from("units")
+          .select("id")
+          .eq("unit_number", data.unit_number)
+          .maybeSingle();
+        unitId = unitData?.id || undefined;
+      }
+
+      const { unit_number, ...insertData } = data;
       const { data: result, error } = await supabase
         .from("penghuni")
-        .insert(data)
+        .insert({ ...insertData, unit_id: unitId })
         .select()
         .single();
 
@@ -69,9 +82,21 @@ export function usePenghuni() {
 
   const updatePenghuni = useMutation({
     mutationFn: async ({ id, ...data }: UpdatePenghuniData) => {
+      // If unit_number provided, find unit_id
+      let unitId = data.unit_id;
+      if (data.unit_number && !data.unit_id) {
+        const { data: unitData } = await supabase
+          .from("units")
+          .select("id")
+          .eq("unit_number", data.unit_number)
+          .maybeSingle();
+        unitId = unitData?.id || undefined;
+      }
+
+      const { unit_number, ...updateData } = data;
       const { data: result, error } = await supabase
         .from("penghuni")
-        .update(data)
+        .update({ ...updateData, unit_id: unitId })
         .eq("id", id)
         .select()
         .single();
