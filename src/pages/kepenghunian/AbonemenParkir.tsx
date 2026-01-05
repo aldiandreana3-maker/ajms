@@ -13,6 +13,7 @@ import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/contexts/AuthContext";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Car, Plus, Loader2, Info, ArrowLeft, Download, Trash2, Check, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -25,6 +26,7 @@ import { useFileUpload } from "@/hooks/useFileUpload";
 export default function AbonemenParkir() {
   const navigate = useNavigate();
   const { getFeaturePermission, isAuthenticated, isAdmin, isSuperAdmin } = usePermissions();
+  const { role } = useAuth();
   const permission = getFeaturePermission("abonemen-parkir");
   const { data: subscriptions, isLoading } = useParkingSubscriptions();
   const createMutation = useCreateParkingSubscription();
@@ -34,7 +36,8 @@ export default function AbonemenParkir() {
   const { uploadFile, uploading } = useFileUpload({ folder: "parking" });
   const canExport = isAdmin || isSuperAdmin;
   const canDelete = isAdmin || isSuperAdmin;
-  const canVerify = isAdmin || isSuperAdmin;
+  // Akses verifikasi untuk staff_tro, staff_finance, admin, dan super_admin
+  const canVerify = isAdmin || isSuperAdmin || role === "staff_tro" || role === "staff_finance";
 
   const [searchValue, setSearchValue] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
