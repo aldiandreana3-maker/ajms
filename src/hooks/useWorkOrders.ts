@@ -25,6 +25,7 @@ export interface WorkOrder {
 
 export interface CreateWorkOrderInput {
   unit_id?: string | null;
+  unit_number?: string;
   keluhan_id?: string | null;
   title: string;
   description?: string;
@@ -58,10 +59,23 @@ export function useCreateWorkOrder() {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("User not authenticated");
 
+      // If unit_number provided, find unit_id
+      let unitId = input.unit_id;
+      if (input.unit_number && !input.unit_id) {
+        const { data: unitData } = await supabase
+          .from("units")
+          .select("id")
+          .eq("unit_number", input.unit_number)
+          .maybeSingle();
+        unitId = unitData?.id || null;
+      }
+
+      const { unit_number, ...insertInput } = input;
       const { data, error } = await supabase
         .from("work_orders")
         .insert({
-          ...input,
+          ...insertInput,
+          unit_id: unitId,
           status: "pending",
         })
         .select()

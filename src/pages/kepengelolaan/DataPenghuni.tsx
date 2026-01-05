@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,9 +19,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Search, Pencil, Trash2, Users } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Users, Download, Upload } from "lucide-react";
 import { usePenghuni } from "@/hooks/usePenghuni";
-import { useUnits } from "@/hooks/useUnits";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import {
@@ -41,10 +40,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { exportToExcel } from "@/lib/exportExcel";
+import * as XLSX from "xlsx";
+
+const penghuniExportColumns = [
+  { header: "No. Unit", key: "unit_number", width: 12 },
+  { header: "Nama Lengkap", key: "full_name", width: 25 },
+  { header: "No. Telepon", key: "phone", width: 15 },
+  { header: "Email", key: "email", width: 25 },
+  { header: "No. KTP", key: "ktp_number", width: 20 },
+  { header: "Status", key: "status", width: 12 },
+];
 
 export default function DataPenghuni() {
   const { penghuni, isLoading, createPenghuni, updatePenghuni, deletePenghuni } = usePenghuni();
-  const { units } = useUnits();
   const { isSuperAdmin, isAdmin } = useAuth();
   const canManage = isSuperAdmin || isAdmin;
 
@@ -53,12 +62,14 @@ export default function DataPenghuni() {
   const [editingPenghuni, setEditingPenghuni] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState({
     full_name: "",
     phone: "",
     email: "",
     ktp_number: "",
-    unit_id: "",
+    unit_number: "",
     is_owner: false,
     is_active: true,
   });
@@ -69,11 +80,75 @@ export default function DataPenghuni() {
       phone: "",
       email: "",
       ktp_number: "",
-      unit_id: "",
+      unit_number: "",
       is_owner: false,
       is_active: true,
     });
     setEditingPenghuni(null);
+  };
+
+  const handleExport = () => {
+    if (!penghuni || penghuni.length === 0) {
+      toast.error("Tidak ada data untuk diekspor");
+      return;
+    }
+    const exportData = penghuni.map((p) => ({
+      unit_number: p.units?.unit_number || "-",
+      full_name: p.full_name,
+      phone: p.phone || "-",
+      email: p.email || "-",
+      ktp_number: p.ktp_number || "-",
+      status: p.is_owner ? "Pemilik" : "Penyewa",
+    }));
+    exportToExcel({
+      filename: "Data_Penghuni",
+      sheetName: "Data Penghuni",
+      data: exportData,
+      columns: penghuniExportColumns,
+    });
+    toast.success("Data berhasil diekspor");
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const data = event.target?.result;
+        const workbook = XLSX.read(data, { type: "binary" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const row of jsonData as any[]) {
+          try {
+            await createPenghuni.mutateAsync({
+              full_name: row["Nama Lengkap"] || row["full_name"] || "",
+              phone: row["No. Telepon"] || row["phone"] || "",
+              email: row["Email"] || row["email"] || "",
+              ktp_number: row["No. KTP"] || row["ktp_number"] || "",
+              unit_number: row["No. Unit"] || row["unit_number"] || "",
+              is_owner: (row["Status"] || row["status"])?.toLowerCase() === "pemilik",
+              is_active: true,
+            });
+            successCount++;
+          } catch {
+            errorCount++;
+          }
+        }
+
+        toast.success(`Import selesai: ${successCount} berhasil, ${errorCount} gagal`);
+      } catch {
+        toast.error("Gagal membaca file Excel");
+      }
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = "";
   };
 
   const handleOpenDialog = (penghuniData?: any) => {
@@ -84,7 +159,7 @@ export default function DataPenghuni() {
         phone: penghuniData.phone || "",
         email: penghuniData.email || "",
         ktp_number: penghuniData.ktp_number || "",
-        unit_id: penghuniData.unit_id || "",
+        unit_number: penghuniData.units?.unit_number || "",
         is_owner: penghuniData.is_owner || false,
         is_active: penghuniData.is_active ?? true,
       });
@@ -97,7 +172,7 @@ export default function DataPenghuni() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.full_name || !formData.unit_id) {
+    if (!formData.full_name || !formData.unit_number) {
       toast.error("Nama dan Unit wajib diisi");
       return;
     }
@@ -138,14 +213,10 @@ export default function DataPenghuni() {
       p.full_name?.toLowerCase().includes(searchLower) ||
       p.phone?.toLowerCase().includes(searchLower) ||
       p.email?.toLowerCase().includes(searchLower) ||
-      p.ktp_number?.toLowerCase().includes(searchLower)
+      p.ktp_number?.toLowerCase().includes(searchLower) ||
+      p.units?.unit_number?.toLowerCase().includes(searchLower)
     );
   });
-
-  const getUnitNumber = (unitId: string) => {
-    const unit = units?.find((u) => u.id === unitId);
-    return unit?.unit_number || "-";
-  };
 
   return (
     <MainLayout>
@@ -159,43 +230,50 @@ export default function DataPenghuni() {
             </p>
           </div>
           {canManage && (
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => handleOpenDialog()}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Tambah Penghuni
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingPenghuni ? "Edit Penghuni" : "Tambah Penghuni Baru"}
-                  </DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="unit_id">Unit *</Label>
-                    <Select
-                      value={formData.unit_id}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, unit_id: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih unit" />
-                      </SelectTrigger>
-                      <SelectContent position="popper" side="bottom" className="max-h-60 overflow-y-auto">
-                        {units?.map((unit) => (
-                          <SelectItem key={unit.id} value={unit.id}>
-                            {unit.unit_number}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+            <div className="flex gap-2">
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImport}
+                accept=".xlsx,.xls"
+                className="hidden"
+              />
+              <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="w-4 h-4 mr-2" />
+                Import Excel
+              </Button>
+              <Button variant="outline" onClick={handleExport}>
+                <Download className="w-4 h-4 mr-2" />
+                Export Excel
+              </Button>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => handleOpenDialog()}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Tambah Penghuni
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>
+                      {editingPenghuni ? "Edit Penghuni" : "Tambah Penghuni Baru"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="unit_number">Unit *</Label>
+                      <Input
+                        id="unit_number"
+                        value={formData.unit_number}
+                        onChange={(e) =>
+                          setFormData({ ...formData, unit_number: e.target.value })
+                        }
+                        placeholder="Contoh: A0520, B1205"
+                      />
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="full_name">Nama Lengkap *</Label>
+                    <div className="space-y-2">
+                      <Label htmlFor="full_name">Nama Lengkap *</Label>
                     <Input
                       id="full_name"
                       value={formData.full_name}
@@ -261,24 +339,25 @@ export default function DataPenghuni() {
                     </Select>
                   </div>
 
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setIsDialogOpen(false);
-                        resetForm();
-                      }}
-                    >
-                      Batal
-                    </Button>
-                    <Button type="submit" disabled={createPenghuni.isPending || updatePenghuni.isPending}>
-                      {editingPenghuni ? "Simpan Perubahan" : "Tambah"}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
+                    <div className="flex justify-end gap-2 pt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setIsDialogOpen(false);
+                          resetForm();
+                        }}
+                      >
+                        Batal
+                      </Button>
+                      <Button type="submit" disabled={createPenghuni.isPending || updatePenghuni.isPending}>
+                        {editingPenghuni ? "Simpan Perubahan" : "Tambah"}
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
           )}
         </div>
 
@@ -328,7 +407,7 @@ export default function DataPenghuni() {
                     {filteredPenghuni.map((p) => (
                       <TableRow key={p.id}>
                         <TableCell className="font-medium">
-                          {getUnitNumber(p.unit_id || "")}
+                          {p.units?.unit_number || "-"}
                         </TableCell>
                         <TableCell>{p.full_name}</TableCell>
                         <TableCell>{p.phone || "-"}</TableCell>

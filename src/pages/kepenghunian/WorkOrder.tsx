@@ -100,7 +100,7 @@ export default function WorkOrder() {
   const [form, setForm] = useState({
     title: "",
     description: "",
-    unit_id: "",
+    unit_number: "",
     priority: "medium",
   });
 
@@ -152,11 +152,11 @@ export default function WorkOrder() {
     await createWorkOrder.mutateAsync({
       title: form.title,
       description: form.description || undefined,
-      unit_id: form.unit_id || null,
+      unit_number: form.unit_number || undefined,
       priority: form.priority,
     });
 
-    setForm({ title: "", description: "", unit_id: "", priority: "medium" });
+    setForm({ title: "", description: "", unit_number: "", priority: "medium" });
     setIsOpen(false);
   };
 
@@ -233,23 +233,13 @@ export default function WorkOrder() {
 
                     <div className="space-y-2">
                       <Label>Unit (Opsional)</Label>
-                      <Select
-                        value={form.unit_id}
-                        onValueChange={(value) =>
-                          setForm({ ...form, unit_id: value })
+                      <Input
+                        value={form.unit_number}
+                        onChange={(e) =>
+                          setForm({ ...form, unit_number: e.target.value })
                         }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Pilih unit" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {units?.map((unit) => (
-                            <SelectItem key={unit.id} value={unit.id}>
-                              {unit.unit_number}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        placeholder="Contoh: A0520, B1205"
+                      />
                     </div>
 
                     <div className="space-y-2">

@@ -439,40 +439,30 @@ export default function AbonemenParkir() {
                         </TableCell>
                         <TableCell>
                           {canVerify ? (
-                            <div className="flex items-center gap-1">
-                              {sub.verification_status === "terverifikasi" ? (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-destructive hover:bg-destructive/10"
-                                  onClick={() => handleUnverify(sub.id)}
-                                  disabled={updateVerificationMutation.isPending}
-                                  title="Batalkan verifikasi"
-                                >
-                                  <X className="w-5 h-5" />
-                                </Button>
-                              ) : (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-success hover:bg-success/10"
-                                  onClick={() => updateVerificationMutation.mutate({ id: sub.id, verification_status: "terverifikasi" })}
-                                  disabled={updateVerificationMutation.isPending}
-                                  title="Verifikasi"
-                                >
-                                  <Check className="w-5 h-5" />
-                                </Button>
+                            <button
+                              onClick={() => {
+                                const newStatus = sub.verification_status === "terverifikasi" ? "proses" : "terverifikasi";
+                                updateVerificationMutation.mutate({ id: sub.id, verification_status: newStatus });
+                              }}
+                              disabled={updateVerificationMutation.isPending}
+                              className={`w-5 h-5 border-2 rounded flex items-center justify-center transition-colors ${
+                                sub.verification_status === "terverifikasi"
+                                  ? "bg-success border-success text-white"
+                                  : "border-muted-foreground hover:border-success"
+                              }`}
+                              title={sub.verification_status === "terverifikasi" ? "Sudah diperpanjang" : "Klik untuk tandai sudah diperpanjang"}
+                            >
+                              {sub.verification_status === "terverifikasi" && (
+                                <Check className="w-3 h-3" />
                               )}
-                            </div>
+                            </button>
                           ) : (
                             sub.verification_status === "terverifikasi" ? (
-                              <Badge className="bg-success/20 text-success border-success/30">
-                                Terverifikasi
-                              </Badge>
+                              <div className="w-5 h-5 border-2 rounded bg-success border-success text-white flex items-center justify-center">
+                                <Check className="w-3 h-3" />
+                              </div>
                             ) : (
-                              <Badge className="bg-warning/20 text-warning border-warning/30">
-                                Proses
-                              </Badge>
+                              <div className="w-5 h-5 border-2 rounded border-muted-foreground" />
                             )
                           )}
                         </TableCell>
