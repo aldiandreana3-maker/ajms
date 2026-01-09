@@ -684,6 +684,68 @@ export type Database = {
         }
         Relationships: []
       }
+      packages: {
+        Row: {
+          courier: string
+          created_at: string
+          id: string
+          item_name: string
+          item_type: string
+          notes: string | null
+          owner_name: string
+          photo_url: string | null
+          picked_up_at: string | null
+          picked_up_by: string | null
+          recorded_by: string | null
+          status: string
+          unit_id: string | null
+          unit_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          courier: string
+          created_at?: string
+          id?: string
+          item_name: string
+          item_type: string
+          notes?: string | null
+          owner_name: string
+          photo_url?: string | null
+          picked_up_at?: string | null
+          picked_up_by?: string | null
+          recorded_by?: string | null
+          status?: string
+          unit_id?: string | null
+          unit_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          courier?: string
+          created_at?: string
+          id?: string
+          item_name?: string
+          item_type?: string
+          notes?: string | null
+          owner_name?: string
+          photo_url?: string | null
+          picked_up_at?: string | null
+          picked_up_by?: string | null
+          recorded_by?: string | null
+          status?: string
+          unit_id?: string | null
+          unit_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "packages_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parking_subscriptions: {
         Row: {
           agent_name: string | null
