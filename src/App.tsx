@@ -22,6 +22,7 @@ import KeluarMasukBarang from "./pages/kepenghunian/KeluarMasukBarang";
 import KartuAkses from "./pages/kepenghunian/KartuAkses";
 import TamuAsing from "./pages/kepenghunian/TamuAsing";
 import WorkOrder from "./pages/kepenghunian/WorkOrder";
+import PelayananPaket from "./pages/kepenghunian/PelayananPaket";
 import DataPenghuni from "./pages/kepengelolaan/DataPenghuni";
 import NotFound from "./pages/NotFound";
 
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/kepenghunian/kartu-akses" element={<KartuAkses />} />
             <Route path="/kepenghunian/tamu-asing" element={<TamuAsing />} />
             <Route path="/kepenghunian/work-order" element={<WorkOrder />} />
+            <Route path="/kepenghunian/pelayanan-paket" element={<PelayananPaket />} />
             <Route path="/kepengelolaan/data-penghuni" element={<DataPenghuni />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

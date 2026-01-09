@@ -8,6 +8,7 @@ import {
   Globe,
   ArrowLeft,
   Wrench,
+  Package,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -64,6 +65,13 @@ const services = [
     description: "Kelola work order dan perawatan",
     color: "warning",
     path: "/kepenghunian/work-order",
+  },
+  {
+    icon: Package,
+    title: "Pelayanan Paket",
+    description: "Kelola paket masuk untuk penghuni",
+    color: "accent",
+    path: "/kepenghunian/pelayanan-paket",
   },
 ];
 
