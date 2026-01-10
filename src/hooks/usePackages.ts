@@ -18,6 +18,9 @@ export interface Package {
   recorded_by: string | null;
   created_at: string;
   updated_at: string;
+  // Joined profile names
+  recorded_by_name?: string | null;
+  picked_up_by_name?: string | null;
 }
 
 export interface CreatePackageInput {
@@ -37,11 +40,21 @@ export function usePackages() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("packages")
-        .select("*")
+        .select(`
+          *,
+          recorded_by_profile:profiles!packages_recorded_by_fkey(full_name),
+          picked_up_by_profile:profiles!packages_picked_up_by_fkey(full_name)
+        `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as Package[];
+      
+      // Transform the data to flatten profile names
+      return (data || []).map((pkg: any) => ({
+        ...pkg,
+        recorded_by_name: pkg.recorded_by_profile?.full_name || null,
+        picked_up_by_name: pkg.picked_up_by_profile?.full_name || null,
+      })) as Package[];
     },
   });
 }
