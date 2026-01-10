@@ -51,7 +51,8 @@ import { usePackages, useCreatePackage, useUpdatePackageStatus, useDeletePackage
 import { useAuth } from "@/contexts/AuthContext";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { TablePagination, usePagination } from "@/components/shared/TablePagination";
-import { PhotoUpload } from "@/components/shared/PhotoUpload";
+import { CameraCapture } from "@/components/shared/CameraCapture";
+import { useFileUpload } from "@/hooks/useFileUpload";
 
 const COURIER_OPTIONS = [
   "SPX Express",
@@ -103,11 +104,17 @@ export default function PelayananPaket() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
+  // File upload
+  const { uploadFile, getPublicUrl, uploading } = useFileUpload({
+    bucket: "packages",
+    folder: "photos",
+    compressImages: true,
+  });
+
   // Form states
   const [formData, setFormData] = useState({
     owner_name: "",
     unit_number: "",
-    item_name: "",
     item_type: "",
     courier: "",
     notes: "",
@@ -126,9 +133,9 @@ export default function PelayananPaket() {
       const query = searchValue.toLowerCase();
       result = result.filter((pkg) =>
         pkg.owner_name.toLowerCase().includes(query) ||
-        pkg.item_name.toLowerCase().includes(query) ||
         pkg.unit_number?.toLowerCase().includes(query) ||
-        pkg.courier.toLowerCase().includes(query)
+        pkg.courier.toLowerCase().includes(query) ||
+        pkg.item_type.toLowerCase().includes(query)
       );
     }
 
@@ -140,19 +147,29 @@ export default function PelayananPaket() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // For now, create without photo upload (can be enhanced later)
+    
+    let photoUrl: string | undefined;
+    
+    // Upload photo if exists
+    if (photoFile) {
+      const filePath = await uploadFile(photoFile);
+      if (filePath) {
+        photoUrl = getPublicUrl(filePath) || undefined;
+      }
+    }
+    
     await createPackage.mutateAsync({
       owner_name: formData.owner_name,
       unit_number: formData.unit_number,
-      item_name: formData.item_name,
+      item_name: formData.item_type, // Use item_type as item_name since we removed item_name field
       item_type: formData.item_type,
       courier: formData.courier,
       notes: formData.notes,
+      photo_url: photoUrl,
     });
     setFormData({
       owner_name: "",
       unit_number: "",
-      item_name: "",
       item_type: "",
       courier: "",
       notes: "",
@@ -281,33 +298,23 @@ export default function PelayananPaket() {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Nama Barang *</Label>
-                      <Input
-                        value={formData.item_name}
-                        onChange={(e) => setFormData({ ...formData, item_name: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Jenis Barang *</Label>
-                      <Select
-                        value={formData.item_type}
-                        onValueChange={(value) => setFormData({ ...formData, item_type: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Pilih jenis" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ITEM_TYPE_OPTIONS.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div className="space-y-2">
+                    <Label>Jenis Barang *</Label>
+                    <Select
+                      value={formData.item_type}
+                      onValueChange={(value) => setFormData({ ...formData, item_type: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih jenis" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ITEM_TYPE_OPTIONS.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Kurir *</Label>
@@ -329,8 +336,8 @@ export default function PelayananPaket() {
                   </div>
                   <div className="space-y-2">
                     <Label>Foto Paket</Label>
-                    <PhotoUpload
-                      label="Upload foto paket"
+                    <CameraCapture
+                      label="Ambil foto paket dengan kamera"
                       value={photoFile}
                       onChange={setPhotoFile}
                     />
@@ -383,7 +390,6 @@ export default function PelayananPaket() {
                     <TableHead className="w-12">No</TableHead>
                     <TableHead>Tanggal Masuk</TableHead>
                     <TableHead>Foto</TableHead>
-                    <TableHead>Nama Barang</TableHead>
                     <TableHead>Jenis Barang</TableHead>
                     <TableHead>Pemilik</TableHead>
                     <TableHead>Unit</TableHead>
@@ -394,15 +400,15 @@ export default function PelayananPaket() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {isLoading ? (
+                {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={11} className="text-center py-8">
+                      <TableCell colSpan={10} className="text-center py-8">
                         Memuat data...
                       </TableCell>
                     </TableRow>
                   ) : paginatedData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                         Tidak ada data paket
                       </TableCell>
                     </TableRow>
@@ -433,7 +439,6 @@ export default function PelayananPaket() {
                             <span className="text-muted-foreground">-</span>
                           )}
                         </TableCell>
-                        <TableCell>{pkg.item_name}</TableCell>
                         <TableCell>{pkg.item_type}</TableCell>
                         <TableCell>{pkg.owner_name}</TableCell>
                         <TableCell>{pkg.unit_number || "-"}</TableCell>
