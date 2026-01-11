@@ -738,6 +738,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "packages_picked_up_by_fkey"
+            columns: ["picked_up_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "packages_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "packages_unit_id_fkey"
             columns: ["unit_id"]
             isOneToOne: false

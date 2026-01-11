@@ -22,13 +22,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -44,7 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Package, Plus, Trash2, Printer, ChevronDown } from "lucide-react";
+import { Package, Plus, Trash2, Printer, ChevronDown, ShieldAlert } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { usePackages, useCreatePackage, useUpdatePackageStatus, useDeletePackage } from "@/hooks/usePackages";
@@ -53,6 +46,7 @@ import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared
 import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 import { CameraCapture } from "@/components/shared/CameraCapture";
 import { useFileUpload } from "@/hooks/useFileUpload";
+import { Combobox } from "@/components/ui/combobox";
 
 const COURIER_OPTIONS = [
   "SPX Express",
@@ -229,10 +223,11 @@ export default function PelayananPaket() {
           <div class="row"><span class="label">Tanggal Masuk:</span><span>${format(new Date(selectedPackage.created_at), "dd MMM yyyy HH:mm", { locale: id })}</span></div>
           <div class="row"><span class="label">Nama Pemilik:</span><span>${selectedPackage.owner_name}</span></div>
           <div class="row"><span class="label">Unit:</span><span>${selectedPackage.unit_number || "-"}</span></div>
-          <div class="row"><span class="label">Nama Barang:</span><span>${selectedPackage.item_name}</span></div>
           <div class="row"><span class="label">Jenis Barang:</span><span>${selectedPackage.item_type}</span></div>
           <div class="row"><span class="label">Kurir:</span><span>${selectedPackage.courier}</span></div>
+          <div class="row"><span class="label">Dicatat Oleh:</span><span>${selectedPackage.recorded_by_name || "-"}</span></div>
           <div class="row"><span class="label">Status:</span><span class="status">${selectedPackage.status === 'diambil' ? 'Sudah Diambil' : 'Belum Diambil'}</span></div>
+          ${selectedPackage.status === 'diambil' && selectedPackage.picked_up_by_name ? `<div class="row"><span class="label">Diproses Oleh:</span><span>${selectedPackage.picked_up_by_name}</span></div>` : ''}
           ${selectedPackage.picked_up_at ? `<div class="row"><span class="label">Waktu Pengambilan:</span><span>${format(new Date(selectedPackage.picked_up_at), "dd MMM yyyy HH:mm", { locale: id })}</span></div>` : ''}
           <div class="footer">
             <p>Terima kasih</p>
@@ -253,7 +248,25 @@ export default function PelayananPaket() {
     return <Badge variant="destructive">Belum Diambil</Badge>;
   };
 
-  const canManage = isSuperAdmin || ["admin", "staff", "staff_tro", "staff_outsourcing_security"].includes(role || "");
+  // Restrict access to admin, super_admin, and staff_tro only
+  const canAccess = isSuperAdmin || ["admin", "staff_tro"].includes(role || "");
+  const canManage = canAccess;
+
+  // Show access denied message for users without permission
+  if (!canAccess) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+          <ShieldAlert className="w-16 h-16 text-muted-foreground" />
+          <h1 className="text-2xl font-bold text-foreground">Akses Ditolak</h1>
+          <p className="text-muted-foreground text-center max-w-md">
+            Anda tidak memiliki izin untuk mengakses halaman ini. 
+            Hanya Admin, Super Admin, dan Staff TRO yang dapat mengakses fitur Pelayanan Paket.
+          </p>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
@@ -300,39 +313,25 @@ export default function PelayananPaket() {
                   </div>
                   <div className="space-y-2">
                     <Label>Jenis Barang *</Label>
-                    <Select
+                    <Combobox
+                      options={ITEM_TYPE_OPTIONS}
                       value={formData.item_type}
-                      onValueChange={(value) => setFormData({ ...formData, item_type: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih jenis" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ITEM_TYPE_OPTIONS.map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      onChange={(value) => setFormData({ ...formData, item_type: value })}
+                      placeholder="Pilih atau ketik jenis barang"
+                      searchPlaceholder="Cari atau ketik jenis barang..."
+                      emptyText="Tekan enter untuk menggunakan input"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Kurir *</Label>
-                    <Select
+                    <Combobox
+                      options={COURIER_OPTIONS}
                       value={formData.courier}
-                      onValueChange={(value) => setFormData({ ...formData, courier: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih kurir" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {COURIER_OPTIONS.map((courier) => (
-                          <SelectItem key={courier} value={courier}>
-                            {courier}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      onChange={(value) => setFormData({ ...formData, courier: value })}
+                      placeholder="Pilih atau ketik kurir"
+                      searchPlaceholder="Cari atau ketik kurir..."
+                      emptyText="Tekan enter untuk menggunakan input"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Foto Paket</Label>
@@ -394,7 +393,8 @@ export default function PelayananPaket() {
                     <TableHead>Pemilik</TableHead>
                     <TableHead>Unit</TableHead>
                     <TableHead>Kurir</TableHead>
-                    <TableHead>Keterangan</TableHead>
+                    <TableHead>Dicatat Oleh</TableHead>
+                    <TableHead>Diambil Oleh</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Aksi</TableHead>
                   </TableRow>
@@ -402,13 +402,13 @@ export default function PelayananPaket() {
                 <TableBody>
                 {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8">
+                      <TableCell colSpan={11} className="text-center py-8">
                         Memuat data...
                       </TableCell>
                     </TableRow>
                   ) : paginatedData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                         Tidak ada data paket
                       </TableCell>
                     </TableRow>
@@ -443,7 +443,21 @@ export default function PelayananPaket() {
                         <TableCell>{pkg.owner_name}</TableCell>
                         <TableCell>{pkg.unit_number || "-"}</TableCell>
                         <TableCell>{pkg.courier}</TableCell>
-                        <TableCell>{pkg.notes || "-"}</TableCell>
+                        <TableCell>{pkg.recorded_by_name || "-"}</TableCell>
+                        <TableCell>
+                          {pkg.status === "diambil" ? (
+                            <div className="text-sm">
+                              <div>{pkg.picked_up_by_name || "-"}</div>
+                              {pkg.picked_up_at && (
+                                <div className="text-xs text-muted-foreground">
+                                  {format(new Date(pkg.picked_up_at), "dd/MM/yyyy HH:mm")}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
                         <TableCell>{getStatusBadge(pkg.status)}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -546,10 +560,6 @@ export default function PelayananPaket() {
                     <span>{selectedPackage.unit_number || "-"}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="font-medium">Nama Barang:</span>
-                    <span>{selectedPackage.item_name}</span>
-                  </div>
-                  <div className="flex justify-between">
                     <span className="font-medium">Jenis Barang:</span>
                     <span>{selectedPackage.item_type}</span>
                   </div>
@@ -557,10 +567,20 @@ export default function PelayananPaket() {
                     <span className="font-medium">Kurir:</span>
                     <span>{selectedPackage.courier}</span>
                   </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Dicatat Oleh:</span>
+                    <span>{selectedPackage.recorded_by_name || "-"}</span>
+                  </div>
                   <div className="flex justify-between items-center">
                     <span className="font-medium">Status:</span>
                     {getStatusBadge(selectedPackage.status)}
                   </div>
+                  {selectedPackage.status === "diambil" && selectedPackage.picked_up_by_name && (
+                    <div className="flex justify-between">
+                      <span className="font-medium">Diproses Oleh:</span>
+                      <span>{selectedPackage.picked_up_by_name}</span>
+                    </div>
+                  )}
                   {selectedPackage.picked_up_at && (
                     <div className="flex justify-between">
                       <span className="font-medium">Waktu Pengambilan:</span>
