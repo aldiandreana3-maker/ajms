@@ -251,6 +251,7 @@ export default function PelayananPaket() {
   // Restrict access to admin, super_admin, and staff_tro only
   const canAccess = isSuperAdmin || ["admin", "staff_tro"].includes(role || "");
   const canManage = canAccess;
+  const canDelete = isSuperAdmin || role === "admin";
 
   // Show access denied message for users without permission
   if (!canAccess) {
@@ -394,7 +395,6 @@ export default function PelayananPaket() {
                     <TableHead>Unit</TableHead>
                     <TableHead>Kurir</TableHead>
                     <TableHead>Dicatat Oleh</TableHead>
-                    <TableHead>Diambil Oleh</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Aksi</TableHead>
                   </TableRow>
@@ -402,13 +402,13 @@ export default function PelayananPaket() {
                 <TableBody>
                 {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={11} className="text-center py-8">
+                      <TableCell colSpan={10} className="text-center py-8">
                         Memuat data...
                       </TableCell>
                     </TableRow>
                   ) : paginatedData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                         Tidak ada data paket
                       </TableCell>
                     </TableRow>
@@ -444,20 +444,6 @@ export default function PelayananPaket() {
                         <TableCell>{pkg.unit_number || "-"}</TableCell>
                         <TableCell>{pkg.courier}</TableCell>
                         <TableCell>{pkg.recorded_by_name || "-"}</TableCell>
-                        <TableCell>
-                          {pkg.status === "diambil" ? (
-                            <div className="text-sm">
-                              <div>{pkg.picked_up_by_name || "-"}</div>
-                              {pkg.picked_up_at && (
-                                <div className="text-xs text-muted-foreground">
-                                  {format(new Date(pkg.picked_up_at), "dd/MM/yyyy HH:mm")}
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
-                        </TableCell>
                         <TableCell>{getStatusBadge(pkg.status)}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -488,7 +474,7 @@ export default function PelayananPaket() {
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             )}
-                            {canManage && (
+                            {canDelete && (
                               <Button
                                 variant="destructive"
                                 size="sm"
