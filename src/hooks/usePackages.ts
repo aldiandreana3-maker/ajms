@@ -50,10 +50,11 @@ export function usePackages() {
       if (error) throw error;
       
       // Transform the data to flatten profile names
+      // Prefer stored names, fallback to joined profile names
       return (data || []).map((pkg: any) => ({
         ...pkg,
-        recorded_by_name: pkg.recorded_by_profile?.full_name || null,
-        picked_up_by_name: pkg.picked_up_by_profile?.full_name || null,
+        recorded_by_name: pkg.recorded_by_name || pkg.recorded_by_profile?.full_name || null,
+        picked_up_by_name: pkg.picked_up_by_name || pkg.picked_up_by_profile?.full_name || null,
       })) as Package[];
     },
   });
@@ -66,11 +67,23 @@ export function useCreatePackage() {
     mutationFn: async (input: CreatePackageInput) => {
       const { data: { user } } = await supabase.auth.getUser();
       
+      // Get user's full name from profile
+      let recordedByName: string | null = null;
+      if (user?.id) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+        recordedByName = profile?.full_name || null;
+      }
+      
       const { data, error } = await supabase
         .from("packages")
         .insert({
           ...input,
           recorded_by: user?.id,
+          recorded_by_name: recordedByName, // Store name directly
           status: "belum_diambil",
         })
         .select()
@@ -101,9 +114,20 @@ export function useUpdatePackageStatus() {
       if (status === "diambil") {
         updateData.picked_up_at = new Date().toISOString();
         updateData.picked_up_by = user?.id;
+        
+        // Get user's full name and store it directly
+        if (user?.id) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", user.id)
+            .single();
+          updateData.picked_up_by_name = profile?.full_name || null;
+        }
       } else {
         updateData.picked_up_at = null;
         updateData.picked_up_by = null;
+        updateData.picked_up_by_name = null;
       }
 
       const { data, error } = await supabase
