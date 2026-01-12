@@ -3,16 +3,19 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { useUsers, useUpdateUserRole, useUpdateUserStatus } from "@/hooks/useUserManagement";
 import { useAuth } from "@/contexts/AuthContext";
-import { Users, Loader2, Shield, UserCheck, UserX } from "lucide-react";
+import { Users, Loader2, Shield, UserCheck, UserX, KeyRound, Copy, Check } from "lucide-react";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type AppRole = "super_admin" | "admin" | "staff" | "agent" | "penghuni" | "staff_tro" | "staff_finance" | "staff_hrd_ga" | "staff_engineering" | "staff_outsourcing_cleaning" | "staff_outsourcing_security" | "staff_outsourcing_parkir";
 
@@ -68,6 +71,12 @@ export default function ManajemenUser() {
 
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [newRole, setNewRole] = useState<AppRole>("penghuni");
+  
+  // Password reset state
+  const [resetPasswordUser, setResetPasswordUser] = useState<{ id: string; email: string } | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [isResetting, setIsResetting] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleUpdateRole = async () => {
     if (selectedUser) {
@@ -78,6 +87,49 @@ export default function ManajemenUser() {
 
   const handleToggleStatus = async (userId: string, isActive: boolean) => {
     await updateStatusMutation.mutateAsync({ userId, isActive: !isActive });
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetPasswordUser) return;
+    
+    setIsResetting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Session expired. Please login again.");
+        return;
+      }
+
+      const response = await supabase.functions.invoke("reset-user-password", {
+        body: { userId: resetPasswordUser.id, userEmail: resetPasswordUser.email },
+      });
+
+      if (response.error) {
+        toast.error("Gagal reset password");
+        console.error(response.error);
+      } else if (response.data?.newPassword) {
+        setNewPassword(response.data.newPassword);
+        toast.success("Password berhasil direset!");
+      }
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      toast.error("Gagal reset password");
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(newPassword);
+    setCopied(true);
+    toast.success("Password berhasil disalin!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const closeResetDialog = () => {
+    setResetPasswordUser(null);
+    setNewPassword("");
+    setCopied(false);
   };
 
   if (!isSuperAdmin) {
@@ -212,6 +264,17 @@ export default function ManajemenUser() {
                             </DialogContent>
                           </Dialog>
 
+                          {/* Reset Password Button */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setResetPasswordUser({ id: u.id, email: u.email })}
+                            disabled={u.id === currentUser?.id}
+                          >
+                            <KeyRound className="w-4 h-4 mr-1" />
+                            Reset
+                          </Button>
+
                           <div className="flex items-center gap-2">
                             <Switch
                               checked={u.is_active}
@@ -235,6 +298,63 @@ export default function ManajemenUser() {
             )}
           </CardContent>
         </Card>
+
+        {/* Reset Password Dialog */}
+        <Dialog open={!!resetPasswordUser} onOpenChange={(open) => !open && closeResetDialog()}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Reset Password User</DialogTitle>
+              <DialogDescription>
+                Reset password untuk: {resetPasswordUser?.email}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {!newPassword ? (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Klik tombol di bawah untuk generate password baru secara otomatis. 
+                    Password lama user akan diganti.
+                  </p>
+                  <Button 
+                    onClick={handleResetPassword} 
+                    disabled={isResetting} 
+                    className="w-full"
+                  >
+                    {isResetting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Mereset Password...
+                      </>
+                    ) : (
+                      <>
+                        <KeyRound className="w-4 h-4 mr-2" />
+                        Generate Password Baru
+                      </>
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label>Password Baru</Label>
+                    <div className="flex gap-2">
+                      <Input value={newPassword} readOnly className="font-mono text-lg" />
+                      <Button variant="outline" size="icon" onClick={copyToClipboard}>
+                        {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Salin password ini dan berikan ke user. Password hanya ditampilkan sekali.
+                    </p>
+                  </div>
+                  <Button onClick={closeResetDialog} variant="outline" className="w-full">
+                    Tutup
+                  </Button>
+                </>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );

@@ -131,6 +131,36 @@ export type Database = {
           },
         ]
       }
+      admin_password_resets: {
+        Row: {
+          created_at: string
+          id: string
+          is_used: boolean | null
+          new_password: string
+          reset_by: string
+          user_email: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_used?: boolean | null
+          new_password: string
+          reset_by: string
+          user_email: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_used?: boolean | null
+          new_password?: string
+          reset_by?: string
+          user_email?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       agent_units: {
         Row: {
           agent_id: string
