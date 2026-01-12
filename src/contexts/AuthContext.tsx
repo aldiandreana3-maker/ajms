@@ -16,6 +16,9 @@ interface AuthContextType {
   isAdmin: boolean;
   isSuperAdmin: boolean;
   isStaff: boolean;
+  isAgent: boolean;
+  isPenghuni: boolean;
+  isLimitedAccess: boolean; // penghuni or agent - same limited access
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -112,7 +115,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isAdmin = role === "admin" || role === "super_admin";
   const isSuperAdmin = role === "super_admin";
-  const isStaff = role === "staff" || role === "agent" || role === "staff_tro" || role === "staff_finance" || role === "staff_hrd_ga" || role === "staff_engineering" || role === "staff_outsourcing_cleaning" || role === "staff_outsourcing_security" || role === "staff_outsourcing_parkir" || isAdmin;
+  const isAgent = role === "agent";
+  const isPenghuni = role === "penghuni";
+  const isLimitedAccess = role === "penghuni" || role === "agent"; // Agent has same access as penghuni
+  const isStaff = role === "staff" || role === "staff_tro" || role === "staff_finance" || role === "staff_hrd_ga" || role === "staff_engineering" || role === "staff_outsourcing_cleaning" || role === "staff_outsourcing_security" || role === "staff_outsourcing_parkir" || isAdmin;
 
   return (
     <AuthContext.Provider
@@ -127,6 +133,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAdmin,
         isSuperAdmin,
         isStaff,
+        isAgent,
+        isPenghuni,
+        isLimitedAccess,
       }}
     >
       {children}
