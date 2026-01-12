@@ -726,7 +726,9 @@ export type Database = {
           photo_url: string | null
           picked_up_at: string | null
           picked_up_by: string | null
+          picked_up_by_name: string | null
           recorded_by: string | null
+          recorded_by_name: string | null
           status: string
           unit_id: string | null
           unit_number: string | null
@@ -743,7 +745,9 @@ export type Database = {
           photo_url?: string | null
           picked_up_at?: string | null
           picked_up_by?: string | null
+          picked_up_by_name?: string | null
           recorded_by?: string | null
+          recorded_by_name?: string | null
           status?: string
           unit_id?: string | null
           unit_number?: string | null
@@ -760,7 +764,9 @@ export type Database = {
           photo_url?: string | null
           picked_up_at?: string | null
           picked_up_by?: string | null
+          picked_up_by_name?: string | null
           recorded_by?: string | null
+          recorded_by_name?: string | null
           status?: string
           unit_id?: string | null
           unit_number?: string | null
