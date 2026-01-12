@@ -24,6 +24,9 @@ import TamuAsing from "./pages/kepenghunian/TamuAsing";
 import WorkOrder from "./pages/kepenghunian/WorkOrder";
 import PelayananPaket from "./pages/kepenghunian/PelayananPaket";
 import DataPenghuni from "./pages/kepengelolaan/DataPenghuni";
+import TenantRelationOffice from "./pages/kepengelolaan/TenantRelationOffice";
+import Finance from "./pages/kepengelolaan/Finance";
+import HrdGa from "./pages/kepengelolaan/HrdGa";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +58,9 @@ const App = () => (
             <Route path="/kepenghunian/work-order" element={<WorkOrder />} />
             <Route path="/kepenghunian/pelayanan-paket" element={<PelayananPaket />} />
             <Route path="/kepengelolaan/data-penghuni" element={<DataPenghuni />} />
+            <Route path="/kepengelolaan/tro" element={<TenantRelationOffice />} />
+            <Route path="/kepengelolaan/finance" element={<Finance />} />
+            <Route path="/kepengelolaan/hrd-ga" element={<HrdGa />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

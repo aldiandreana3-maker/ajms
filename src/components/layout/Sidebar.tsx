@@ -14,7 +14,9 @@ import {
   Newspaper,
   Shield,
   FolderKanban,
-  UserCheck,
+  Headphones,
+  Wallet,
+  UserCog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,9 +37,11 @@ const menuItems = [
   { icon: Newspaper, label: "Berita", path: "/berita", isSuperAdminOnly: true },
 ];
 
-// Kepengelolaan submenu items
+// Kepengelolaan submenu items - restructured with departments
 const kepengelolaanItems = [
-  { icon: UserCheck, label: "Data Penghuni", path: "/kepengelolaan/data-penghuni" },
+  { icon: Headphones, label: "Tenant Relation Office", path: "/kepengelolaan/tro" },
+  { icon: Wallet, label: "Finance", path: "/kepengelolaan/finance" },
+  { icon: UserCog, label: "HRD & GA", path: "/kepengelolaan/hrd-ga" },
 ];
 
 const adminMenuItems = [
@@ -52,12 +56,13 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, isSuperAdmin, isAdmin } = useAuth();
+  const { signOut, isSuperAdmin, isAdmin, isLimitedAccess } = useAuth();
   const [kepengelolaanOpen, setKepengelolaanOpen] = useState(
     location.pathname.startsWith("/kepengelolaan")
   );
   
-  const canAccessKepengelolaan = isSuperAdmin || isAdmin;
+  // Hide kepengelolaan from penghuni and agent (limited access users)
+  const canAccessKepengelolaan = (isSuperAdmin || isAdmin) && !isLimitedAccess;
 
   const handleLogout = async () => {
     await signOut();
@@ -122,7 +127,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           );
         })}
 
-        {/* Kepengelolaan Menu */}
+        {/* Kepengelolaan Menu - Hidden from penghuni and agent */}
         {canAccessKepengelolaan && (
           <>
             {!collapsed && (
@@ -135,7 +140,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             {collapsed ? (
               // Collapsed view - show icons only
               kepengelolaanItems.map((item) => {
-                const isActive = location.pathname === item.path;
+                const isActive = location.pathname.startsWith(item.path);
                 return (
                   <NavLink
                     key={item.path}
@@ -161,7 +166,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pl-4">
                   {kepengelolaanItems.map((item) => {
-                    const isActive = location.pathname === item.path;
+                    const isActive = location.pathname.startsWith(item.path);
                     return (
                       <NavLink
                         key={item.path}
