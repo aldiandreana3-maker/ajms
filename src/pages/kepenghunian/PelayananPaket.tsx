@@ -252,6 +252,7 @@ export default function PelayananPaket() {
   const canAccess = isSuperAdmin || ["admin", "staff_tro"].includes(role || "");
   const canManage = canAccess;
   const canDelete = isSuperAdmin || role === "admin";
+  const canChangeStatusAfterPickup = isSuperAdmin || role === "admin"; // Only admin/super_admin can change status after pickup
 
   // Show access denied message for users without permission
   if (!canAccess) {
@@ -448,31 +449,45 @@ export default function PelayananPaket() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             {canManage && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="outline" size="sm">
-                                    Pilih Aksi <ChevronDown className="w-4 h-4 ml-1" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                  <DropdownMenuItem
-                                    onClick={() => handleStatusChange(pkg.id, "diambil")}
-                                    disabled={pkg.status === "diambil"}
+                              <>
+                                {/* If package is picked up and user is staff_tro, only show print option */}
+                                {pkg.status === "diambil" && !canChangeStatusAfterPickup ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handlePrintReceipt(pkg)}
                                   >
-                                    Sudah Diambil
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleStatusChange(pkg.id, "belum_diambil")}
-                                    disabled={pkg.status === "belum_diambil"}
-                                  >
-                                    Belum Diambil
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handlePrintReceipt(pkg)}>
                                     <Printer className="w-4 h-4 mr-2" />
                                     Cetak Struk
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                                  </Button>
+                                ) : (
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="outline" size="sm">
+                                        Pilih Aksi <ChevronDown className="w-4 h-4 ml-1" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                      <DropdownMenuItem
+                                        onClick={() => handleStatusChange(pkg.id, "diambil")}
+                                        disabled={pkg.status === "diambil"}
+                                      >
+                                        Sudah Diambil
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={() => handleStatusChange(pkg.id, "belum_diambil")}
+                                        disabled={pkg.status === "belum_diambil"}
+                                      >
+                                        Belum Diambil
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handlePrintReceipt(pkg)}>
+                                        <Printer className="w-4 h-4 mr-2" />
+                                        Cetak Struk
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                )}
+                              </>
                             )}
                             {canDelete && (
                               <Button
