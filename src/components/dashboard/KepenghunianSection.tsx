@@ -11,7 +11,7 @@ import {
   Package,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
+import { useAuth } from "@/contexts/AuthContext";
 interface KepenghunianSectionProps {
   onBack: () => void;
 }
@@ -72,6 +72,7 @@ const services = [
     description: "Kelola paket masuk untuk penghuni",
     color: "accent",
     path: "/kepenghunian/pelayanan-paket",
+    restrictedRoles: ["staff_tro", "admin", "super_admin"], // Only these roles can see this
   },
 ];
 
@@ -96,6 +97,14 @@ const colorStyles = {
 
 export function KepenghunianSection({ onBack }: KepenghunianSectionProps) {
   const navigate = useNavigate();
+  const { role, isSuperAdmin } = useAuth();
+
+  // Filter services based on user role
+  const filteredServices = services.filter((service) => {
+    if (!service.restrictedRoles) return true;
+    if (isSuperAdmin) return true;
+    return service.restrictedRoles.includes(role || "");
+  });
 
   return (
     <div className="animate-fade-in">
@@ -113,7 +122,7 @@ export function KepenghunianSection({ onBack }: KepenghunianSectionProps) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {services.map((service, index) => {
+        {filteredServices.map((service, index) => {
           const styles = colorStyles[service.color as keyof typeof colorStyles];
           return (
             <div
