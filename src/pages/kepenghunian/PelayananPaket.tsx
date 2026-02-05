@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,10 +40,10 @@ import {
 import { Package, Plus, Trash2, Printer, ChevronDown, ShieldAlert } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { usePackages, useCreatePackage, useUpdatePackageStatus, useDeletePackage } from "@/hooks/usePackages";
+import { usePackagesPaginated, useCreatePackage, useUpdatePackageStatus, useDeletePackage, DateFilterType } from "@/hooks/usePackages";
 import { useAuth } from "@/contexts/AuthContext";
-import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
-import { TablePagination, usePagination } from "@/components/shared/TablePagination";
+import { DataFilterBar } from "@/components/shared/DataFilterBar";
+import { TablePagination } from "@/components/shared/TablePagination";
 import { CameraCapture } from "@/components/shared/CameraCapture";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { Combobox } from "@/components/ui/combobox";
@@ -76,7 +76,23 @@ const ITEM_TYPE_OPTIONS = [
 ];
 
 export default function PelayananPaket() {
-  const { data: packages = [], isLoading } = usePackages();
+  // Pagination and filter states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [searchValue, setSearchValue] = useState("");
+  const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
+
+  // Use server-side paginated hook
+  const { data: packagesResult, isLoading } = usePackagesPaginated(
+    currentPage,
+    itemsPerPage,
+    searchValue,
+    dateFilter
+  );
+
+  const packages = packagesResult?.data || [];
+  const totalCount = packagesResult?.totalCount || 0;
+
   const createPackage = useCreatePackage();
   const updateStatus = useUpdatePackageStatus();
   const deletePackage = useDeletePackage();
@@ -89,14 +105,6 @@ export default function PelayananPaket() {
   const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
-
-  // Filter states
-  const [searchValue, setSearchValue] = useState("");
-  const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
-
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // File upload
   const { uploadFile, getPublicUrl, uploading } = useFileUpload({
@@ -115,29 +123,7 @@ export default function PelayananPaket() {
   });
   const [photoFile, setPhotoFile] = useState<File | null>(null);
 
-  // Filter data
-  const filteredData = useMemo(() => {
-    let result = packages;
-
-    // Date filter
-    result = filterByDate(result, dateFilter);
-
-    // Search filter
-    if (searchValue) {
-      const query = searchValue.toLowerCase();
-      result = result.filter((pkg) =>
-        pkg.owner_name.toLowerCase().includes(query) ||
-        pkg.unit_number?.toLowerCase().includes(query) ||
-        pkg.courier.toLowerCase().includes(query) ||
-        pkg.item_type.toLowerCase().includes(query)
-      );
-    }
-
-    return result;
-  }, [packages, searchValue, dateFilter]);
-
-  // Pagination
-  const paginatedData = usePagination(filteredData, itemsPerPage, currentPage);
+  // Note: Filtering and pagination are now handled server-side in usePackagesPaginated
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -243,7 +229,7 @@ export default function PelayananPaket() {
 
   const getStatusBadge = (status: string) => {
     if (status === "diambil") {
-      return <Badge className="bg-green-500">Sudah Diambil</Badge>;
+      return <Badge className="bg-emerald-500 hover:bg-emerald-600">Sudah Diambil</Badge>;
     }
     return <Badge variant="destructive">Belum Diambil</Badge>;
   };
@@ -407,14 +393,14 @@ export default function PelayananPaket() {
                         Memuat data...
                       </TableCell>
                     </TableRow>
-                  ) : paginatedData.length === 0 ? (
+                  ) : packages.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                         Tidak ada data paket
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginatedData.map((pkg, index) => (
+                    packages.map((pkg, index) => (
                       <TableRow key={pkg.id}>
                         <TableCell>{(currentPage - 1) * itemsPerPage + index + 1}</TableCell>
                         <TableCell className="whitespace-nowrap">
@@ -512,7 +498,7 @@ export default function PelayananPaket() {
 
             <TablePagination
               currentPage={currentPage}
-              totalItems={filteredData.length}
+              totalItems={totalCount}
               itemsPerPage={itemsPerPage}
               onPageChange={setCurrentPage}
               onItemsPerPageChange={(value) => {
