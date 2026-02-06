@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { User, Phone, Mail, MapPin, Building2, X, Plus, Trash2, ImagePlus, Loader2 } from "lucide-react";
+import { User, Phone, Mail, MapPin, Building2, X, Plus, Trash2, ImagePlus, Loader2, Camera } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAgentGallery, useAddGalleryImage, useDeleteGalleryImage, useUploadGalleryImage } from "@/hooks/useAgentGallery";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface AgentWithUnits {
   id: string;
@@ -35,11 +36,12 @@ interface AgentDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   isSuperAdmin: boolean;
   units?: Unit[];
-  selectedUnitId: string;
-  onSelectUnit: (value: string) => void;
+  unitInput: string;
+  onUnitInputChange: (value: string) => void;
   onAddUnit: () => void;
   onRemoveUnit: (id: string) => void;
   isAddingUnit: boolean;
+  onPhotoUpdated?: () => void;
 }
 
 export function AgentDetailDialog({
@@ -48,11 +50,12 @@ export function AgentDetailDialog({
   onOpenChange,
   isSuperAdmin,
   units,
-  selectedUnitId,
-  onSelectUnit,
+  unitInput,
+  onUnitInputChange,
   onAddUnit,
   onRemoveUnit,
   isAddingUnit,
+  onPhotoUpdated,
 }: AgentDetailDialogProps) {
   const { data: galleryImages, isLoading: isLoadingGallery } = useAgentGallery(agent?.id ?? null);
   const addGalleryImage = useAddGalleryImage();
@@ -60,8 +63,47 @@ export function AgentDetailDialog({
   const uploadGalleryImage = useUploadGalleryImage();
   
   const [isUploading, setIsUploading] = useState(false);
+  const [isUploadingProfile, setIsUploadingProfile] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
+  const [unitType, setUnitType] = useState("");
+  const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0] || !agent) return;
+    
+    const file = e.target.files[0];
+    setIsUploadingProfile(true);
+    
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${agent.id}-profile-${Date.now()}.${fileExt}`;
+      const filePath = `profiles/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from("agent-gallery")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("agent-gallery")
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from("agents")
+        .update({ photo_url: publicUrl })
+        .eq("id", agent.id);
+
+      if (updateError) throw updateError;
+      
+      toast.success("Foto profil berhasil diperbarui");
+      onPhotoUpdated?.();
+    } catch (error: any) {
+      toast.error("Gagal upload foto: " + error.message);
+    } finally {
+      setIsUploadingProfile(false);
+      e.target.value = "";
+    }
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || !e.target.files[0] || !agent) return;
@@ -102,12 +144,37 @@ export function AgentDetailDialog({
           
           <div className="space-y-6">
             {/* Agent Info */}
-            <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center overflow-hidden flex-shrink-0">
-                {agent.photo_url ? (
-                  <img src={agent.photo_url} alt={agent.name} className="w-full h-full object-cover" />
-                ) : (
-                  <User className="w-10 h-10 text-primary-foreground" />
+            <div className="flex items-start gap-4">
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {agent.photo_url ? (
+                    <img src={agent.photo_url} alt={agent.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-10 h-10 text-primary-foreground" />
+                  )}
+                </div>
+                {isSuperAdmin && (
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfilePhotoUpload}
+                      className="hidden"
+                      disabled={isUploadingProfile}
+                    />
+                    <Button size="sm" variant="outline" asChild disabled={isUploadingProfile}>
+                      <span className="text-xs">
+                        {isUploadingProfile ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <>
+                            <Camera className="w-3 h-3 mr-1" />
+                            Ganti Foto
+                          </>
+                        )}
+                      </span>
+                    </Button>
+                  </label>
                 )}
               </div>
               <div>
@@ -163,20 +230,24 @@ export function AgentDetailDialog({
               </div>
 
               {isSuperAdmin && (
-                <div className="flex gap-2 mt-2">
-                  <Select value={selectedUnitId} onValueChange={onSelectUnit}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Pilih unit" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {units?.filter(u => !agent.agent_units?.some(au => au.unit_id === u.id)).map((u) => (
-                        <SelectItem key={u.id} value={u.id}>{u.unit_number}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button onClick={onAddUnit} disabled={!selectedUnitId || isAddingUnit}>
-                    {isAddingUnit ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  </Button>
+                <div className="space-y-2 mt-2">
+                  <div className="flex gap-2">
+                    <Input
+                      value={unitInput}
+                      onChange={(e) => onUnitInputChange(e.target.value)}
+                      placeholder="Ketik nomor unit (contoh: A-12-05)"
+                      className="flex-1"
+                    />
+                    <Button onClick={onAddUnit} disabled={!unitInput.trim() || isAddingUnit}>
+                      {isAddingUnit ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                  <Input
+                    value={unitType}
+                    onChange={(e) => setUnitType(e.target.value)}
+                    placeholder="Keterangan type unit (contoh: 2BR Furnished)"
+                    className="text-sm"
+                  />
                 </div>
               )}
             </div>

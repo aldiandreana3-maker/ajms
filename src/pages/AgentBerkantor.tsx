@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { AgentCard } from "@/components/agent/AgentCard";
 import { AgentDetailDialog } from "@/components/agent/AgentDetailDialog";
 import { AgentFormDialog } from "@/components/agent/AgentFormDialog";
+import { toast } from "sonner";
 
 const AgentBerkantor = () => {
   const { data: agents, isLoading } = useAgents();
@@ -22,7 +23,7 @@ const AgentBerkantor = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [selectedUnitId, setSelectedUnitId] = useState("");
+  const [unitInput, setUnitInput] = useState("");
 
   const [form, setForm] = useState({
     name: "",
@@ -69,9 +70,22 @@ const AgentBerkantor = () => {
   };
 
   const handleAddUnit = async () => {
-    if (selectedAgent && selectedUnitId) {
-      await addUnitMutation.mutateAsync({ agent_id: selectedAgent, unit_id: selectedUnitId });
-      setSelectedUnitId("");
+    if (selectedAgent && unitInput.trim()) {
+      // Find unit by unit_number
+      const matchedUnit = units?.find(u => u.unit_number.toLowerCase() === unitInput.trim().toLowerCase());
+      if (matchedUnit) {
+        await addUnitMutation.mutateAsync({ agent_id: selectedAgent, unit_id: matchedUnit.id });
+        setUnitInput("");
+      } else {
+        // If no exact match, try partial match
+        const partialMatch = units?.find(u => u.unit_number.toLowerCase().includes(unitInput.trim().toLowerCase()));
+        if (partialMatch) {
+          await addUnitMutation.mutateAsync({ agent_id: selectedAgent, unit_id: partialMatch.id });
+          setUnitInput("");
+        } else {
+          toast.error("Unit tidak ditemukan. Pastikan nomor unit benar.");
+        }
+      }
     }
   };
 
@@ -146,11 +160,15 @@ const AgentBerkantor = () => {
         onOpenChange={(open) => !open && setSelectedAgent(null)}
         isSuperAdmin={isSuperAdmin}
         units={units}
-        selectedUnitId={selectedUnitId}
-        onSelectUnit={setSelectedUnitId}
+        unitInput={unitInput}
+        onUnitInputChange={setUnitInput}
         onAddUnit={handleAddUnit}
         onRemoveUnit={handleRemoveUnit}
         isAddingUnit={addUnitMutation.isPending}
+        onPhotoUpdated={() => {
+          // Refetch agents to get updated photo
+          window.location.reload();
+        }}
       />
     </MainLayout>
   );
