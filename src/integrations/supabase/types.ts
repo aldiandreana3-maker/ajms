@@ -161,6 +161,44 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_gallery: {
+        Row: {
+          agent_id: string
+          caption: string | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          image_url: string
+          updated_at: string | null
+        }
+        Insert: {
+          agent_id: string
+          caption?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url: string
+          updated_at?: string | null
+        }
+        Update: {
+          agent_id?: string
+          caption?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_gallery_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_units: {
         Row: {
           agent_id: string
