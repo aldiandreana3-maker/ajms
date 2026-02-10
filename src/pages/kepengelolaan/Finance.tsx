@@ -2,14 +2,13 @@ import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShieldAlert, Wallet, ArrowLeft, Construction } from "lucide-react";
+import { ShieldAlert, Wallet, ArrowLeft, Receipt, Construction } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Finance() {
   const navigate = useNavigate();
   const { isSuperAdmin, isAdmin, isLimitedAccess } = useAuth();
 
-  // Only admin and super_admin can access, not penghuni or agent
   const canAccess = (isSuperAdmin || isAdmin) && !isLimitedAccess;
 
   if (!canAccess) {
@@ -30,12 +29,7 @@ export default function Finance() {
     <MainLayout>
       <div className="space-y-6 animate-fade-in">
         <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(-1)}
-            className="rounded-lg"
-          >
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-lg">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex items-center gap-3">
@@ -47,23 +41,29 @@ export default function Finance() {
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Construction className="w-5 h-5 text-warning" />
-              Dalam Pengembangan
-            </CardTitle>
-            <CardDescription>
-              Fitur Finance sedang dalam proses pengembangan
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Halaman ini akan berisi fitur-fitur terkait keuangan seperti pengelolaan tagihan, 
-              pembayaran, dan laporan keuangan penghuni.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Card
+            className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all duration-200 group"
+            onClick={() => navigate("/tagihan")}
+          >
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
+                  <Receipt className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Sistem Tagihan IPL</CardTitle>
+                  <CardDescription>Kelola tagihan IPL penghuni</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                Atur tarif per tipe unit, generate tagihan otomatis, dan kelola pembayaran penghuni.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </MainLayout>
   );
