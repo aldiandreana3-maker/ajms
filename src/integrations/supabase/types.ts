@@ -274,6 +274,39 @@ export type Database = {
         }
         Relationships: []
       }
+      bill_rates: {
+        Row: {
+          area_label: string
+          area_sqm: number
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          monthly_amount: number | null
+          quarterly_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          area_label: string
+          area_sqm: number
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          monthly_amount?: number | null
+          quarterly_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          area_label?: string
+          area_sqm?: number
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          monthly_amount?: number | null
+          quarterly_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       bills: {
         Row: {
           amount: number
