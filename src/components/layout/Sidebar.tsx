@@ -29,11 +29,11 @@ import {
 // Menu items with isSuperAdminOnly flag for red indicator
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/", isSuperAdminOnly: false },
+  { icon: Receipt, label: "Sistem Tagihan", path: "/sistem-tagihan", isSuperAdminOnly: false },
   { icon: Users, label: "Tentang Kami", path: "/tentang-kami", isSuperAdminOnly: true },
   { icon: Building2, label: "Agent Berkantor", path: "/agent-berkantor", isSuperAdminOnly: true },
   { icon: Layers, label: "Struktur Fasilitas", path: "/struktur-fasilitas", isSuperAdminOnly: true },
   { icon: FileBarChart, label: "Laporan Keuangan", path: "/laporan-keuangan", isSuperAdminOnly: true },
-  { icon: Receipt, label: "Tagihan", path: "/tagihan", isSuperAdminOnly: true },
   { icon: Newspaper, label: "Berita", path: "/berita", isSuperAdminOnly: true },
 ];
 

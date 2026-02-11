@@ -12,6 +12,7 @@ import AgentBerkantor from "./pages/AgentBerkantor";
 import StrukturFasilitas from "./pages/StrukturFasilitas";
 import LaporanKeuangan from "./pages/LaporanKeuangan";
 import Tagihan from "./pages/Tagihan";
+import SistemTagihan from "./pages/SistemTagihan";
 import Berita from "./pages/Berita";
 import Profile from "./pages/Profile";
 import ManajemenUser from "./pages/ManajemenUser";
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/struktur-fasilitas" element={<StrukturFasilitas />} />
             <Route path="/laporan-keuangan" element={<LaporanKeuangan />} />
             <Route path="/tagihan" element={<Tagihan />} />
+            <Route path="/sistem-tagihan" element={<SistemTagihan />} />
             <Route path="/berita" element={<Berita />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/manajemen-user" element={<ManajemenUser />} />
