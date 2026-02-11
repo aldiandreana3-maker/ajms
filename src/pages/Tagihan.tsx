@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { BillRatesCard } from "@/components/tagihan/BillRatesCard";
 import { GenerateBillDialog } from "@/components/tagihan/GenerateBillDialog";
 import { BillTable } from "@/components/tagihan/BillTable";
-import { UnitCombobox } from "@/components/tagihan/UnitCombobox";
+
 import { Receipt, Plus, Loader2, CheckCircle, ShieldAlert } from "lucide-react";
 
 export default function Tagihan() {
@@ -105,7 +105,10 @@ export default function Tagihan() {
                   <DialogTitle>Tambah Tagihan Manual</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <UnitCombobox value={form.unit_number} onChange={(v) => setForm({ ...form, unit_number: v })} />
+                  <div className="space-y-2">
+                    <Label>Unit</Label>
+                    <Input value={form.unit_number} onChange={(e) => setForm({ ...form, unit_number: e.target.value })} placeholder="Ketik nomor unit (cth: A0101, K-B05)" required />
+                  </div>
                   <div className="space-y-2">
                     <Label>Jenis Tagihan</Label>
                     <Select value={form.bill_type} onValueChange={(v) => setForm({ ...form, bill_type: v as typeof form.bill_type })}>
