@@ -25,7 +25,8 @@ interface Bill {
 }
 
 interface CreateBillInput {
-  unit_id: string;
+  unit_id?: string;
+  unit_number?: string;
   penghuni_id?: string;
   bill_type: BillType;
   amount: number;
@@ -59,9 +60,22 @@ export function useCreateBill() {
 
   return useMutation({
     mutationFn: async (input: CreateBillInput) => {
+      let unit_id = input.unit_id;
+
+      // If unit_number provided, look up or skip unit_id
+      if (!unit_id && input.unit_number) {
+        const { data: unit } = await supabase
+          .from("units")
+          .select("id")
+          .eq("unit_number", input.unit_number)
+          .maybeSingle();
+        unit_id = unit?.id || undefined;
+      }
+
+      const { unit_number, ...rest } = input;
       const { data, error } = await supabase
         .from("bills")
-        .insert(input)
+        .insert({ ...rest, unit_id: unit_id || null })
         .select()
         .single();
 
