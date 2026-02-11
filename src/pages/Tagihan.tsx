@@ -9,11 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBills, useCreateBill, useUpdateBillPayment } from "@/hooks/useBills";
-import { useUnits } from "@/hooks/useUnits";
 import { useAuth } from "@/contexts/AuthContext";
 import { BillRatesCard } from "@/components/tagihan/BillRatesCard";
 import { GenerateBillDialog } from "@/components/tagihan/GenerateBillDialog";
 import { BillTable } from "@/components/tagihan/BillTable";
+import { UnitCombobox } from "@/components/tagihan/UnitCombobox";
 import { Receipt, Plus, Loader2, CheckCircle, ShieldAlert } from "lucide-react";
 
 export default function Tagihan() {
@@ -21,7 +21,6 @@ export default function Tagihan() {
   const canAccess = (isSuperAdmin || isAdmin) && !isLimitedAccess;
 
   const { data: bills, isLoading } = useBills();
-  const { units } = useUnits();
   const createMutation = useCreateBill();
   const payMutation = useUpdateBillPayment();
 
@@ -30,8 +29,8 @@ export default function Tagihan() {
   const [payAmount, setPayAmount] = useState("");
 
   const [form, setForm] = useState({
-    unit_id: "",
-    bill_type: "air" as "ipl" | "kebersihan" | "keamanan" | "sinking_fund" | "listrik" | "air" | "denda" | "perbaikan",
+    unit_number: "",
+    bill_type: "ipl" as "ipl" | "air",
     amount: "",
     billing_period: "",
     due_date: "",
@@ -54,13 +53,17 @@ export default function Tagihan() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.unit_number) return;
     await createMutation.mutateAsync({
-      ...form,
+      unit_number: form.unit_number,
+      bill_type: form.bill_type,
       amount: parseFloat(form.amount),
+      billing_period: form.billing_period,
+      due_date: form.due_date,
       notes: form.notes || undefined,
     });
     setIsOpen(false);
-    setForm({ unit_id: "", bill_type: "air", amount: "", billing_period: "", due_date: "", notes: "" });
+    setForm({ unit_number: "", bill_type: "ipl", amount: "", billing_period: "", due_date: "", notes: "" });
   };
 
   const handlePay = async () => {
@@ -102,26 +105,14 @@ export default function Tagihan() {
                   <DialogTitle>Tambah Tagihan Manual</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Unit</Label>
-                    <Select value={form.unit_id} onValueChange={(v) => setForm({ ...form, unit_id: v })}>
-                      <SelectTrigger><SelectValue placeholder="Pilih unit" /></SelectTrigger>
-                      <SelectContent>
-                        {units?.map((u) => (
-                          <SelectItem key={u.id} value={u.id}>{u.unit_number}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <UnitCombobox value={form.unit_number} onChange={(v) => setForm({ ...form, unit_number: v })} />
                   <div className="space-y-2">
                     <Label>Jenis Tagihan</Label>
                     <Select value={form.bill_type} onValueChange={(v) => setForm({ ...form, bill_type: v as typeof form.bill_type })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="ipl">IPL</SelectItem>
                         <SelectItem value="air">Air</SelectItem>
-                        <SelectItem value="listrik">Listrik</SelectItem>
-                        <SelectItem value="denda">Denda</SelectItem>
-                        <SelectItem value="perbaikan">Perbaikan</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
