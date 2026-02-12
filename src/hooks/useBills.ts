@@ -75,7 +75,7 @@ export function useCreateBill() {
       const { unit_number, ...rest } = input;
       const { data, error } = await supabase
         .from("bills")
-        .insert({ ...rest, unit_id: unit_id || null })
+        .insert({ ...rest, unit_id: unit_id || null, unit_number: input.unit_number || null })
         .select()
         .single();
 
@@ -118,6 +118,36 @@ export function useUpdateBillPayment() {
     },
     onError: (error) => {
       toast.error("Gagal mencatat pembayaran: " + error.message);
+    },
+  });
+}
+
+export function useRevertBillPayment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase
+        .from("bills")
+        .update({ 
+          payment_status: "unpaid" as PaymentStatus,
+          paid_at: null,
+          paid_amount: null 
+        })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+      queryClient.invalidateQueries({ queryKey: ["financial-report"] });
+      toast.success("Status tagihan dikembalikan ke Belum Bayar");
+    },
+    onError: (error) => {
+      toast.error("Gagal mengubah status: " + error.message);
     },
   });
 }

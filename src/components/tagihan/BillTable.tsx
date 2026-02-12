@@ -26,6 +26,7 @@ const formatCurrency = (amount: number) =>
 interface Bill {
   id: string;
   units?: { unit_number: string } | null;
+  unit_number?: string | null;
   bill_type: string;
   amount: number;
   billing_period: string;
@@ -39,9 +40,11 @@ interface Bill {
 export function BillTable({
   bills,
   onPay,
+  onRevert,
 }: {
   bills: Bill[];
   onPay?: (id: string, amount: number) => void;
+  onRevert?: (id: string) => void;
 }) {
   return (
     <Table>
@@ -54,13 +57,13 @@ export function BillTable({
           <TableHead>Jatuh Tempo</TableHead>
           <TableHead>Jumlah</TableHead>
           <TableHead>Status</TableHead>
-          {onPay && <TableHead>Aksi</TableHead>}
+          {(onPay || onRevert) && <TableHead>Aksi</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
         {bills.map((b) => (
           <TableRow key={b.id}>
-            <TableCell>{b.units?.unit_number || "-"}</TableCell>
+            <TableCell>{b.units?.unit_number || b.unit_number || "-"}</TableCell>
             <TableCell>
               <div className="flex items-center gap-2">
                 {billTypeLabels[b.bill_type] || b.bill_type}
@@ -80,20 +83,27 @@ export function BillTable({
                 {b.payment_status === "unpaid" ? "Belum Bayar" : b.payment_status === "paid" ? "Lunas" : "Terlambat"}
               </Badge>
             </TableCell>
-            {onPay && (
+            {(onPay || onRevert) && (
               <TableCell>
-                {b.payment_status === "unpaid" && (
-                  <Button variant="outline" size="sm" onClick={() => onPay(b.id, b.amount)}>
-                    Bayar
-                  </Button>
-                )}
+                <div className="flex gap-1">
+                  {onPay && b.payment_status === "unpaid" && (
+                    <Button variant="outline" size="sm" onClick={() => onPay(b.id, b.amount)}>
+                      Bayar
+                    </Button>
+                  )}
+                  {onRevert && b.payment_status === "paid" && (
+                    <Button variant="outline" size="sm" className="text-destructive" onClick={() => onRevert(b.id)}>
+                      Batalkan
+                    </Button>
+                  )}
+                </div>
               </TableCell>
             )}
           </TableRow>
         ))}
         {bills.length === 0 && (
           <TableRow>
-            <TableCell colSpan={onPay ? 8 : 7} className="text-center text-muted-foreground py-8">
+            <TableCell colSpan={(onPay || onRevert) ? 8 : 7} className="text-center text-muted-foreground py-8">
               Tidak ada tagihan
             </TableCell>
           </TableRow>

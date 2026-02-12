@@ -322,6 +322,7 @@ export type Database = {
           payment_status: Database["public"]["Enums"]["payment_status"] | null
           penghuni_id: string | null
           unit_id: string | null
+          unit_number: string | null
           updated_at: string | null
         }
         Insert: {
@@ -338,6 +339,7 @@ export type Database = {
           payment_status?: Database["public"]["Enums"]["payment_status"] | null
           penghuni_id?: string | null
           unit_id?: string | null
+          unit_number?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -354,6 +356,7 @@ export type Database = {
           payment_status?: Database["public"]["Enums"]["payment_status"] | null
           penghuni_id?: string | null
           unit_id?: string | null
+          unit_number?: string | null
           updated_at?: string | null
         }
         Relationships: [
