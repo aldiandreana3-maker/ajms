@@ -56,13 +56,14 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, isSuperAdmin, isAdmin, isLimitedAccess } = useAuth();
+  const { signOut, isSuperAdmin, isAdmin, isLimitedAccess, user } = useAuth();
   const [kepengelolaanOpen, setKepengelolaanOpen] = useState(
     location.pathname.startsWith("/kepengelolaan")
   );
   
-  // Hide kepengelolaan from penghuni and agent (limited access users)
+  // Hide kepengelolaan from penghuni and agent, except Finance
   const canAccessKepengelolaan = (isSuperAdmin || isAdmin) && !isLimitedAccess;
+  const canAccessFinance = !!user; // All logged-in users can access Finance
 
   const handleLogout = async () => {
     await signOut();
@@ -189,7 +190,25 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </>
         )}
 
-        {/* Admin Menu */}
+        {/* Finance shortcut for penghuni/agent (limited access users) */}
+        {!canAccessKepengelolaan && canAccessFinance && (
+          <NavLink
+            to="/kepengelolaan/finance"
+            className={cn(
+              "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group",
+              location.pathname.startsWith("/kepengelolaan/finance")
+                ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+                : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            )}
+          >
+            <Wallet className={cn("w-5 h-5 flex-shrink-0", collapsed && "mx-auto")} />
+            {!collapsed && (
+              <span className="font-medium text-sm truncate">Finance</span>
+            )}
+          </NavLink>
+        )}
+
+
         {isSuperAdmin && (
           <>
             {!collapsed && (
