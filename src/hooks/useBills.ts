@@ -152,6 +152,48 @@ export function useRevertBillPayment() {
   });
 }
 
+export function useDeleteBill() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("bills").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+      toast.success("Tagihan berhasil dihapus");
+    },
+    onError: (error) => {
+      toast.error("Gagal menghapus tagihan: " + error.message);
+    },
+  });
+}
+
+export function useUpdateBill() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string; unit_number?: string; bill_type?: BillType; amount?: number; billing_period?: string; due_date?: string; notes?: string | null }) => {
+      const { data, error } = await supabase
+        .from("bills")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+      toast.success("Tagihan berhasil diperbarui");
+    },
+    onError: (error) => {
+      toast.error("Gagal memperbarui tagihan: " + error.message);
+    },
+  });
+}
+
 export function useGenerateMonthlyBills() {
   const queryClient = useQueryClient();
 

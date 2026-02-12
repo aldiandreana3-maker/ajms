@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useBills, useCreateBill, useUpdateBillPayment, useRevertBillPayment } from "@/hooks/useBills";
+import { useBills, useCreateBill, useUpdateBillPayment, useRevertBillPayment, useDeleteBill, useUpdateBill } from "@/hooks/useBills";
 import { useAuth } from "@/contexts/AuthContext";
 import { BillRatesCard } from "@/components/tagihan/BillRatesCard";
 import { GenerateBillDialog } from "@/components/tagihan/GenerateBillDialog";
@@ -24,6 +24,8 @@ export default function Tagihan() {
   const createMutation = useCreateBill();
   const payMutation = useUpdateBillPayment();
   const revertMutation = useRevertBillPayment();
+  const deleteMutation = useDeleteBill();
+  const updateBillMutation = useUpdateBill();
 
   const [isOpen, setIsOpen] = useState(false);
   const [payingId, setPayingId] = useState<string | null>(null);
@@ -166,13 +168,13 @@ export default function Tagihan() {
                   <TabsTrigger value="all">Semua ({bills?.length || 0})</TabsTrigger>
                 </TabsList>
                 <TabsContent value="unpaid" className="mt-4">
-                  <BillTable bills={unpaidBills} onPay={(id, amount) => { setPayingId(id); setPayAmount(amount.toString()); }} onRevert={(id) => revertMutation.mutate(id)} />
+                  <BillTable bills={unpaidBills} onPay={(id, amount) => { setPayingId(id); setPayAmount(amount.toString()); }} onRevert={(id) => revertMutation.mutate(id)} onDelete={(id) => deleteMutation.mutate(id)} onEdit={(id, data) => updateBillMutation.mutate({ id, ...data })} isDeleting={deleteMutation.isPending} isEditing={updateBillMutation.isPending} />
                 </TabsContent>
                 <TabsContent value="paid" className="mt-4">
-                  <BillTable bills={paidBills} onRevert={(id) => revertMutation.mutate(id)} />
+                  <BillTable bills={paidBills} onRevert={(id) => revertMutation.mutate(id)} onDelete={(id) => deleteMutation.mutate(id)} onEdit={(id, data) => updateBillMutation.mutate({ id, ...data })} isDeleting={deleteMutation.isPending} isEditing={updateBillMutation.isPending} />
                 </TabsContent>
                 <TabsContent value="all" className="mt-4">
-                  <BillTable bills={bills || []} onPay={(id, amount) => { setPayingId(id); setPayAmount(amount.toString()); }} onRevert={(id) => revertMutation.mutate(id)} />
+                  <BillTable bills={bills || []} onPay={(id, amount) => { setPayingId(id); setPayAmount(amount.toString()); }} onRevert={(id) => revertMutation.mutate(id)} onDelete={(id) => deleteMutation.mutate(id)} onEdit={(id, data) => updateBillMutation.mutate({ id, ...data })} isDeleting={deleteMutation.isPending} isEditing={updateBillMutation.isPending} />
                 </TabsContent>
               </Tabs>
             )}
