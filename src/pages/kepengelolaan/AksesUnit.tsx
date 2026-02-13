@@ -11,7 +11,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUsers } from "@/hooks/useUserManagement";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, ShieldAlert, Loader2, Search, Users } from "lucide-react";
+import { ArrowLeft, ShieldAlert, Loader2, Search, Users, Settings } from "lucide-react";
+import { ManageUnitsDialog } from "@/components/akses-unit/ManageUnitsDialog";
 
 const roleLabels: Record<string, string> = {
   super_admin: "Super Admin",
@@ -74,7 +75,7 @@ export default function AksesUnit() {
   const { data: users, isLoading: usersLoading } = useUsers();
   const { data: unitMap, isLoading: unitsLoading } = useUserUnits();
   const [search, setSearch] = useState("");
-
+  const [editingUser, setEditingUser] = useState<null | { id: string; full_name: string | null; email: string }>(null);
   const canAccess = (isSuperAdmin || isAdmin) && !isLimitedAccess;
 
   if (!canAccess) {
@@ -145,6 +146,7 @@ export default function AksesUnit() {
                     <TableHead>Role</TableHead>
                     <TableHead>Unit yang Dipegang</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead className="w-[60px]">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -195,12 +197,22 @@ export default function AksesUnit() {
                             <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">Nonaktif</Badge>
                           )}
                         </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setEditingUser({ id: u.id, full_name: u.full_name, email: u.email })}
+                            className="h-8 w-8"
+                          >
+                            <Settings className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     );
                   })}
                   {filteredUsers?.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                         Tidak ada pengguna ditemukan
                       </TableCell>
                     </TableRow>
@@ -211,6 +223,15 @@ export default function AksesUnit() {
           </CardContent>
         </Card>
       </div>
+
+      {editingUser && (
+        <ManageUnitsDialog
+          open={!!editingUser}
+          onOpenChange={(open) => { if (!open) setEditingUser(null); }}
+          user={editingUser}
+          currentUnits={unitMap?.get(editingUser.id) || []}
+        />
+      )}
     </MainLayout>
   );
 }
