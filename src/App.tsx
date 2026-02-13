@@ -28,6 +28,7 @@ import DataPenghuni from "./pages/kepengelolaan/DataPenghuni";
 import TenantRelationOffice from "./pages/kepengelolaan/TenantRelationOffice";
 import Finance from "./pages/kepengelolaan/Finance";
 import HrdGa from "./pages/kepengelolaan/HrdGa";
+import AksesUnit from "./pages/kepengelolaan/AksesUnit";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -63,6 +64,7 @@ const App = () => (
             <Route path="/kepengelolaan/tro" element={<TenantRelationOffice />} />
             <Route path="/kepengelolaan/finance" element={<Finance />} />
             <Route path="/kepengelolaan/hrd-ga" element={<HrdGa />} />
+            <Route path="/kepengelolaan/akses-unit" element={<AksesUnit />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

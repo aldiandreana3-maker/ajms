@@ -14,6 +14,13 @@ const troServices = [
     color: "primary",
     path: "/kepengelolaan/data-penghuni",
   },
+  {
+    icon: ShieldAlert,
+    title: "Akses Unit Pengguna",
+    description: "Kelola akun pengguna dan unit yang dipegang",
+    color: "info",
+    path: "/kepengelolaan/akses-unit",
+  },
 ];
 
 const colorStyles = {
