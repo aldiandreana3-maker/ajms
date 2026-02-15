@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
-import { Trash2, Settings, Loader2 } from "lucide-react";
+import { Trash2, Settings, Loader2, FileText } from "lucide-react";
+import { BillReceiptDialog } from "./BillReceiptDialog";
 
 const billTypeLabels: Record<string, string> = {
   ipl: "IPL",
@@ -35,12 +36,15 @@ interface Bill {
   id: string;
   units?: { unit_number: string } | null;
   unit_number?: string | null;
+  penghuni?: { full_name: string } | null;
   bill_type: string;
   amount: number;
   billing_period: string;
   due_date: string;
   payment_status: "unpaid" | "paid" | "overdue";
   paid_amount: number | null;
+  paid_at?: string | null;
+  created_at?: string | null;
   is_auto_generated: boolean;
   notes: string | null;
 }
@@ -64,6 +68,7 @@ export function BillTable({
 }) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editBill, setEditBill] = useState<Bill | null>(null);
+  const [receiptBill, setReceiptBill] = useState<Bill | null>(null);
   const [editForm, setEditForm] = useState({
     unit_number: "",
     bill_type: "",
@@ -113,6 +118,7 @@ export function BillTable({
             <TableHead>Jatuh Tempo</TableHead>
             <TableHead>Jumlah</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead className="text-center">Kwitansi</TableHead>
             {hasActions && <TableHead>Aksi</TableHead>}
           </TableRow>
         </TableHeader>
@@ -138,6 +144,17 @@ export function BillTable({
                 <Badge className={statusColors[b.payment_status]}>
                   {b.payment_status === "unpaid" ? "Belum Bayar" : b.payment_status === "paid" ? "Lunas" : "Terlambat"}
                 </Badge>
+              </TableCell>
+              <TableCell className="text-center">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setReceiptBill(b)}
+                  title="Lihat Kwitansi"
+                >
+                  <FileText className="w-4 h-4" />
+                </Button>
               </TableCell>
               {hasActions && (
                 <TableCell>
@@ -169,13 +186,34 @@ export function BillTable({
           ))}
           {bills.length === 0 && (
             <TableRow>
-              <TableCell colSpan={hasActions ? 8 : 7} className="text-center text-muted-foreground py-8">
+              <TableCell colSpan={hasActions ? 9 : 8} className="text-center text-muted-foreground py-8">
                 Tidak ada tagihan
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
+
+      {/* Receipt Dialog */}
+      <BillReceiptDialog
+        bill={receiptBill ? {
+          id: receiptBill.id,
+          unit_number: receiptBill.units?.unit_number || receiptBill.unit_number || "-",
+          penghuni_name: receiptBill.penghuni?.full_name || "-",
+          bill_type: receiptBill.bill_type,
+          amount: receiptBill.amount,
+          billing_period: receiptBill.billing_period,
+          due_date: receiptBill.due_date,
+          payment_status: receiptBill.payment_status,
+          paid_amount: receiptBill.paid_amount,
+          paid_at: receiptBill.paid_at || null,
+          is_auto_generated: receiptBill.is_auto_generated,
+          notes: receiptBill.notes,
+          created_at: receiptBill.created_at || null,
+        } : null}
+        open={!!receiptBill}
+        onOpenChange={(open) => !open && setReceiptBill(null)}
+      />
 
       {/* Delete Confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
