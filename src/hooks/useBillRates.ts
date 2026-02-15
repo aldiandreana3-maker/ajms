@@ -8,6 +8,8 @@ export interface BillRate {
   area_sqm: number;
   quarterly_amount: number;
   monthly_amount: number;
+  monthly_sc: number;
+  monthly_sf: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -33,7 +35,7 @@ export function useCreateBillRate() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: { area_label: string; area_sqm: number; quarterly_amount: number }) => {
+    mutationFn: async (input: { area_label: string; area_sqm: number; quarterly_amount: number; monthly_sc: number; monthly_sf: number }) => {
       const { data, error } = await supabase
         .from("bill_rates")
         .insert(input)
@@ -57,7 +59,7 @@ export function useUpdateBillRate() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...input }: { id: string; area_label?: string; area_sqm?: number; quarterly_amount?: number }) => {
+    mutationFn: async ({ id, ...input }: { id: string; area_label?: string; area_sqm?: number; quarterly_amount?: number; monthly_sc?: number; monthly_sf?: number }) => {
       const { data, error } = await supabase
         .from("bill_rates")
         .update(input)

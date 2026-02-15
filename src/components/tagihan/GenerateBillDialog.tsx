@@ -52,14 +52,12 @@ export function GenerateBillDialog() {
         const unit = units?.find((u) => u.id === unitId);
         if (!unit) continue;
 
-        // Match unit to rate by area_sqm
         const matchedRate = rates.find((r) => unit.area_sqm && r.area_sqm === unit.area_sqm);
         if (!matchedRate) {
           toast.warning(`Unit ${unit.unit_number} (${unit.area_sqm || '?'} m²) tidak cocok dengan tarif manapun, dilewati.`);
           continue;
         }
 
-        // Get penghuni for this unit
         const { data: penghuniData } = await supabase
           .from("penghuni")
           .select("id, full_name")
@@ -68,10 +66,10 @@ export function GenerateBillDialog() {
           .limit(1)
           .maybeSingle();
 
-        const scAmount = Math.round((matchedRate.quarterly_amount * 5) / 6 / 3);
-        const sfAmount = Math.round(matchedRate.quarterly_amount / 6 / 3);
+        // Use exact SC and SF from tariff
+        const scAmount = matchedRate.monthly_sc;
+        const sfAmount = matchedRate.monthly_sf;
 
-        // Create SC bill
         await createBill.mutateAsync({
           unit_id: unitId,
           unit_number: unit.unit_number,
@@ -85,7 +83,6 @@ export function GenerateBillDialog() {
         });
         totalBills++;
 
-        // Create SF bill
         await createBill.mutateAsync({
           unit_id: unitId,
           unit_number: unit.unit_number,
@@ -125,7 +122,7 @@ export function GenerateBillDialog() {
         <form onSubmit={handleGenerate} className="space-y-4">
           <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
             <p className="font-medium">Tagihan otomatis berdasarkan tipe unit:</p>
-            <p className="text-muted-foreground">Setiap unit akan mendapat 2 tagihan per bulan: SC (Service Charge = 5/6 tarif) dan SF (Sinking Fund = 1/6 tarif), dihitung dari tarif triwulan.</p>
+            <p className="text-muted-foreground">Setiap unit mendapat 2 tagihan per bulan: SC dan SF sesuai tarif yang sudah ditetapkan.</p>
           </div>
 
           {rates && rates.length > 0 && (
@@ -133,7 +130,7 @@ export function GenerateBillDialog() {
               <p className="font-medium mb-2">Tarif Aktif:</p>
               {rates.map((r) => (
                 <p key={r.id} className="text-muted-foreground">
-                  {r.area_label}: SC {formatCurrency(Math.round((r.quarterly_amount * 5) / 6 / 3))}/bln + SF {formatCurrency(Math.round(r.quarterly_amount / 6 / 3))}/bln
+                  {r.area_label}: SC {formatCurrency(r.monthly_sc)}/bln + SF {formatCurrency(r.monthly_sf)}/bln
                 </p>
               ))}
             </div>

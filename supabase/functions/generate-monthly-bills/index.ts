@@ -16,12 +16,10 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get current date info
     const now = new Date();
     const billingPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
     const dueDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-05`;
 
-    // Check if bills already generated for this period
     const { data: existingBills } = await supabase
       .from("bills")
       .select("id")
@@ -36,7 +34,7 @@ serve(async (req) => {
       );
     }
 
-    // Get active bill rates
+    // Get active bill rates with exact SC and SF values
     const { data: rates, error: ratesError } = await supabase
       .from("bill_rates")
       .select("*")
@@ -50,14 +48,12 @@ serve(async (req) => {
       );
     }
 
-    // Get all units with their penghuni
     const { data: units, error: unitsError } = await supabase
       .from("units")
       .select("id, unit_number, area_sqm");
 
     if (unitsError) throw unitsError;
 
-    // Get active penghuni mapped by unit_id
     const { data: penghuniList } = await supabase
       .from("penghuni")
       .select("id, full_name, unit_id")
@@ -77,8 +73,10 @@ serve(async (req) => {
       if (!matchedRate) continue;
 
       const penghuni = penghuniByUnit.get(unit.id);
-      const scAmount = Math.round((matchedRate.quarterly_amount * 5) / 6 / 3);
-      const sfAmount = Math.round(matchedRate.quarterly_amount / 6 / 3);
+      
+      // Use exact SC and SF from the tariff table
+      const scAmount = Number(matchedRate.monthly_sc);
+      const sfAmount = Number(matchedRate.monthly_sf);
 
       // SC bill
       billsToInsert.push({
