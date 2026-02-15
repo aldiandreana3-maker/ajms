@@ -26,13 +26,12 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const now = new Date();
-    const currentMonth = now.getMonth() + 1; // 1-12
+    const currentMonth = now.getMonth() + 1;
     const currentYear = now.getFullYear();
 
-    // Determine current quarter
     const quarter = QUARTER_MONTHS.find((q) => currentMonth >= q.start && currentMonth <= q.end)!;
     const quarterStart = `${currentYear}-${String(quarter.start).padStart(2, "0")}-01`;
-    const quarterEnd = `${currentYear}-${String(quarter.end).padStart(2, "0")}-28`; // approximate end
+    const quarterEnd = `${currentYear}-${String(quarter.end).padStart(2, "0")}-28`;
     const quarterLabel = quarter.label(currentYear);
     const dueDate = `${currentYear}-${String(quarter.start).padStart(2, "0")}-05`;
 
@@ -65,7 +64,11 @@ serve(async (req) => {
       );
     }
 
-    // Get all units
+    // Build rate map by area_sqm
+    const rateMap = new Map<number, any>();
+    rates.forEach((r: any) => rateMap.set(Number(r.area_sqm), r));
+
+    // Get all units with area
     const { data: units, error: unitsError } = await supabase
       .from("units")
       .select("id, unit_number, area_sqm");
@@ -82,12 +85,11 @@ serve(async (req) => {
       if (p.unit_id) penghuniByUnit.set(p.unit_id, { id: p.id, full_name: p.full_name });
     });
 
-    let billsCreated = 0;
-
+    // Prepare all bill records in memory
+    const billRecords: any[] = [];
     for (const unit of units || []) {
       if (!unit.area_sqm) continue;
-
-      const matchedRate = rates.find((r: any) => Number(r.area_sqm) === Number(unit.area_sqm));
+      const matchedRate = rateMap.get(Number(unit.area_sqm));
       if (!matchedRate) continue;
 
       const penghuni = penghuniByUnit.get(unit.id);
@@ -97,62 +99,73 @@ serve(async (req) => {
       const sfTotal = sfMonthly * 3;
       const totalAmount = scTotal + sfTotal;
 
-      // Create quarterly bill
-      const { data: bill, error: billError } = await supabase
-        .from("bills")
-        .insert({
-          unit_id: unit.id,
-          unit_number: unit.unit_number,
-          penghuni_id: penghuni?.id || null,
-          bill_type: "ipl",
-          amount: totalAmount,
-          billing_period: quarterStart,
-          due_date: dueDate,
-          quarter_start: quarterStart,
-          quarter_end: quarterEnd,
-          quarter_label: quarterLabel,
-          sc_monthly: scMonthly,
-          sf_monthly: sfMonthly,
-          sc_total: scTotal,
-          sf_total: sfTotal,
-          total_amount: totalAmount,
-          is_auto_generated: true,
-          payment_status: "unpaid",
-          notes: `${matchedRate.area_label} - ${penghuni?.full_name || "N/A"}`,
-        })
-        .select("id")
-        .single();
+      billRecords.push({
+        unit_id: unit.id,
+        unit_number: unit.unit_number,
+        penghuni_id: penghuni?.id || null,
+        bill_type: "ipl",
+        amount: totalAmount,
+        billing_period: quarterStart,
+        due_date: dueDate,
+        quarter_start: quarterStart,
+        quarter_end: quarterEnd,
+        quarter_label: quarterLabel,
+        sc_monthly: scMonthly,
+        sf_monthly: sfMonthly,
+        sc_total: scTotal,
+        sf_total: sfTotal,
+        total_amount: totalAmount,
+        is_auto_generated: true,
+        payment_status: "unpaid",
+        notes: `${matchedRate.area_label} - ${penghuni?.full_name || "N/A"}`,
+      });
+    }
 
-      if (billError) {
-        console.error(`Error creating bill for unit ${unit.unit_number}:`, billError);
+    // Batch insert bills in chunks of 500
+    const BATCH_SIZE = 500;
+    let billsCreated = 0;
+    const allCreatedBills: any[] = [];
+
+    for (let i = 0; i < billRecords.length; i += BATCH_SIZE) {
+      const batch = billRecords.slice(i, i + BATCH_SIZE);
+      const { data: created, error: batchError } = await supabase
+        .from("bills")
+        .insert(batch)
+        .select("id, unit_id, sc_monthly, sf_monthly");
+
+      if (batchError) {
+        console.error(`Error inserting bill batch ${i}:`, batchError);
         continue;
       }
+      if (created) {
+        allCreatedBills.push(...created);
+        billsCreated += created.length;
+      }
+    }
 
-      // Create 3 monthly payment records
-      const payments = [];
-      for (let i = 0; i < 3; i++) {
-        const monthIdx = quarter.start - 1 + i; // 0-indexed
-        const monthDate = `${currentYear}-${String(monthIdx + 1).padStart(2, "0")}-01`;
-        const monthLabel = `${MONTH_NAMES[monthIdx]} ${currentYear}`;
-
-        payments.push({
+    // Prepare all bill_payments records
+    const paymentRecords: any[] = [];
+    for (const bill of allCreatedBills) {
+      for (let m = 0; m < 3; m++) {
+        const monthIdx = quarter.start - 1 + m;
+        paymentRecords.push({
           bill_id: bill.id,
-          month_number: i + 1,
-          month_label: monthLabel,
-          month_date: monthDate,
-          sc_amount: scMonthly,
-          sf_amount: sfMonthly,
-          total_amount: scMonthly + sfMonthly,
+          month_number: m + 1,
+          month_label: `${MONTH_NAMES[monthIdx]} ${currentYear}`,
+          month_date: `${currentYear}-${String(monthIdx + 1).padStart(2, "0")}-01`,
+          sc_amount: Number(bill.sc_monthly),
+          sf_amount: Number(bill.sf_monthly),
+          total_amount: Number(bill.sc_monthly) + Number(bill.sf_monthly),
         });
       }
+    }
 
-      const { error: pError } = await supabase.from("bill_payments").insert(payments);
-      if (pError) {
-        console.error(`Error creating payments for bill ${bill.id}:`, pError);
-        continue;
-      }
-
-      billsCreated++;
+    // Batch insert payments in chunks of 1000
+    const PAY_BATCH = 1000;
+    for (let i = 0; i < paymentRecords.length; i += PAY_BATCH) {
+      const batch = paymentRecords.slice(i, i + PAY_BATCH);
+      const { error: pError } = await supabase.from("bill_payments").insert(batch);
+      if (pError) console.error(`Error inserting payment batch ${i}:`, pError);
     }
 
     return new Response(
