@@ -3,11 +3,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Loader2, Search, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CheckCircle, XCircle } from "lucide-react";
+import { Trash2, Loader2, Search, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CheckCircle, XCircle, FileText } from "lucide-react";
 import type { QuarterlyBill } from "@/hooks/useBills";
+import { InvoiceDialog } from "./InvoiceDialog";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
@@ -30,15 +30,18 @@ export function BillTable({
   onRevertMonth,
   onDelete,
   isDeleting,
+  showInvoice = false,
 }: {
   bills: QuarterlyBill[];
   onPayMonth?: (paymentId: string, amount: number) => void;
   onRevertMonth?: (paymentId: string) => void;
   onDelete?: (id: string) => void;
   isDeleting?: boolean;
+  showInvoice?: boolean;
 }) {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [expandedBill, setExpandedBill] = useState<string | null>(null);
+  const [invoiceBill, setInvoiceBill] = useState<QuarterlyBill | null>(null);
 
   // Pagination & Search
   const [searchQuery, setSearchQuery] = useState("");
@@ -64,6 +67,8 @@ export function BillTable({
   const toggleExpand = (billId: string) => {
     setExpandedBill((prev) => (prev === billId ? null : billId));
   };
+
+  const hasActions = onDelete || showInvoice;
 
   return (
     <>
@@ -105,13 +110,14 @@ export function BillTable({
               <TableHead>Total Kuartal</TableHead>
               <TableHead>Terbayar</TableHead>
               <TableHead>Status</TableHead>
-              {onDelete && <TableHead>Aksi</TableHead>}
+              {hasActions && <TableHead>{showInvoice && !onDelete ? "Invoice" : "Aksi"}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedBills.map((b) => {
               const isExpanded = expandedBill === b.id;
               const paidMonths = b.bill_payments?.filter((p) => p.is_paid).length || 0;
+              const colSpan = hasActions ? 10 : 9;
 
               return (
                 <>{/* Main row */}
@@ -138,16 +144,31 @@ export function BillTable({
                         {statusLabels[b.payment_status] || b.payment_status}
                       </Badge>
                     </TableCell>
-                    {onDelete && (
+                    {hasActions && (
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
-                          onClick={(e) => { e.stopPropagation(); setDeleteId(b.id); }}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          {showInvoice && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 gap-1"
+                              onClick={(e) => { e.stopPropagation(); setInvoiceBill(b); }}
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              Invoice
+                            </Button>
+                          )}
+                          {onDelete && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={(e) => { e.stopPropagation(); setDeleteId(b.id); }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>
@@ -155,7 +176,7 @@ export function BillTable({
                   {/* Expanded detail rows */}
                   {isExpanded && (
                     <TableRow key={`${b.id}-detail`}>
-                      <TableCell colSpan={onDelete ? 10 : 9} className="bg-muted/30 p-0">
+                      <TableCell colSpan={colSpan} className="bg-muted/30 p-0">
                         <div className="p-4">
                           <p className="text-sm font-medium mb-3">Rincian Pembayaran Per Bulan</p>
                           <Table>
@@ -166,7 +187,7 @@ export function BillTable({
                                 <TableHead>SF</TableHead>
                                 <TableHead>Total</TableHead>
                                 <TableHead>Status</TableHead>
-                                <TableHead>Aksi</TableHead>
+                                {(onPayMonth || onRevertMonth) && <TableHead>Aksi</TableHead>}
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -185,23 +206,25 @@ export function BillTable({
                                       <Badge className="bg-warning/20 text-warning border-warning/30">Belum Bayar</Badge>
                                     )}
                                   </TableCell>
-                                  <TableCell>
-                                    {!p.is_paid && onPayMonth && (
-                                      <Button variant="outline" size="sm" onClick={() => onPayMonth(p.id, p.total_amount)}>
-                                        Bayar
-                                      </Button>
-                                    )}
-                                    {p.is_paid && onRevertMonth && (
-                                      <Button variant="outline" size="sm" className="text-destructive" onClick={() => onRevertMonth(p.id)}>
-                                        <XCircle className="w-3 h-3 mr-1" />Batalkan
-                                      </Button>
-                                    )}
-                                  </TableCell>
+                                  {(onPayMonth || onRevertMonth) && (
+                                    <TableCell>
+                                      {!p.is_paid && onPayMonth && (
+                                        <Button variant="outline" size="sm" onClick={() => onPayMonth(p.id, p.total_amount)}>
+                                          Bayar
+                                        </Button>
+                                      )}
+                                      {p.is_paid && onRevertMonth && (
+                                        <Button variant="outline" size="sm" className="text-destructive" onClick={() => onRevertMonth(p.id)}>
+                                          <XCircle className="w-3 h-3 mr-1" />Batalkan
+                                        </Button>
+                                      )}
+                                    </TableCell>
+                                  )}
                                 </TableRow>
                               ))}
                               {(!b.bill_payments || b.bill_payments.length === 0) && (
                                 <TableRow>
-                                  <TableCell colSpan={6} className="text-center text-muted-foreground py-4">
+                                  <TableCell colSpan={(onPayMonth || onRevertMonth) ? 6 : 5} className="text-center text-muted-foreground py-4">
                                     Tidak ada data pembayaran
                                   </TableCell>
                                 </TableRow>
@@ -217,7 +240,7 @@ export function BillTable({
             })}
             {paginatedBills.length === 0 && (
               <TableRow>
-                <TableCell colSpan={onDelete ? 10 : 9} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={hasActions ? 10 : 9} className="text-center text-muted-foreground py-8">
                   {searchQuery ? "Tidak ditemukan tagihan yang cocok" : "Tidak ada tagihan"}
                 </TableCell>
               </TableRow>
@@ -279,6 +302,13 @@ export function BillTable({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Invoice Dialog */}
+      <InvoiceDialog
+        bill={invoiceBill}
+        open={!!invoiceBill}
+        onOpenChange={(open) => !open && setInvoiceBill(null)}
+      />
     </>
   );
 }

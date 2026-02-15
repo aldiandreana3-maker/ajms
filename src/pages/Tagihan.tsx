@@ -135,6 +135,7 @@ export default function Tagihan() {
                 <TabsContent value="unpaid" className="mt-4">
                   <BillTable
                     bills={unpaidBills}
+                    showInvoice
                     onPayMonth={(id, amount) => { setPayingPayment({ id, amount }); setPayAmount(amount.toString()); }}
                     onRevertMonth={(id) => revertMutation.mutate(id)}
                     onDelete={(id) => deleteMutation.mutate(id)}
@@ -145,6 +146,7 @@ export default function Tagihan() {
                 <TabsContent value="partial" className="mt-4">
                   <BillTable
                     bills={partialBills}
+                    showInvoice
                     onPayMonth={(id, amount) => { setPayingPayment({ id, amount }); setPayAmount(amount.toString()); }}
                     onRevertMonth={(id) => revertMutation.mutate(id)}
                     onDelete={(id) => deleteMutation.mutate(id)}
@@ -175,6 +177,7 @@ export default function Tagihan() {
                   </div>
                   <BillTable
                     bills={paidBills}
+                    showInvoice
                     onRevertMonth={(id) => revertMutation.mutate(id)}
                     onDelete={(id) => deleteMutation.mutate(id)}
                     isDeleting={deleteMutation.isPending}
@@ -184,6 +187,7 @@ export default function Tagihan() {
                 <TabsContent value="all" className="mt-4">
                   <BillTable
                     bills={bills || []}
+                    showInvoice
                     onPayMonth={(id, amount) => { setPayingPayment({ id, amount }); setPayAmount(amount.toString()); }}
                     onRevertMonth={(id) => revertMutation.mutate(id)}
                     onDelete={(id) => deleteMutation.mutate(id)}
