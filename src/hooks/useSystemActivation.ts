@@ -122,3 +122,25 @@ export function useUpdatePaymentStatus() {
     },
   });
 }
+
+export function useDeletePayment() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("system_payments")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["system-payments"] });
+      toast({ title: "Pembayaran berhasil dihapus" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Gagal menghapus pembayaran", description: error.message, variant: "destructive" });
+    },
+  });
+}

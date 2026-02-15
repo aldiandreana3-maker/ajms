@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSystemStatus, useToggleSystemStatus, useSystemPayments } from "@/hooks/useSystemActivation";
-import { Power, PowerOff, CheckCircle2, XCircle, Clock, Loader2, CreditCard, History, ShieldAlert } from "lucide-react";
+import { useSystemStatus, useToggleSystemStatus, useSystemPayments, useDeletePayment } from "@/hooks/useSystemActivation";
+import { Power, PowerOff, CheckCircle2, XCircle, Clock, Loader2, CreditCard, History, ShieldAlert, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { Navigate } from "react-router-dom";
@@ -32,6 +32,7 @@ export default function AktivasiSistem() {
   const { data: systemStatus, isLoading } = useSystemStatus();
   const { data: payments, isLoading: paymentsLoading } = useSystemPayments();
   const toggleStatus = useToggleSystemStatus();
+  const deletePayment = useDeletePayment();
   const { toast } = useToast();
   const [payingType, setPayingType] = useState<string | null>(null);
   const [snapLoaded, setSnapLoaded] = useState(false);
@@ -291,6 +292,7 @@ export default function AktivasiSistem() {
                       <TableHead>Nominal</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Catatan</TableHead>
+                      {isSuperAdmin && <TableHead className="w-[60px]">Aksi</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -303,6 +305,34 @@ export default function AktivasiSistem() {
                         <TableCell className="font-medium">{formatCurrency(Number(p.nominal))}</TableCell>
                         <TableCell>{statusBadge(p.status)}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{p.notes || "-"}</TableCell>
+                        {isSuperAdmin && (
+                          <TableCell>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Hapus Pembayaran?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Data pembayaran ini akan dihapus permanen. Apakah Anda yakin?
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deletePayment.mutate(p.id)}
+                                    className="bg-destructive hover:bg-destructive/90"
+                                  >
+                                    Ya, Hapus
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
