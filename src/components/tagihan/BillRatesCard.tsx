@@ -58,7 +58,7 @@ export function BillRatesCard() {
   // Compute SC (5/6) and SF (1/6) from quarterly amount
   const computeSC = (quarterly: number) => Math.round((quarterly * 5) / 6);
   const computeSF = (quarterly: number) => Math.round(quarterly / 6);
-  const computeMonthly = (quarterly: number) => Math.round(quarterly / 3);
+  const computeMonthly = (quarterly: number) => computeSC(quarterly) + computeSF(quarterly);
 
   const quarterlyVal = parseFloat(form.quarterly_amount || "0");
 
