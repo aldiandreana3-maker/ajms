@@ -27,15 +27,26 @@ export function ManageUnitsDialog({ open, onOpenChange, user, currentUnits }: Ma
   const { data: penghuniUnits } = useQuery({
     queryKey: ["penghuni-distinct-units"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("penghuni")
-        .select("unit_number, unit_id")
-        .not("unit_number", "is", null)
-        .order("unit_number", { ascending: true });
-      if (error) throw error;
+      // Fetch ALL units without 1000-row limit
+      let allData: { unit_number: string | null; unit_id: string | null }[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from("penghuni")
+          .select("unit_number, unit_id")
+          .not("unit_number", "is", null)
+          .order("unit_number", { ascending: true })
+          .range(from, from + batchSize - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data);
+        if (data.length < batchSize) break;
+        from += batchSize;
+      }
       // Deduplicate by unit_number
       const seen = new Set<string>();
-      return (data || []).filter((row) => {
+      return allData.filter((row) => {
         if (!row.unit_number || seen.has(row.unit_number)) return false;
         seen.add(row.unit_number);
         return true;
