@@ -65,7 +65,7 @@ const selectableRoles = [
 ];
 
 export default function ManajemenUser() {
-  const { isSuperAdmin, user: currentUser } = useAuth();
+  const { isSuperAdmin, isAdmin, user: currentUser } = useAuth();
   const { data: users, isLoading } = useUsers();
   const updateRoleMutation = useUpdateUserRole();
   const updateStatusMutation = useUpdateUserStatus();
@@ -133,13 +133,13 @@ export default function ManajemenUser() {
     setCopied(false);
   };
 
-  if (!isSuperAdmin) {
+  if (!isAdmin) {
     return (
       <MainLayout>
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <Shield className="w-16 h-16 text-muted-foreground mb-4" />
           <h2 className="text-xl font-semibold text-foreground mb-2">Akses Ditolak</h2>
-          <p className="text-muted-foreground">Halaman ini hanya dapat diakses oleh Super Admin</p>
+          <p className="text-muted-foreground">Halaman ini hanya dapat diakses oleh Super Admin dan Admin</p>
         </div>
       </MainLayout>
     );
@@ -231,10 +231,10 @@ export default function ManajemenUser() {
                                   setSelectedUser(u.id);
                                   setNewRole(u.role || "penghuni");
                                 }}
-                                disabled={u.id === currentUser?.id}
-                              >
-                                <Shield className="w-4 h-4 mr-1" />
-                                Role
+                              disabled={u.id === currentUser?.id || (!isSuperAdmin && u.role === "super_admin")}
+                            >
+                              <Shield className="w-4 h-4 mr-1" />
+                              Role
                               </Button>
                             </DialogTrigger>
                             <DialogContent>
@@ -270,7 +270,7 @@ export default function ManajemenUser() {
                             variant="outline"
                             size="sm"
                             onClick={() => setResetPasswordUser({ id: u.id, email: u.email })}
-                            disabled={u.id === currentUser?.id}
+                            disabled={u.id === currentUser?.id || (!isSuperAdmin && u.role === "super_admin")}
                           >
                             <KeyRound className="w-4 h-4 mr-1" />
                             Reset
@@ -280,7 +280,7 @@ export default function ManajemenUser() {
                             <Switch
                               checked={u.is_active}
                               onCheckedChange={() => handleToggleStatus(u.id, u.is_active)}
-                              disabled={u.id === currentUser?.id || updateStatusMutation.isPending}
+                              disabled={u.id === currentUser?.id || updateStatusMutation.isPending || (!isSuperAdmin && u.role === "super_admin")}
                             />
                           </div>
                         </div>
