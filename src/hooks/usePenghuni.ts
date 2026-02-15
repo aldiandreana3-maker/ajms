@@ -16,7 +16,7 @@ export interface Penghuni {
   move_out_date: string | null;
   created_at: string | null;
   updated_at: string | null;
-  units?: { unit_number: string } | null;
+  units?: { unit_number: string; area_sqm: number | null; type: string | null } | null;
 }
 
 interface CreatePenghuniData {
@@ -44,7 +44,7 @@ export function usePenghuni() {
         .from("penghuni")
         .select(`
           *,
-          units:unit_id(unit_number)
+          units:unit_id(unit_number, area_sqm, type)
         `)
         .order("full_name", { ascending: true });
 
