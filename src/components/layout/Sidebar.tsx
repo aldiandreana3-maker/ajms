@@ -47,7 +47,7 @@ const kepengelolaanItems = [
 
 const adminMenuItems = [
   { icon: Shield, label: "Manajemen User", path: "/manajemen-user", superAdminOnly: false },
-  { icon: Settings, label: "Aktivasi Sistem", path: "/aktivasi-sistem", superAdminOnly: true },
+  { icon: Settings, label: "Aktivasi Sistem", path: "/aktivasi-sistem", superAdminOnly: false },
 ];
 
 interface SidebarProps {

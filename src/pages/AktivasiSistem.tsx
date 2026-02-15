@@ -139,26 +139,25 @@ export default function AktivasiSistem() {
           <p className="text-muted-foreground">Kelola status aktivasi dan pembayaran sistem</p>
         </div>
 
-        {/* System Status Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              {isAktif ? <Power className="w-5 h-5 text-green-500" /> : <PowerOff className="w-5 h-5 text-destructive" />}
-              Status Sistem
-            </CardTitle>
-            <CardDescription>Status operasional sistem AJMS saat ini</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="flex items-center gap-3">
-                <div className={`w-4 h-4 rounded-full ${isAktif ? "bg-green-500 animate-pulse" : "bg-destructive"}`} />
-                <span className="text-lg font-semibold">
-                  {isLoading ? "Memuat..." : isAktif ? "Sistem Aktif" : "Sistem Tidak Aktif"}
-                </span>
-              </div>
+        {/* System Status Card - Super Admin Only */}
+        {isSuperAdmin && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                {isAktif ? <Power className="w-5 h-5 text-green-500" /> : <PowerOff className="w-5 h-5 text-destructive" />}
+                Status Sistem
+              </CardTitle>
+              <CardDescription>Status operasional sistem AJMS saat ini</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-4 h-4 rounded-full ${isAktif ? "bg-green-500 animate-pulse" : "bg-destructive"}`} />
+                  <span className="text-lg font-semibold">
+                    {isLoading ? "Memuat..." : isAktif ? "Sistem Aktif" : "Sistem Tidak Aktif"}
+                  </span>
+                </div>
 
-              {/* Only Super Admin can toggle system status */}
-              {isSuperAdmin && (
                 <div className="flex gap-2 ml-auto">
                   {!isAktif ? (
                     <AlertDialog>
@@ -206,28 +205,21 @@ export default function AktivasiSistem() {
                     </AlertDialog>
                   )}
                 </div>
-              )}
+              </div>
 
-              {!isSuperAdmin && (
-                <div className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
-                  <ShieldAlert className="w-4 h-4" />
-                  <span>Hanya Super Admin yang dapat mengubah status sistem</span>
+              {systemStatus && (
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                  {systemStatus.activated_at && (
+                    <div>Terakhir diaktifkan: {format(new Date(systemStatus.activated_at), "dd MMM yyyy HH:mm", { locale: idLocale })}</div>
+                  )}
+                  {systemStatus.deactivated_at && (
+                    <div>Terakhir dinonaktifkan: {format(new Date(systemStatus.deactivated_at), "dd MMM yyyy HH:mm", { locale: idLocale })}</div>
+                  )}
                 </div>
               )}
-            </div>
-
-            {systemStatus && (
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                {systemStatus.activated_at && (
-                  <div>Terakhir diaktifkan: {format(new Date(systemStatus.activated_at), "dd MMM yyyy HH:mm", { locale: idLocale })}</div>
-                )}
-                {systemStatus.deactivated_at && (
-                  <div>Terakhir dinonaktifkan: {format(new Date(systemStatus.deactivated_at), "dd MMM yyyy HH:mm", { locale: idLocale })}</div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Payment Cards with Midtrans */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
