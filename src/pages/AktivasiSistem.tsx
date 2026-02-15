@@ -37,21 +37,22 @@ export default function AktivasiSistem() {
   const [payingType, setPayingType] = useState<string | null>(null);
   const [snapLoaded, setSnapLoaded] = useState(false);
 
-  // Load Midtrans Snap.js from backend config
+  // Load Midtrans Snap.js from backend config (force fresh load)
   useEffect(() => {
     const loadSnap = async () => {
       try {
+        // Remove any existing snap script to force reload with latest config
         const existingScript = document.querySelector('script[src*="snap.js"]');
         if (existingScript) {
-          setSnapLoaded(true);
-          return;
+          existingScript.remove();
+          delete window.snap;
         }
 
         const { data, error } = await supabase.functions.invoke("midtrans-config");
         if (error || !data?.client_key) return;
 
         const script = document.createElement("script");
-        script.src = data.snap_url;
+        script.src = `${data.snap_url}?t=${Date.now()}`;
         script.setAttribute("data-client-key", data.client_key);
         script.onload = () => setSnapLoaded(true);
         document.head.appendChild(script);
