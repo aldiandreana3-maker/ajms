@@ -222,7 +222,8 @@ export default function AktivasiSistem() {
           </Card>
         )}
 
-        {/* Payment Cards with Midtrans */}
+        {/* Payment Cards with Midtrans - Super Admin Only */}
+        {isSuperAdmin && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
             <CardHeader className="pb-3">
@@ -263,6 +264,7 @@ export default function AktivasiSistem() {
             </CardContent>
           </Card>
         </div>
+        )}
 
         {/* Payment History */}
         <Card>
