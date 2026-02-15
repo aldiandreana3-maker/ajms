@@ -23,6 +23,7 @@ interface CreatePenghuniData {
   full_name: string;
   unit_id?: string;
   unit_number?: string;
+  area_sqm?: string;
   email?: string;
   phone?: string;
   ktp_number?: string;
@@ -55,14 +56,17 @@ export function usePenghuni() {
 
   const createPenghuni = useMutation({
     mutationFn: async (data: CreatePenghuniData) => {
-      // If unit_number provided, find unit_id
       let unitId = data.unit_id;
       if (data.unit_number && !data.unit_id) {
+        const areaSqm = data.area_sqm ? parseFloat(data.area_sqm) : null;
+        const upsertData: any = { unit_number: data.unit_number };
+        if (areaSqm) upsertData.area_sqm = areaSqm;
+        
         const { data: unitData } = await supabase
           .from("units")
+          .upsert(upsertData, { onConflict: "unit_number" })
           .select("id")
-          .eq("unit_number", data.unit_number)
-          .maybeSingle();
+          .single();
         unitId = unitData?.id || undefined;
       }
 
@@ -91,14 +95,17 @@ export function usePenghuni() {
 
   const updatePenghuni = useMutation({
     mutationFn: async ({ id, ...data }: UpdatePenghuniData) => {
-      // If unit_number provided, find unit_id
       let unitId = data.unit_id;
       if (data.unit_number && !data.unit_id) {
+        const areaSqm = data.area_sqm ? parseFloat(data.area_sqm) : null;
+        const upsertData: any = { unit_number: data.unit_number };
+        if (areaSqm) upsertData.area_sqm = areaSqm;
+
         const { data: unitData } = await supabase
           .from("units")
+          .upsert(upsertData, { onConflict: "unit_number" })
           .select("id")
-          .eq("unit_number", data.unit_number)
-          .maybeSingle();
+          .single();
         unitId = unitData?.id || undefined;
       }
 

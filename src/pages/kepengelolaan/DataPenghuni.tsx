@@ -70,6 +70,7 @@ export default function DataPenghuni() {
     email: "",
     ktp_number: "",
     unit_number: "",
+    area_sqm: "",
     is_owner: false,
     is_active: true,
   });
@@ -81,6 +82,7 @@ export default function DataPenghuni() {
       email: "",
       ktp_number: "",
       unit_number: "",
+      area_sqm: "",
       is_owner: false,
       is_active: true,
     });
@@ -160,6 +162,7 @@ export default function DataPenghuni() {
         email: penghuniData.email || "",
         ktp_number: penghuniData.ktp_number || "",
         unit_number: penghuniData.unit_number || penghuniData.units?.unit_number || "",
+        area_sqm: penghuniData.units?.area_sqm?.toString() || "",
         is_owner: penghuniData.is_owner || false,
         is_active: penghuniData.is_active ?? true,
       });
@@ -270,6 +273,19 @@ export default function DataPenghuni() {
                           setFormData({ ...formData, unit_number: e.target.value })
                         }
                         placeholder="Contoh: A0520, B1205"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="area_sqm">Tipe Unit (m²)</Label>
+                      <Input
+                        id="area_sqm"
+                        type="number"
+                        value={formData.area_sqm}
+                        onChange={(e) =>
+                          setFormData({ ...formData, area_sqm: e.target.value })
+                        }
+                        placeholder="Contoh: 18.5, 24, 33, 40"
                       />
                     </div>
 
