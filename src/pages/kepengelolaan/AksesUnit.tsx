@@ -48,15 +48,26 @@ function useUserUnits() {
   return useQuery({
     queryKey: ["user-units-mapping"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("penghuni")
-        .select("user_id, unit_number")
-        .not("user_id", "is", null)
-        .eq("is_active", true);
-      if (error) throw error;
+      // Fetch ALL records without 1000-row limit
+      let allData: { user_id: string | null; unit_number: string | null }[] = [];
+      let from = 0;
+      const batchSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from("penghuni")
+          .select("user_id, unit_number")
+          .not("user_id", "is", null)
+          .eq("is_active", true)
+          .range(from, from + batchSize - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data);
+        if (data.length < batchSize) break;
+        from += batchSize;
+      }
 
       const map = new Map<string, string[]>();
-      data?.forEach((row) => {
+      allData.forEach((row) => {
         if (row.user_id) {
           const existing = map.get(row.user_id) || [];
           if (row.unit_number && !existing.includes(row.unit_number)) {
