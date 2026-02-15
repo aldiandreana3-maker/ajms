@@ -3,8 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Combobox } from "@/components/ui/combobox";
-import { useUnits } from "@/hooks/useUnits";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Plus, X } from "lucide-react";
@@ -21,36 +20,53 @@ interface ManageUnitsDialogProps {
 }
 
 export function ManageUnitsDialog({ open, onOpenChange, user, currentUnits }: ManageUnitsDialogProps) {
-  const { units } = useUnits();
   const queryClient = useQueryClient();
   const [selectedUnit, setSelectedUnit] = useState("");
 
-  const unitOptions = units
-    ?.filter((u) => !currentUnits.includes(u.unit_number))
-    .map((u) => ({ value: u.unit_number, label: u.unit_number })) || [];
+  // Fetch distinct unit_numbers from penghuni table
+  const { data: penghuniUnits } = useQuery({
+    queryKey: ["penghuni-distinct-units"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("penghuni")
+        .select("unit_number, unit_id")
+        .not("unit_number", "is", null)
+        .order("unit_number", { ascending: true });
+      if (error) throw error;
+      // Deduplicate by unit_number
+      const seen = new Set<string>();
+      return (data || []).filter((row) => {
+        if (!row.unit_number || seen.has(row.unit_number)) return false;
+        seen.add(row.unit_number);
+        return true;
+      });
+    },
+  });
+
+  const unitOptions = penghuniUnits
+    ?.filter((u) => !currentUnits.includes(u.unit_number!))
+    .map((u) => ({ value: u.unit_number!, label: u.unit_number! })) || [];
 
   const addUnit = useMutation({
     mutationFn: async (unitNumber: string) => {
-      const unit = units?.find((u) => u.unit_number === unitNumber);
-      if (!unit) throw new Error("Unit tidak ditemukan");
-
+      const pu = penghuniUnits?.find((u) => u.unit_number === unitNumber);
+      const unitId = pu?.unit_id;
+      if (!unitId) throw new Error("Unit tidak ditemukan");
       // Check if penghuni record already exists for this user+unit
       const { data: existing } = await supabase
         .from("penghuni")
         .select("id")
         .eq("user_id", user.id)
-        .eq("unit_id", unit.id)
+        .eq("unit_id", unitId)
         .maybeSingle();
 
       if (existing) {
-        // Reactivate if inactive
         const { error } = await supabase
           .from("penghuni")
           .update({ is_active: true, unit_number: unitNumber })
           .eq("id", existing.id);
         if (error) throw error;
       } else {
-        // Get user profile for name
         const { data: profile } = await supabase
           .from("profiles")
           .select("full_name, email, phone")
@@ -59,7 +75,7 @@ export function ManageUnitsDialog({ open, onOpenChange, user, currentUnits }: Ma
 
         const { error } = await supabase.from("penghuni").insert({
           user_id: user.id,
-          unit_id: unit.id,
+          unit_id: unitId,
           unit_number: unitNumber,
           full_name: profile?.full_name || user.email,
           email: profile?.email || user.email,
@@ -73,6 +89,7 @@ export function ManageUnitsDialog({ open, onOpenChange, user, currentUnits }: Ma
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["user-units-mapping"] });
       queryClient.invalidateQueries({ queryKey: ["penghuni"] });
+      queryClient.invalidateQueries({ queryKey: ["penghuni-distinct-units"] });
       setSelectedUnit("");
       toast.success("Unit berhasil ditambahkan");
     },
@@ -81,14 +98,12 @@ export function ManageUnitsDialog({ open, onOpenChange, user, currentUnits }: Ma
 
   const removeUnit = useMutation({
     mutationFn: async (unitNumber: string) => {
-      const unit = units?.find((u) => u.unit_number === unitNumber);
-      if (!unit) throw new Error("Unit tidak ditemukan");
-
       const { error } = await supabase
         .from("penghuni")
         .update({ is_active: false })
         .eq("user_id", user.id)
-        .eq("unit_id", unit.id);
+        .eq("unit_number", unitNumber)
+        .eq("is_active", true);
       if (error) throw error;
     },
     onSuccess: () => {
