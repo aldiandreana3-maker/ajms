@@ -29,13 +29,13 @@ import {
 
 // Menu items with isSuperAdminOnly flag for red indicator
 const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/", isSuperAdminOnly: false },
-  { icon: Receipt, label: "Sistem Tagihan", path: "/sistem-tagihan", isSuperAdminOnly: false },
-  { icon: Users, label: "Tentang Kami", path: "/tentang-kami", isSuperAdminOnly: true },
-  { icon: Building2, label: "Agent Berkantor", path: "/agent-berkantor", isSuperAdminOnly: true },
-  { icon: Layers, label: "Struktur Fasilitas", path: "/struktur-fasilitas", isSuperAdminOnly: true },
-  { icon: FileBarChart, label: "Laporan Keuangan", path: "/laporan-keuangan", isSuperAdminOnly: true },
-  { icon: Newspaper, label: "Berita", path: "/berita", isSuperAdminOnly: true },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/", isSuperAdminOnly: false, staffOnly: false },
+  { icon: Receipt, label: "Sistem Tagihan", path: "/sistem-tagihan", isSuperAdminOnly: false, staffOnly: true },
+  { icon: Users, label: "Tentang Kami", path: "/tentang-kami", isSuperAdminOnly: true, staffOnly: false },
+  { icon: Building2, label: "Agent Berkantor", path: "/agent-berkantor", isSuperAdminOnly: true, staffOnly: false },
+  { icon: Layers, label: "Struktur Fasilitas", path: "/struktur-fasilitas", isSuperAdminOnly: true, staffOnly: false },
+  { icon: FileBarChart, label: "Laporan Keuangan", path: "/laporan-keuangan", isSuperAdminOnly: true, staffOnly: false },
+  { icon: Newspaper, label: "Berita", path: "/berita", isSuperAdminOnly: true, staffOnly: false },
 ];
 
 // Kepengelolaan submenu items - restructured with departments
@@ -46,8 +46,8 @@ const kepengelolaanItems = [
 ];
 
 const adminMenuItems = [
-  { icon: Shield, label: "Manajemen User", path: "/manajemen-user" },
-  { icon: Settings, label: "Aktivasi Sistem", path: "/aktivasi-sistem" },
+  { icon: Shield, label: "Manajemen User", path: "/manajemen-user", superAdminOnly: false },
+  { icon: Settings, label: "Aktivasi Sistem", path: "/aktivasi-sistem", superAdminOnly: true },
 ];
 
 interface SidebarProps {
@@ -58,7 +58,7 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, isSuperAdmin, isAdmin, isLimitedAccess, user } = useAuth();
+  const { signOut, isSuperAdmin, isAdmin, isStaff, isLimitedAccess, user } = useAuth();
   const [kepengelolaanOpen, setKepengelolaanOpen] = useState(
     location.pathname.startsWith("/kepengelolaan")
   );
@@ -109,7 +109,9 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => {
+        {menuItems
+          .filter((item) => !item.staffOnly || isStaff)
+          .map((item) => {
           const isActive = location.pathname === item.path;
           return (
             <NavLink
@@ -192,7 +194,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </>
         )}
 
-        {/* Finance shortcut for penghuni/agent (limited access users) */}
+        {/* Tagihan Saya shortcut for penghuni/agent (limited access users) */}
         {!canAccessKepengelolaan && canAccessFinance && (
           <NavLink
             to="/kepengelolaan/finance"
@@ -203,15 +205,15 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             )}
           >
-            <Wallet className={cn("w-5 h-5 flex-shrink-0", collapsed && "mx-auto")} />
+            <Receipt className={cn("w-5 h-5 flex-shrink-0", collapsed && "mx-auto")} />
             {!collapsed && (
-              <span className="font-medium text-sm truncate">Finance</span>
+              <span className="font-medium text-sm truncate">Tagihan Saya</span>
             )}
           </NavLink>
         )}
 
 
-        {isSuperAdmin && (
+        {(isSuperAdmin || isAdmin) && (
           <>
             {!collapsed && (
               <div className="pt-4 pb-2">
@@ -220,7 +222,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 </span>
               </div>
             )}
-            {adminMenuItems.map((item) => {
+            {adminMenuItems.filter((item) => !item.superAdminOnly || isSuperAdmin).map((item) => {
               const isActive = location.pathname === item.path;
               return (
                 <NavLink

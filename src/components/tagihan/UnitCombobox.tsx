@@ -16,18 +16,19 @@ function generateAllUnits(): UnitOption[] {
   const towers = ["A", "B", "C", "D"];
 
   // Residential: Tower A-D, Floor 1-23, Unit 1-35
+  // Format: TA0101, TB2215, etc.
   for (const tower of towers) {
     for (let floor = 1; floor <= 23; floor++) {
       for (let unit = 1; unit <= 35; unit++) {
         const floorStr = floor.toString().padStart(2, "0");
         const unitStr = unit.toString().padStart(2, "0");
-        const code = `${tower}${floorStr}${unitStr}`;
-        units.push({ label: `T${tower} Lt.${floor} Unit ${unit} (${code})`, value: code });
+        const code = `T${tower}${floorStr}${unitStr}`;
+        units.push({ label: `Tower ${tower} Lt.${floor} Unit ${unit} (${code})`, value: code });
       }
     }
   }
 
-  // Commercial: A1-A40, B1-B40, C1-C40, D1-D40
+  // Commercial: K-A01 to K-D40
   for (const tower of towers) {
     for (let num = 1; num <= 40; num++) {
       const code = `K-${tower}${num.toString().padStart(2, "0")}`;
