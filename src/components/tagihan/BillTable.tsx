@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
-import { Trash2, Settings, Loader2, FileText } from "lucide-react";
+import { Trash2, Settings, Loader2, FileText, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { BillReceiptDialog } from "./BillReceiptDialog";
 
 const billTypeLabels: Record<string, string> = {
@@ -78,6 +78,40 @@ export function BillTable({
     notes: "",
   });
 
+  // Pagination & Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Filter bills by search
+  const filteredBills = useMemo(() => {
+    if (!searchQuery.trim()) return bills;
+    const q = searchQuery.toLowerCase();
+    return bills.filter((b) => {
+      const unit = (b.units?.unit_number || b.unit_number || "").toLowerCase();
+      const penghuni = (b.penghuni?.full_name || "").toLowerCase();
+      const type = (billTypeLabels[b.bill_type] || b.bill_type).toLowerCase();
+      const notes = (b.notes || "").toLowerCase();
+      const period = b.billing_period || "";
+      return unit.includes(q) || penghuni.includes(q) || type.includes(q) || notes.includes(q) || period.includes(q);
+    });
+  }, [bills, searchQuery]);
+
+  // Pagination logic
+  const totalPages = Math.max(1, Math.ceil(filteredBills.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedBills = filteredBills.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  // Reset page when search or pageSize changes
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val);
+    setCurrentPage(1);
+  };
+  const handlePageSizeChange = (val: string) => {
+    setPageSize(Number(val));
+    setCurrentPage(1);
+  };
+
   const handleEditOpen = (bill: Bill) => {
     setEditBill(bill);
     setEditForm({
@@ -108,91 +142,172 @@ export function BillTable({
 
   return (
     <>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Unit</TableHead>
-            <TableHead>Jenis</TableHead>
-            <TableHead>Keterangan</TableHead>
-            <TableHead>Periode</TableHead>
-            <TableHead>Jatuh Tempo</TableHead>
-            <TableHead>Jumlah</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-center">Kwitansi</TableHead>
-            {hasActions && <TableHead>Aksi</TableHead>}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {bills.map((b) => (
-            <TableRow key={b.id}>
-              <TableCell>{b.units?.unit_number || b.unit_number || "-"}</TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  {billTypeLabels[b.bill_type] || b.bill_type}
-                  {b.is_auto_generated && (
-                    <Badge variant="outline" className="text-xs">Auto</Badge>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-                {b.notes || "-"}
-              </TableCell>
-              <TableCell>{format(new Date(b.billing_period), "MMM yyyy")}</TableCell>
-              <TableCell>{format(new Date(b.due_date), "dd/MM/yyyy")}</TableCell>
-              <TableCell className="font-medium">{formatCurrency(b.amount)}</TableCell>
-              <TableCell>
-                <Badge className={statusColors[b.payment_status]}>
-                  {b.payment_status === "unpaid" ? "Belum Bayar" : b.payment_status === "paid" ? "Lunas" : "Terlambat"}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-center">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => setReceiptBill(b)}
-                  title="Lihat Kwitansi"
-                >
-                  <FileText className="w-4 h-4" />
-                </Button>
-              </TableCell>
-              {hasActions && (
+      {/* Search & Page Size Controls */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Cari unit, penghuni, jenis..."
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground whitespace-nowrap">Tampilkan</span>
+          <Select value={pageSize.toString()} onValueChange={handlePageSizeChange}>
+            <SelectTrigger className="w-20 h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
+          <span className="text-muted-foreground whitespace-nowrap">dari {filteredBills.length} data</span>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Unit</TableHead>
+              <TableHead>Jenis</TableHead>
+              <TableHead>Keterangan</TableHead>
+              <TableHead>Periode</TableHead>
+              <TableHead>Jatuh Tempo</TableHead>
+              <TableHead>Jumlah</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-center">Kwitansi</TableHead>
+              {hasActions && <TableHead>Aksi</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedBills.map((b) => (
+              <TableRow key={b.id}>
+                <TableCell>{b.units?.unit_number || b.unit_number || "-"}</TableCell>
                 <TableCell>
-                  <div className="flex gap-1">
-                    {onPay && b.payment_status === "unpaid" && (
-                      <Button variant="outline" size="sm" onClick={() => onPay(b.id, b.amount)}>
-                        Bayar
-                      </Button>
-                    )}
-                    {onRevert && b.payment_status === "paid" && (
-                      <Button variant="outline" size="sm" className="text-destructive" onClick={() => onRevert(b.id)}>
-                        Batalkan
-                      </Button>
-                    )}
-                    {onEdit && (
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditOpen(b)}>
-                        <Settings className="w-4 h-4" />
-                      </Button>
-                    )}
-                    {onDelete && (
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteId(b.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                  <div className="flex items-center gap-2">
+                    {billTypeLabels[b.bill_type] || b.bill_type}
+                    {b.is_auto_generated && (
+                      <Badge variant="outline" className="text-xs">Auto</Badge>
                     )}
                   </div>
                 </TableCell>
-              )}
-            </TableRow>
-          ))}
-          {bills.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={hasActions ? 9 : 8} className="text-center text-muted-foreground py-8">
-                Tidak ada tagihan
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+                <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                  {b.notes || "-"}
+                </TableCell>
+                <TableCell>{format(new Date(b.billing_period), "MMM yyyy")}</TableCell>
+                <TableCell>{format(new Date(b.due_date), "dd/MM/yyyy")}</TableCell>
+                <TableCell className="font-medium">{formatCurrency(b.amount)}</TableCell>
+                <TableCell>
+                  <Badge className={statusColors[b.payment_status]}>
+                    {b.payment_status === "unpaid" ? "Belum Bayar" : b.payment_status === "paid" ? "Lunas" : "Terlambat"}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-center">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setReceiptBill(b)}
+                    title="Lihat Kwitansi"
+                  >
+                    <FileText className="w-4 h-4" />
+                  </Button>
+                </TableCell>
+                {hasActions && (
+                  <TableCell>
+                    <div className="flex gap-1">
+                      {onPay && b.payment_status === "unpaid" && (
+                        <Button variant="outline" size="sm" onClick={() => onPay(b.id, b.amount)}>
+                          Bayar
+                        </Button>
+                      )}
+                      {onRevert && b.payment_status === "paid" && (
+                        <Button variant="outline" size="sm" className="text-destructive" onClick={() => onRevert(b.id)}>
+                          Batalkan
+                        </Button>
+                      )}
+                      {onEdit && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditOpen(b)}>
+                          <Settings className="w-4 h-4" />
+                        </Button>
+                      )}
+                      {onDelete && (
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteId(b.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+            {paginatedBills.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={hasActions ? 9 : 8} className="text-center text-muted-foreground py-8">
+                  {searchQuery ? "Tidak ditemukan tagihan yang cocok" : "Tidak ada tagihan"}
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Pagination Controls */}
+      {filteredBills.length > pageSize && (
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-sm text-muted-foreground">
+            Halaman {safePage} dari {totalPages}
+          </p>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              disabled={safePage <= 1}
+              onClick={() => setCurrentPage(safePage - 1)}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              let page: number;
+              if (totalPages <= 5) {
+                page = i + 1;
+              } else if (safePage <= 3) {
+                page = i + 1;
+              } else if (safePage >= totalPages - 2) {
+                page = totalPages - 4 + i;
+              } else {
+                page = safePage - 2 + i;
+              }
+              return (
+                <Button
+                  key={page}
+                  variant={page === safePage ? "default" : "outline"}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
+                </Button>
+              );
+            })}
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              disabled={safePage >= totalPages}
+              onClick={() => setCurrentPage(safePage + 1)}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Receipt Dialog */}
       <BillReceiptDialog
