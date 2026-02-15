@@ -210,50 +210,17 @@ export function useGenerateMonthlyBills() {
 
   return useMutation({
     mutationFn: async ({ billing_period, due_date }: { billing_period: string; due_date: string }) => {
-      // Get all active units
-      const { data: units, error: unitsError } = await supabase
-        .from("units")
-        .select("id")
-        .eq("status", "occupied");
+      // Call the edge function
+      const { data, error } = await supabase.functions.invoke("generate-monthly-bills", {
+        body: { billing_period, due_date },
+      });
 
-      if (unitsError) throw unitsError;
-
-      // Define auto-generated bill types with amounts
-      const billTypes: { type: BillType; amount: number }[] = [
-        { type: "ipl", amount: 500000 },
-        { type: "kebersihan", amount: 100000 },
-        { type: "keamanan", amount: 75000 },
-        { type: "sinking_fund", amount: 150000 },
-        { type: "listrik", amount: 0 }, // Will be filled manually later
-      ];
-
-      const bills: CreateBillInput[] = [];
-
-      for (const unit of units || []) {
-        for (const billType of billTypes) {
-          if (billType.amount > 0) {
-            bills.push({
-              unit_id: unit.id,
-              bill_type: billType.type,
-              amount: billType.amount,
-              billing_period,
-              due_date,
-              is_auto_generated: true,
-            });
-          }
-        }
-      }
-
-      if (bills.length > 0) {
-        const { error } = await supabase.from("bills").insert(bills);
-        if (error) throw error;
-      }
-
-      return { count: bills.length };
+      if (error) throw error;
+      return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["bills"] });
-      toast.success(`${data.count} tagihan berhasil digenerate`);
+      toast.success(data?.message || "Tagihan berhasil digenerate");
     },
     onError: (error) => {
       toast.error("Gagal generate tagihan: " + error.message);
