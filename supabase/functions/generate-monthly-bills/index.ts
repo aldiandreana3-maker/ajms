@@ -68,26 +68,43 @@ serve(async (req) => {
     const rateMap = new Map<number, any>();
     rates.forEach((r: any) => rateMap.set(Number(r.area_sqm), r));
 
-    // Get all units with area
-    const { data: units, error: unitsError } = await supabase
-      .from("units")
-      .select("id, unit_number, area_sqm");
-    if (unitsError) throw unitsError;
+    // Get all units (paginated to avoid 1000 row limit)
+    const allUnits: any[] = [];
+    let unitFrom = 0;
+    const unitPageSize = 1000;
+    while (true) {
+      const { data: unitBatch, error: ubError } = await supabase
+        .from("units")
+        .select("id, unit_number, area_sqm")
+        .range(unitFrom, unitFrom + unitPageSize - 1);
+      if (ubError) throw ubError;
+      if (unitBatch) allUnits.push(...unitBatch);
+      if (!unitBatch || unitBatch.length < unitPageSize) break;
+      unitFrom += unitPageSize;
+    }
 
-    // Get active penghuni
-    const { data: penghuniList } = await supabase
-      .from("penghuni")
-      .select("id, full_name, unit_id")
-      .eq("is_active", true);
+    // Get active penghuni (paginated)
+    const allPenghuni: any[] = [];
+    let pFrom = 0;
+    while (true) {
+      const { data: pBatch } = await supabase
+        .from("penghuni")
+        .select("id, full_name, unit_id")
+        .eq("is_active", true)
+        .range(pFrom, pFrom + unitPageSize - 1);
+      if (pBatch) allPenghuni.push(...pBatch);
+      if (!pBatch || pBatch.length < unitPageSize) break;
+      pFrom += unitPageSize;
+    }
 
     const penghuniByUnit = new Map<string, { id: string; full_name: string }>();
-    penghuniList?.forEach((p: any) => {
+    allPenghuni.forEach((p: any) => {
       if (p.unit_id) penghuniByUnit.set(p.unit_id, { id: p.id, full_name: p.full_name });
     });
 
     // Prepare all bill records in memory
     const billRecords: any[] = [];
-    for (const unit of units || []) {
+    for (const unit of allUnits) {
       if (!unit.area_sqm) continue;
       const matchedRate = rateMap.get(Number(unit.area_sqm));
       if (!matchedRate) continue;
