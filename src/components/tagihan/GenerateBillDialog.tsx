@@ -79,6 +79,10 @@ export function GenerateBillDialog() {
           .limit(1)
           .maybeSingle();
 
+        // bill_rates stores quarterly (3-month) totals, divide by 3 for monthly
+        const scMonthly = Math.round(matchedRate.monthly_sc / 3);
+        const sfMonthly = Math.round(matchedRate.monthly_sf / 3);
+
         await createBill.mutateAsync({
           unit_id: unitId,
           unit_number: unit.unit_number,
@@ -86,8 +90,8 @@ export function GenerateBillDialog() {
           quarter_start: quarter.start,
           quarter_end: quarter.end,
           quarter_label: quarter.quarterLabel,
-          sc_monthly: matchedRate.monthly_sc,
-          sf_monthly: matchedRate.monthly_sf,
+          sc_monthly: scMonthly,
+          sf_monthly: sfMonthly,
           due_date: dueDate,
           is_auto_generated: true,
           notes: `${matchedRate.area_label} - ${penghuniData?.full_name || 'N/A'}`,
@@ -128,7 +132,7 @@ export function GenerateBillDialog() {
               <p className="font-medium mb-2">Tarif Aktif (per bulan):</p>
               {rates.map((r) => (
                 <p key={r.id} className="text-muted-foreground">
-                  {r.area_label}: SC {formatCurrency(r.monthly_sc)}/bln + SF {formatCurrency(r.monthly_sf)}/bln = {formatCurrency((r.monthly_sc + r.monthly_sf) * 3)}/kuartal
+                  {r.area_label}: SC {formatCurrency(Math.round(r.monthly_sc / 3))}/bln + SF {formatCurrency(Math.round(r.monthly_sf / 3))}/bln = {formatCurrency(r.monthly_sc + r.monthly_sf)}/kuartal
                 </p>
               ))}
             </div>
