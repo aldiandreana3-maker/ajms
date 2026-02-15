@@ -62,7 +62,6 @@ export function useBills() {
             units:unit_id(unit_number),
             penghuni:penghuni_id(full_name, phone, address)
           `)
-          .not("quarter_label", "is", null)
           .order("created_at", { ascending: false })
           .range(from, from + pageSize - 1);
 
@@ -313,6 +312,51 @@ export function useDeleteBill() {
     },
     onError: (error) => {
       toast.error("Gagal menghapus tagihan: " + error.message);
+    },
+  });
+}
+
+export function useCreateManualBill() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      unit_id: string;
+      unit_number: string;
+      penghuni_id: string | null;
+      bill_type: string;
+      amount: number;
+      billing_period: string;
+      due_date: string;
+      notes?: string;
+    }) => {
+      const { data, error } = await supabase
+        .from("bills")
+        .insert({
+          unit_id: input.unit_id,
+          unit_number: input.unit_number,
+          penghuni_id: input.penghuni_id,
+          bill_type: input.bill_type as any,
+          amount: input.amount,
+          total_amount: input.amount,
+          billing_period: input.billing_period,
+          due_date: input.due_date,
+          notes: input.notes || null,
+          payment_status: "unpaid",
+          is_auto_generated: false,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+      toast.success("Tagihan manual berhasil dibuat");
+    },
+    onError: (error) => {
+      toast.error("Gagal membuat tagihan: " + error.message);
     },
   });
 }
