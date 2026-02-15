@@ -1,37 +1,65 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSystemStatus, useToggleSystemStatus, useSystemPayments, useAddSystemPayment, useUpdatePaymentStatus } from "@/hooks/useSystemActivation";
-import { Power, PowerOff, Plus, CheckCircle2, XCircle, Clock, Loader2, CreditCard, History } from "lucide-react";
+import { useSystemStatus, useToggleSystemStatus, useSystemPayments } from "@/hooks/useSystemActivation";
+import { Power, PowerOff, CheckCircle2, XCircle, Clock, Loader2, CreditCard, History, ShieldAlert } from "lucide-react";
 import { format } from "date-fns";
-import { id } from "date-fns/locale";
+import { id as idLocale } from "date-fns/locale";
 import { Navigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+declare global {
+  interface Window {
+    snap?: {
+      pay: (token: string, options: {
+        onSuccess?: (result: unknown) => void;
+        onPending?: (result: unknown) => void;
+        onError?: (result: unknown) => void;
+        onClose?: () => void;
+      }) => void;
+    };
+  }
+}
 
 export default function AktivasiSistem() {
-  const { isSuperAdmin, isLoading: authLoading } = useAuth();
+  const { isSuperAdmin, isStaff, isLoading: authLoading, session } = useAuth();
   const { data: systemStatus, isLoading } = useSystemStatus();
   const { data: payments, isLoading: paymentsLoading } = useSystemPayments();
   const toggleStatus = useToggleSystemStatus();
-  const addPayment = useAddSystemPayment();
-  const updatePaymentStatus = useUpdatePaymentStatus();
+  const { toast } = useToast();
+  const [payingType, setPayingType] = useState<string | null>(null);
+  const [snapLoaded, setSnapLoaded] = useState(false);
 
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [paymentForm, setPaymentForm] = useState({
-    jenis_pembayaran: "aktivasi" as "aktivasi" | "bulanan",
-    nominal: "",
-    tanggal_bayar: new Date().toISOString().split("T")[0],
-    due_date: "",
-    status: "pending" as "pending" | "berhasil" | "gagal",
-    notes: "",
-  });
+  // Load Midtrans Snap.js from backend config
+  useEffect(() => {
+    const loadSnap = async () => {
+      try {
+        const existingScript = document.querySelector('script[src*="snap.js"]');
+        if (existingScript) {
+          setSnapLoaded(true);
+          return;
+        }
+
+        const { data, error } = await supabase.functions.invoke("midtrans-config");
+        if (error || !data?.client_key) return;
+
+        const script = document.createElement("script");
+        script.src = data.snap_url;
+        script.setAttribute("data-client-key", data.client_key);
+        script.onload = () => setSnapLoaded(true);
+        document.head.appendChild(script);
+      } catch (err) {
+        console.error("Failed to load Midtrans:", err);
+      }
+    };
+    loadSnap();
+  }, []);
 
   if (authLoading) {
     return (
@@ -43,30 +71,49 @@ export default function AktivasiSistem() {
     );
   }
 
-  if (!isSuperAdmin) {
+  // Only staff+ can access
+  if (!isStaff) {
     return <Navigate to="/" replace />;
   }
 
   const isAktif = systemStatus?.system_status === "aktif";
 
-  const handleAddPayment = async () => {
-    await addPayment.mutateAsync({
-      jenis_pembayaran: paymentForm.jenis_pembayaran,
-      nominal: Number(paymentForm.nominal),
-      tanggal_bayar: paymentForm.tanggal_bayar,
-      due_date: paymentForm.due_date || undefined,
-      status: paymentForm.status,
-      notes: paymentForm.notes || undefined,
-    });
-    setPaymentDialogOpen(false);
-    setPaymentForm({
-      jenis_pembayaran: "aktivasi",
-      nominal: "",
-      tanggal_bayar: new Date().toISOString().split("T")[0],
-      due_date: "",
-      status: "pending",
-      notes: "",
-    });
+  const handlePayment = async (jenis: "aktivasi" | "bulanan") => {
+    setPayingType(jenis);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-midtrans-transaction", {
+        body: { jenis_pembayaran: jenis },
+      });
+
+      if (error) throw error;
+      if (!data?.token) throw new Error("No payment token received");
+
+      if (!window.snap) {
+        toast({ title: "Midtrans belum siap", description: "Silakan coba lagi dalam beberapa detik", variant: "destructive" });
+        return;
+      }
+
+      window.snap.pay(data.token, {
+        onSuccess: () => {
+          toast({ title: "Pembayaran berhasil!" });
+          window.location.reload();
+        },
+        onPending: () => {
+          toast({ title: "Pembayaran pending", description: "Silakan selesaikan pembayaran Anda" });
+        },
+        onError: () => {
+          toast({ title: "Pembayaran gagal", variant: "destructive" });
+        },
+        onClose: () => {
+          toast({ title: "Pembayaran dibatalkan", variant: "destructive" });
+        },
+      });
+    } catch (err) {
+      console.error("Payment error:", err);
+      toast({ title: "Gagal memulai pembayaran", description: err instanceof Error ? err.message : "Terjadi kesalahan", variant: "destructive" });
+    } finally {
+      setPayingType(null);
+    }
   };
 
   const formatCurrency = (amount: number) =>
@@ -109,69 +156,79 @@ export default function AktivasiSistem() {
                 </span>
               </div>
 
-              <div className="flex gap-2 ml-auto">
-                {!isAktif ? (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button className="bg-green-600 hover:bg-green-700">
-                        <Power className="w-4 h-4 mr-2" />Aktifkan Sistem
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Aktifkan Sistem AJMS?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Semua fitur sistem akan berjalan normal setelah diaktifkan. Pastikan pembayaran aktivasi telah berhasil.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Batal</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => toggleStatus.mutate("aktif")} className="bg-green-600 hover:bg-green-700">
-                          Ya, Aktifkan
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                ) : (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive">
-                        <PowerOff className="w-4 h-4 mr-2" />Nonaktifkan Sistem
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Nonaktifkan Sistem AJMS?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Fitur tagihan dan akses penghuni akan dibatasi (read only). Apakah Anda yakin?
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Batal</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => toggleStatus.mutate("tidak_aktif")} className="bg-destructive hover:bg-destructive/90">
-                          Ya, Nonaktifkan
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
-              </div>
+              {/* Only Super Admin can toggle system status */}
+              {isSuperAdmin && (
+                <div className="flex gap-2 ml-auto">
+                  {!isAktif ? (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button className="bg-green-600 hover:bg-green-700">
+                          <Power className="w-4 h-4 mr-2" />Aktifkan Sistem
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Aktifkan Sistem AJMS?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Semua fitur sistem akan berjalan normal setelah diaktifkan. Pastikan pembayaran aktivasi telah berhasil.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Batal</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => toggleStatus.mutate("aktif")} className="bg-green-600 hover:bg-green-700">
+                            Ya, Aktifkan
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  ) : (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive">
+                          <PowerOff className="w-4 h-4 mr-2" />Nonaktifkan Sistem
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Nonaktifkan Sistem AJMS?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Fitur tagihan dan akses penghuni akan dibatasi (read only). Apakah Anda yakin?
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Batal</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => toggleStatus.mutate("tidak_aktif")} className="bg-destructive hover:bg-destructive/90">
+                            Ya, Nonaktifkan
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </div>
+              )}
+
+              {!isSuperAdmin && (
+                <div className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
+                  <ShieldAlert className="w-4 h-4" />
+                  <span>Hanya Super Admin yang dapat mengubah status sistem</span>
+                </div>
+              )}
             </div>
 
             {systemStatus && (
               <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-muted-foreground">
                 {systemStatus.activated_at && (
-                  <div>Terakhir diaktifkan: {format(new Date(systemStatus.activated_at), "dd MMM yyyy HH:mm", { locale: id })}</div>
+                  <div>Terakhir diaktifkan: {format(new Date(systemStatus.activated_at), "dd MMM yyyy HH:mm", { locale: idLocale })}</div>
                 )}
                 {systemStatus.deactivated_at && (
-                  <div>Terakhir dinonaktifkan: {format(new Date(systemStatus.deactivated_at), "dd MMM yyyy HH:mm", { locale: id })}</div>
+                  <div>Terakhir dinonaktifkan: {format(new Date(systemStatus.deactivated_at), "dd MMM yyyy HH:mm", { locale: idLocale })}</div>
                 )}
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Payment Info */}
+        {/* Payment Cards with Midtrans */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card>
             <CardHeader className="pb-3">
@@ -182,6 +239,14 @@ export default function AktivasiSistem() {
             <CardContent>
               <p className="text-2xl font-bold text-foreground">{formatCurrency(6699000)}</p>
               <p className="text-sm text-muted-foreground mt-1">Pembayaran satu kali untuk mengaktifkan sistem</p>
+              <Button
+                className="mt-4 w-full bg-green-600 hover:bg-green-700"
+                onClick={() => handlePayment("aktivasi")}
+                disabled={payingType === "aktivasi" || !snapLoaded}
+              >
+                {payingType === "aktivasi" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                Bayar Aktivasi
+              </Button>
             </CardContent>
           </Card>
           <Card>
@@ -193,6 +258,14 @@ export default function AktivasiSistem() {
             <CardContent>
               <p className="text-2xl font-bold text-foreground">{formatCurrency(1299000)}</p>
               <p className="text-sm text-muted-foreground mt-1">Biaya pemeliharaan bulanan sistem</p>
+              <Button
+                className="mt-4 w-full"
+                onClick={() => handlePayment("bulanan")}
+                disabled={payingType === "bulanan" || !snapLoaded}
+              >
+                {payingType === "bulanan" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                Bayar Bulanan
+              </Button>
             </CardContent>
           </Card>
         </div>
@@ -200,67 +273,8 @@ export default function AktivasiSistem() {
         {/* Payment History */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Riwayat Pembayaran</CardTitle>
-                <CardDescription>Semua pembayaran aktivasi dan bulanan sistem</CardDescription>
-              </div>
-              <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button><Plus className="w-4 h-4 mr-2" />Tambah Pembayaran</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Tambah Pembayaran</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium">Jenis Pembayaran</label>
-                      <Select value={paymentForm.jenis_pembayaran} onValueChange={(v) => setPaymentForm(p => ({ ...p, jenis_pembayaran: v as "aktivasi" | "bulanan", nominal: v === "aktivasi" ? "6699000" : "1299000" }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="aktivasi">Aktivasi (Rp 6.699.000)</SelectItem>
-                          <SelectItem value="bulanan">Bulanan (Rp 1.299.000)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Nominal</label>
-                      <Input type="number" value={paymentForm.nominal} onChange={e => setPaymentForm(p => ({ ...p, nominal: e.target.value }))} />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Tanggal Bayar</label>
-                      <Input type="date" value={paymentForm.tanggal_bayar} onChange={e => setPaymentForm(p => ({ ...p, tanggal_bayar: e.target.value }))} />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Jatuh Tempo (opsional)</label>
-                      <Input type="date" value={paymentForm.due_date} onChange={e => setPaymentForm(p => ({ ...p, due_date: e.target.value }))} />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Status</label>
-                      <Select value={paymentForm.status} onValueChange={(v) => setPaymentForm(p => ({ ...p, status: v as "pending" | "berhasil" | "gagal" }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="berhasil">Berhasil</SelectItem>
-                          <SelectItem value="gagal">Gagal</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Catatan (opsional)</label>
-                      <Input value={paymentForm.notes} onChange={e => setPaymentForm(p => ({ ...p, notes: e.target.value }))} placeholder="Catatan pembayaran..." />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button onClick={handleAddPayment} disabled={!paymentForm.nominal || addPayment.isPending}>
-                      {addPayment.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                      Simpan
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
+            <CardTitle>Riwayat Pembayaran</CardTitle>
+            <CardDescription>Semua pembayaran aktivasi dan bulanan sistem</CardDescription>
           </CardHeader>
           <CardContent>
             {paymentsLoading ? (
@@ -268,45 +282,32 @@ export default function AktivasiSistem() {
             ) : !payments?.length ? (
               <div className="text-center py-8 text-muted-foreground">Belum ada riwayat pembayaran</div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tanggal</TableHead>
-                    <TableHead>Jenis</TableHead>
-                    <TableHead>Nominal</TableHead>
-                    <TableHead>Jatuh Tempo</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Catatan</TableHead>
-                    <TableHead>Aksi</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {payments.map((p) => (
-                    <TableRow key={p.id}>
-                      <TableCell>{format(new Date(p.tanggal_bayar), "dd MMM yyyy", { locale: id })}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{p.jenis_pembayaran === "aktivasi" ? "Aktivasi" : "Bulanan"}</Badge>
-                      </TableCell>
-                      <TableCell className="font-medium">{formatCurrency(Number(p.nominal))}</TableCell>
-                      <TableCell>{p.due_date ? format(new Date(p.due_date), "dd MMM yyyy", { locale: id }) : "-"}</TableCell>
-                      <TableCell>{statusBadge(p.status)}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{p.notes || "-"}</TableCell>
-                      <TableCell>
-                        {p.status === "pending" && (
-                          <div className="flex gap-1">
-                            <Button size="sm" variant="ghost" className="text-green-600 h-8" onClick={() => updatePaymentStatus.mutate({ id: p.id, status: "berhasil" })}>
-                              <CheckCircle2 className="w-4 h-4" />
-                            </Button>
-                            <Button size="sm" variant="ghost" className="text-destructive h-8" onClick={() => updatePaymentStatus.mutate({ id: p.id, status: "gagal" })}>
-                              <XCircle className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tanggal</TableHead>
+                      <TableHead>Jenis</TableHead>
+                      <TableHead>Nominal</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Catatan</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {payments.map((p) => (
+                      <TableRow key={p.id}>
+                        <TableCell>{format(new Date(p.tanggal_bayar), "dd MMM yyyy", { locale: idLocale })}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{p.jenis_pembayaran === "aktivasi" ? "Aktivasi" : "Bulanan"}</Badge>
+                        </TableCell>
+                        <TableCell className="font-medium">{formatCurrency(Number(p.nominal))}</TableCell>
+                        <TableCell>{statusBadge(p.status)}</TableCell>
+                        <TableCell className="max-w-[200px] truncate">{p.notes || "-"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
