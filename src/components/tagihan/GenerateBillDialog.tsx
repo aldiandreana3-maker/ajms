@@ -3,11 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useBillRates } from "@/hooks/useBillRates";
 import { useUnits } from "@/hooks/useUnits";
 import { useCreateBill } from "@/hooks/useBills";
+import { supabase } from "@/integrations/supabase/client";
 import { Zap, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,14 +20,10 @@ export function GenerateBillDialog() {
   const createBill = useCreateBill();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [rateId, setRateId] = useState("");
-  const [paymentType, setPaymentType] = useState<"monthly" | "quarterly">("quarterly");
   const [billingPeriod, setBillingPeriod] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-
-  const selectedRate = rates?.find((r) => r.id === rateId);
 
   const toggleUnit = (unitId: string) => {
     setSelectedUnits((prev) =>
@@ -43,51 +39,68 @@ export function GenerateBillDialog() {
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedRate || selectedUnits.length === 0) {
-      toast.error("Pilih tarif dan minimal 1 unit");
+    if (selectedUnits.length === 0 || !rates || rates.length === 0) {
+      toast.error("Pilih minimal 1 unit dan pastikan tarif sudah dikonfigurasi");
       return;
     }
 
     setIsGenerating(true);
     try {
-      const amount = paymentType === "quarterly" ? selectedRate.quarterly_amount : selectedRate.monthly_amount;
-      const billCount = paymentType === "quarterly" ? 1 : 3;
+      let totalBills = 0;
 
       for (const unitId of selectedUnits) {
-        if (paymentType === "monthly") {
-          // Generate 3 monthly bills
-          const baseDate = new Date(billingPeriod);
-          for (let i = 0; i < 3; i++) {
-            const period = new Date(baseDate);
-            period.setMonth(period.getMonth() + i);
-            const due = new Date(dueDate);
-            due.setMonth(due.getMonth() + i);
+        const unit = units?.find((u) => u.id === unitId);
+        if (!unit) continue;
 
-            await createBill.mutateAsync({
-              unit_id: unitId,
-              bill_type: "ipl",
-              amount,
-              billing_period: period.toISOString().split("T")[0],
-              due_date: due.toISOString().split("T")[0],
-              is_auto_generated: true,
-              notes: `${selectedRate.area_label} - Bulan ${i + 1}/3`,
-            });
-          }
-        } else {
-          await createBill.mutateAsync({
-            unit_id: unitId,
-            bill_type: "ipl",
-            amount,
-            billing_period: billingPeriod,
-            due_date: dueDate,
-            is_auto_generated: true,
-            notes: `${selectedRate.area_label} - Per 3 Bulan`,
-          });
+        // Match unit to rate by area_sqm
+        const matchedRate = rates.find((r) => unit.area_sqm && r.area_sqm === unit.area_sqm);
+        if (!matchedRate) {
+          toast.warning(`Unit ${unit.unit_number} (${unit.area_sqm || '?'} m²) tidak cocok dengan tarif manapun, dilewati.`);
+          continue;
         }
+
+        // Get penghuni for this unit
+        const { data: penghuniData } = await supabase
+          .from("penghuni")
+          .select("id, full_name")
+          .eq("unit_id", unitId)
+          .eq("is_active", true)
+          .limit(1)
+          .maybeSingle();
+
+        const scAmount = Math.round((matchedRate.quarterly_amount * 5) / 6 / 3);
+        const sfAmount = Math.round(matchedRate.quarterly_amount / 6 / 3);
+
+        // Create SC bill
+        await createBill.mutateAsync({
+          unit_id: unitId,
+          unit_number: unit.unit_number,
+          penghuni_id: penghuniData?.id,
+          bill_type: "ipl",
+          amount: scAmount,
+          billing_period: billingPeriod,
+          due_date: dueDate,
+          is_auto_generated: true,
+          notes: `SC (Service Charge) - ${matchedRate.area_label} - ${penghuniData?.full_name || 'N/A'}`,
+        });
+        totalBills++;
+
+        // Create SF bill
+        await createBill.mutateAsync({
+          unit_id: unitId,
+          unit_number: unit.unit_number,
+          penghuni_id: penghuniData?.id,
+          bill_type: "sinking_fund",
+          amount: sfAmount,
+          billing_period: billingPeriod,
+          due_date: dueDate,
+          is_auto_generated: true,
+          notes: `SF (Sinking Fund) - ${matchedRate.area_label} - ${penghuniData?.full_name || 'N/A'}`,
+        });
+        totalBills++;
       }
 
-      const totalBills = selectedUnits.length * billCount;
-      toast.success(`${totalBills} tagihan berhasil digenerate untuk ${selectedUnits.length} unit`);
+      toast.success(`${totalBills} tagihan (SC + SF) berhasil digenerate`);
       setIsOpen(false);
       setSelectedUnits([]);
     } catch (error: any) {
@@ -107,48 +120,28 @@ export function GenerateBillDialog() {
       </DialogTrigger>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Generate Tagihan IPL</DialogTitle>
+          <DialogTitle>Generate Tagihan IPL (SC + SF)</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleGenerate} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Tarif Tipe Unit</Label>
-            <Select value={rateId} onValueChange={setRateId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih tipe unit" />
-              </SelectTrigger>
-              <SelectContent>
-                {rates?.map((r) => (
-                  <SelectItem key={r.id} value={r.id}>
-                    {r.area_label} - {formatCurrency(r.quarterly_amount)}/3bln
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
+            <p className="font-medium">Tagihan otomatis berdasarkan tipe unit:</p>
+            <p className="text-muted-foreground">Setiap unit akan mendapat 2 tagihan per bulan: SC (Service Charge = 5/6 tarif) dan SF (Sinking Fund = 1/6 tarif), dihitung dari tarif triwulan.</p>
           </div>
 
-          {selectedRate && (
-            <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
-              <p>Tarif 3 bulan: <strong>{formatCurrency(selectedRate.quarterly_amount)}</strong></p>
-              <p>Tarif per bulan: <strong>{formatCurrency(selectedRate.monthly_amount)}</strong></p>
+          {rates && rates.length > 0 && (
+            <div className="p-3 border rounded-lg text-sm space-y-1">
+              <p className="font-medium mb-2">Tarif Aktif:</p>
+              {rates.map((r) => (
+                <p key={r.id} className="text-muted-foreground">
+                  {r.area_label}: SC {formatCurrency(Math.round((r.quarterly_amount * 5) / 6 / 3))}/bln + SF {formatCurrency(Math.round(r.quarterly_amount / 6 / 3))}/bln
+                </p>
+              ))}
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label>Metode Pembayaran</Label>
-            <Select value={paymentType} onValueChange={(v) => setPaymentType(v as "monthly" | "quarterly")}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="quarterly">Per 3 Bulan (1 tagihan)</SelectItem>
-                <SelectItem value="monthly">Per Bulan (3 tagihan terpisah)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Periode Mulai</Label>
+              <Label>Periode Tagihan</Label>
               <Input type="date" value={billingPeriod} onChange={(e) => setBillingPeriod(e.target.value)} required />
             </div>
             <div className="space-y-2">
@@ -166,16 +159,20 @@ export function GenerateBillDialog() {
               </div>
             </div>
             <div className="border rounded-lg max-h-48 overflow-y-auto p-2 space-y-1">
-              {units?.map((unit) => (
-                <label key={unit.id} className="flex items-center gap-2 p-1.5 hover:bg-muted rounded cursor-pointer text-sm">
-                  <Checkbox
-                    checked={selectedUnits.includes(unit.id)}
-                    onCheckedChange={() => toggleUnit(unit.id)}
-                  />
-                  <span>{unit.unit_number}</span>
-                  {unit.area_sqm && <span className="text-muted-foreground">({unit.area_sqm} m²)</span>}
-                </label>
-              ))}
+              {units?.map((unit) => {
+                const matchedRate = rates?.find((r) => unit.area_sqm && r.area_sqm === unit.area_sqm);
+                return (
+                  <label key={unit.id} className="flex items-center gap-2 p-1.5 hover:bg-muted rounded cursor-pointer text-sm">
+                    <Checkbox
+                      checked={selectedUnits.includes(unit.id)}
+                      onCheckedChange={() => toggleUnit(unit.id)}
+                    />
+                    <span>{unit.unit_number}</span>
+                    {unit.area_sqm && <span className="text-muted-foreground">({unit.area_sqm} m²)</span>}
+                    {!matchedRate && unit.area_sqm && <span className="text-destructive text-xs">(tarif tidak cocok)</span>}
+                  </label>
+                );
+              })}
               {(!units || units.length === 0) && (
                 <p className="text-center text-muted-foreground py-4 text-sm">Tidak ada unit</p>
               )}
@@ -184,7 +181,7 @@ export function GenerateBillDialog() {
 
           <Button type="submit" className="w-full" disabled={isGenerating || selectedUnits.length === 0}>
             {isGenerating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Generate {selectedUnits.length > 0 ? `${selectedUnits.length * (paymentType === "monthly" ? 3 : 1)} Tagihan` : "Tagihan"}
+            Generate {selectedUnits.length > 0 ? `${selectedUnits.length * 2} Tagihan (SC + SF)` : "Tagihan"}
           </Button>
         </form>
       </DialogContent>
