@@ -14,9 +14,13 @@ import { BillRatesCard } from "@/components/tagihan/BillRatesCard";
 import { GenerateBillDialog } from "@/components/tagihan/GenerateBillDialog";
 import { BillingStatementDialog } from "@/components/tagihan/BillingStatementDialog";
 import { BillTable } from "@/components/tagihan/BillTable";
-
 import { UnitCombobox } from "@/components/tagihan/UnitCombobox";
-import { Receipt, Plus, Loader2, CheckCircle, ShieldAlert } from "lucide-react";
+import { Receipt, Plus, Loader2, CheckCircle, ShieldAlert, Download } from "lucide-react";
+import { exportToExcel } from "@/lib/exportExcel";
+import { format } from "date-fns";
+
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
 
 export default function Tagihan() {
   const { isAdmin, isSuperAdmin, isLimitedAccess } = useAuth();
@@ -81,6 +85,43 @@ export default function Tagihan() {
 
   const unpaidBills = bills?.filter((b) => b.payment_status === "unpaid") || [];
   const paidBills = bills?.filter((b) => b.payment_status === "paid") || [];
+
+  // Recap totals for paid bills
+  const totalPaidAmount = paidBills.reduce((sum, b) => sum + (b.paid_amount || b.amount), 0);
+  const totalPaidSC = paidBills.filter(b => b.bill_type === "ipl").reduce((sum, b) => sum + (b.paid_amount || b.amount), 0);
+  const totalPaidSF = paidBills.filter(b => b.bill_type === "sinking_fund").reduce((sum, b) => sum + (b.paid_amount || b.amount), 0);
+  const totalPaidOther = totalPaidAmount - totalPaidSC - totalPaidSF;
+
+  const handleExportPaid = () => {
+    if (paidBills.length === 0) return;
+    const rows = paidBills.map((b) => ({
+      unit: b.units?.unit_number || (b as any).unit_number || "-",
+      penghuni: b.penghuni?.full_name || "-",
+      jenis: b.bill_type === "ipl" ? "Service Charge" : b.bill_type === "sinking_fund" ? "Sinking Fund" : b.bill_type,
+      periode: b.billing_period,
+      jatuh_tempo: b.due_date,
+      jumlah_tagihan: b.amount,
+      jumlah_dibayar: b.paid_amount || b.amount,
+      tanggal_bayar: b.paid_at ? format(new Date(b.paid_at), "dd/MM/yyyy HH:mm") : "-",
+      catatan: b.notes || "",
+    }));
+    exportToExcel({
+      filename: `Tagihan_Lunas_${format(new Date(), "yyyyMMdd")}`,
+      sheetName: "Tagihan Lunas",
+      data: rows,
+      columns: [
+        { header: "Unit", key: "unit", width: 12 },
+        { header: "Penghuni", key: "penghuni", width: 20 },
+        { header: "Jenis", key: "jenis", width: 18 },
+        { header: "Periode", key: "periode", width: 12 },
+        { header: "Jatuh Tempo", key: "jatuh_tempo", width: 12 },
+        { header: "Jumlah Tagihan", key: "jumlah_tagihan", width: 18 },
+        { header: "Jumlah Dibayar", key: "jumlah_dibayar", width: 18 },
+        { header: "Tanggal Bayar", key: "tanggal_bayar", width: 20 },
+        { header: "Catatan", key: "catatan", width: 25 },
+      ],
+    });
+  };
 
   return (
     <MainLayout>
@@ -156,10 +197,8 @@ export default function Tagihan() {
           </div>
         </div>
 
-        {/* Bill Rates Configuration */}
         <BillRatesCard />
 
-        {/* Bills List */}
         <Card>
           <CardContent className="pt-6">
             {isLoading ? (
@@ -176,7 +215,32 @@ export default function Tagihan() {
                 <TabsContent value="unpaid" className="mt-4">
                   <BillTable bills={unpaidBills} onPay={(id, amount) => { setPayingId(id); setPayAmount(amount.toString()); }} onRevert={(id) => revertMutation.mutate(id)} onDelete={(id) => deleteMutation.mutate(id)} onEdit={(id, data) => updateBillMutation.mutate({ id, ...data })} isDeleting={deleteMutation.isPending} isEditing={updateBillMutation.isPending} />
                 </TabsContent>
-                <TabsContent value="paid" className="mt-4">
+                <TabsContent value="paid" className="mt-4 space-y-4">
+                  {/* Recap Summary */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="p-4 bg-muted rounded-lg">
+                      <p className="text-xs text-muted-foreground">Total Terkumpul</p>
+                      <p className="text-lg font-bold text-foreground">{formatCurrency(totalPaidAmount)}</p>
+                    </div>
+                    <div className="p-4 bg-muted rounded-lg">
+                      <p className="text-xs text-muted-foreground">Service Charge (SC)</p>
+                      <p className="text-lg font-bold text-foreground">{formatCurrency(totalPaidSC)}</p>
+                    </div>
+                    <div className="p-4 bg-muted rounded-lg">
+                      <p className="text-xs text-muted-foreground">Sinking Fund (SF)</p>
+                      <p className="text-lg font-bold text-foreground">{formatCurrency(totalPaidSF)}</p>
+                    </div>
+                    <div className="p-4 bg-muted rounded-lg">
+                      <p className="text-xs text-muted-foreground">Lainnya</p>
+                      <p className="text-lg font-bold text-foreground">{formatCurrency(totalPaidOther)}</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button variant="outline" size="sm" onClick={handleExportPaid} disabled={paidBills.length === 0}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Export Excel
+                    </Button>
+                  </div>
                   <BillTable bills={paidBills} onRevert={(id) => revertMutation.mutate(id)} onDelete={(id) => deleteMutation.mutate(id)} onEdit={(id, data) => updateBillMutation.mutate({ id, ...data })} isDeleting={deleteMutation.isPending} isEditing={updateBillMutation.isPending} />
                 </TabsContent>
                 <TabsContent value="all" className="mt-4">
@@ -187,7 +251,6 @@ export default function Tagihan() {
           </CardContent>
         </Card>
 
-        {/* Payment Confirmation Dialog */}
         <Dialog open={!!payingId} onOpenChange={(open) => !open && setPayingId(null)}>
           <DialogContent>
             <DialogHeader>

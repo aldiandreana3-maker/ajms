@@ -19,10 +19,10 @@ export function BillRatesCard() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [editingRate, setEditingRate] = useState<BillRate | null>(null);
-  const [form, setForm] = useState({ area_label: "", area_sqm: "", quarterly_amount: "" });
+  const [form, setForm] = useState({ area_label: "", area_sqm: "", quarterly_amount: "", monthly_sc: "", monthly_sf: "" });
 
   const resetForm = () => {
-    setForm({ area_label: "", area_sqm: "", quarterly_amount: "" });
+    setForm({ area_label: "", area_sqm: "", quarterly_amount: "", monthly_sc: "", monthly_sf: "" });
     setEditingRate(null);
   };
 
@@ -32,16 +32,22 @@ export function BillRatesCard() {
       area_label: rate.area_label,
       area_sqm: rate.area_sqm.toString(),
       quarterly_amount: rate.quarterly_amount.toString(),
+      monthly_sc: rate.monthly_sc.toString(),
+      monthly_sf: rate.monthly_sf.toString(),
     });
     setIsOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const scVal = parseFloat(form.monthly_sc);
+    const sfVal = parseFloat(form.monthly_sf);
     const input = {
       area_label: form.area_label,
       area_sqm: parseFloat(form.area_sqm),
       quarterly_amount: parseFloat(form.quarterly_amount),
+      monthly_sc: scVal,
+      monthly_sf: sfVal,
     };
 
     if (editingRate) {
@@ -55,12 +61,8 @@ export function BillRatesCard() {
 
   const isPending = createMutation.isPending || updateMutation.isPending;
 
-  // Compute SC (5/6) and SF (1/6) from quarterly amount
-  const computeSC = (quarterly: number) => Math.round((quarterly * 5) / 6);
-  const computeSF = (quarterly: number) => Math.round(quarterly / 6);
-  const computeMonthly = (quarterly: number) => computeSC(quarterly) + computeSF(quarterly);
-
-  const quarterlyVal = parseFloat(form.quarterly_amount || "0");
+  const scVal = parseFloat(form.monthly_sc || "0");
+  const sfVal = parseFloat(form.monthly_sf || "0");
 
   return (
     <Card>
@@ -110,12 +112,32 @@ export function BillRatesCard() {
                   required
                 />
               </div>
-              {quarterlyVal > 0 && (
+              <div className="space-y-2">
+                <Label>SC (Service Charge) per Bulan (Rp)</Label>
+                <Input
+                  type="number"
+                  value={form.monthly_sc}
+                  onChange={(e) => setForm({ ...form, monthly_sc: e.target.value })}
+                  placeholder="555000"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>SF (Sinking Fund) per Bulan (Rp)</Label>
+                <Input
+                  type="number"
+                  value={form.monthly_sf}
+                  onChange={(e) => setForm({ ...form, monthly_sf: e.target.value })}
+                  placeholder="111000"
+                  required
+                />
+              </div>
+              {(scVal > 0 || sfVal > 0) && (
                 <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
-                  <p className="font-medium">Breakdown per Bulan:</p>
-                  <p>SC (Service Charge): <strong>{formatCurrency(computeSC(quarterlyVal))}</strong></p>
-                  <p>SF (Sinking Fund): <strong>{formatCurrency(computeSF(quarterlyVal))}</strong></p>
-                  <p className="text-muted-foreground pt-1">Total/bulan: {formatCurrency(computeMonthly(quarterlyVal))}</p>
+                  <p className="font-medium">Ringkasan per Bulan:</p>
+                  <p>SC: <strong>{formatCurrency(scVal)}</strong></p>
+                  <p>SF: <strong>{formatCurrency(sfVal)}</strong></p>
+                  <p className="text-muted-foreground pt-1">Total/bulan: {formatCurrency(scVal + sfVal)}</p>
                 </div>
               )}
               <Button type="submit" className="w-full" disabled={isPending}>
@@ -151,9 +173,9 @@ export function BillRatesCard() {
                     <TableCell className="font-medium">{rate.area_label}</TableCell>
                     <TableCell>{rate.area_sqm} m²</TableCell>
                     <TableCell>{formatCurrency(rate.quarterly_amount)}</TableCell>
-                    <TableCell>{formatCurrency(computeSC(rate.quarterly_amount))}</TableCell>
-                    <TableCell>{formatCurrency(computeSF(rate.quarterly_amount))}</TableCell>
-                    <TableCell className="font-medium">{formatCurrency(rate.monthly_amount)}</TableCell>
+                    <TableCell>{formatCurrency(rate.monthly_sc)}</TableCell>
+                    <TableCell>{formatCurrency(rate.monthly_sf)}</TableCell>
+                    <TableCell className="font-medium">{formatCurrency(rate.monthly_sc + rate.monthly_sf)}</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(rate)}>
