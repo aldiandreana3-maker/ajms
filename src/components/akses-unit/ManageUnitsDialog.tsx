@@ -60,9 +60,18 @@ export function ManageUnitsDialog({ open, onOpenChange, user, currentUnits }: Ma
 
   const addUnit = useMutation({
     mutationFn: async (unitNumber: string) => {
-      const pu = penghuniUnits?.find((u) => u.unit_number === unitNumber);
-      const unitId = pu?.unit_id;
-      if (!unitId) throw new Error("Unit tidak ditemukan");
+      // Try to get unit_id from cached penghuni data first, then fallback to units table
+      let unitId = penghuniUnits?.find((u) => u.unit_number === unitNumber)?.unit_id;
+      if (!unitId) {
+        const { data: unitRow } = await supabase
+          .from("units")
+          .select("id")
+          .eq("unit_number", unitNumber)
+          .maybeSingle();
+        unitId = unitRow?.id || null;
+      }
+      if (!unitId) throw new Error("Unit tidak ditemukan di database");
+
       // Check if penghuni record already exists for this user+unit
       const { data: existing } = await supabase
         .from("penghuni")
@@ -78,23 +87,39 @@ export function ManageUnitsDialog({ open, onOpenChange, user, currentUnits }: Ma
           .eq("id", existing.id);
         if (error) throw error;
       } else {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name, email, phone")
-          .eq("id", user.id)
+        // Also check by unit_number in case unit_id differs
+        const { data: existingByNumber } = await supabase
+          .from("penghuni")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("unit_number", unitNumber)
           .maybeSingle();
 
-        const { error } = await supabase.from("penghuni").insert({
-          user_id: user.id,
-          unit_id: unitId,
-          unit_number: unitNumber,
-          full_name: profile?.full_name || user.email,
-          email: profile?.email || user.email,
-          phone: profile?.phone || null,
-          is_active: true,
-          is_owner: false,
-        });
-        if (error) throw error;
+        if (existingByNumber) {
+          const { error } = await supabase
+            .from("penghuni")
+            .update({ is_active: true, unit_id: unitId })
+            .eq("id", existingByNumber.id);
+          if (error) throw error;
+        } else {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name, email, phone")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          const { error } = await supabase.from("penghuni").insert({
+            user_id: user.id,
+            unit_id: unitId,
+            unit_number: unitNumber,
+            full_name: profile?.full_name || user.email,
+            email: profile?.email || user.email,
+            phone: profile?.phone || null,
+            is_active: true,
+            is_owner: false,
+          });
+          if (error) throw error;
+        }
       }
     },
     onSuccess: () => {
