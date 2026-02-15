@@ -282,6 +282,8 @@ export type Database = {
           id: string
           is_active: boolean | null
           monthly_amount: number | null
+          monthly_sc: number | null
+          monthly_sf: number | null
           quarterly_amount: number
           updated_at: string | null
         }
@@ -292,6 +294,8 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           monthly_amount?: number | null
+          monthly_sc?: number | null
+          monthly_sf?: number | null
           quarterly_amount: number
           updated_at?: string | null
         }
@@ -302,6 +306,8 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           monthly_amount?: number | null
+          monthly_sc?: number | null
+          monthly_sf?: number | null
           quarterly_amount?: number
           updated_at?: string | null
         }
