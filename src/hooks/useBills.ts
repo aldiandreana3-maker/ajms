@@ -72,6 +72,17 @@ export function useCreateBill() {
         unit_id = unit?.id || undefined;
       }
 
+      // If we still don't have unit_id, try to find or create unit by unit_number
+      if (!unit_id && input.unit_number) {
+        // Try to create the unit if it doesn't exist
+        const { data: newUnit } = await supabase
+          .from("units")
+          .upsert({ unit_number: input.unit_number }, { onConflict: "unit_number" })
+          .select("id")
+          .single();
+        unit_id = newUnit?.id || undefined;
+      }
+
       const { unit_number, ...rest } = input;
       const { data, error } = await supabase
         .from("bills")

@@ -14,6 +14,7 @@ import { BillRatesCard } from "@/components/tagihan/BillRatesCard";
 import { GenerateBillDialog } from "@/components/tagihan/GenerateBillDialog";
 import { BillTable } from "@/components/tagihan/BillTable";
 
+import { UnitCombobox } from "@/components/tagihan/UnitCombobox";
 import { Receipt, Plus, Loader2, CheckCircle, ShieldAlert } from "lucide-react";
 
 export default function Tagihan() {
@@ -33,7 +34,7 @@ export default function Tagihan() {
 
   const [form, setForm] = useState({
     unit_number: "",
-    bill_type: "ipl" as "ipl" | "air",
+    bill_type: "ipl" as "ipl" | "kebersihan" | "keamanan" | "sinking_fund" | "listrik" | "air" | "denda" | "perbaikan",
     amount: "",
     billing_period: "",
     due_date: "",
@@ -108,17 +109,20 @@ export default function Tagihan() {
                   <DialogTitle>Tambah Tagihan Manual</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Unit</Label>
-                    <Input value={form.unit_number} onChange={(e) => setForm({ ...form, unit_number: e.target.value })} placeholder="Ketik nomor unit (cth: A0101, K-B05)" required />
-                  </div>
+                  <UnitCombobox value={form.unit_number} onChange={(v) => setForm({ ...form, unit_number: v })} />
                   <div className="space-y-2">
                     <Label>Jenis Tagihan</Label>
                     <Select value={form.bill_type} onValueChange={(v) => setForm({ ...form, bill_type: v as typeof form.bill_type })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="ipl">IPL</SelectItem>
+                        <SelectItem value="kebersihan">Kebersihan</SelectItem>
+                        <SelectItem value="keamanan">Keamanan</SelectItem>
+                        <SelectItem value="sinking_fund">Sinking Fund</SelectItem>
+                        <SelectItem value="listrik">Listrik</SelectItem>
                         <SelectItem value="air">Air</SelectItem>
+                        <SelectItem value="denda">Denda</SelectItem>
+                        <SelectItem value="perbaikan">Perbaikan</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
