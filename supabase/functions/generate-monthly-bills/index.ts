@@ -110,8 +110,9 @@ serve(async (req) => {
       if (!matchedRate) continue;
 
       const penghuni = penghuniByUnit.get(unit.id);
-      const scMonthly = Number(matchedRate.monthly_sc);
-      const sfMonthly = Number(matchedRate.monthly_sf);
+      // bill_rates stores quarterly (3-month) totals, divide by 3 for monthly
+      const scMonthly = Math.round(Number(matchedRate.monthly_sc) / 3);
+      const sfMonthly = Math.round(Number(matchedRate.monthly_sf) / 3);
       const scTotal = scMonthly * 3;
       const sfTotal = sfMonthly * 3;
       const totalAmount = scTotal + sfTotal;
