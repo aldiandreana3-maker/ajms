@@ -52,6 +52,7 @@ const roleColors: Record<string, string> = {
 // Roles available for selection (without duplicate admin and staff)
 const selectableRoles = [
   { value: "super_admin", label: "Super Admin" },
+  { value: "admin", label: "Admin" },
   { value: "agent", label: "Agent" },
   { value: "staff_tro", label: "Staff TRO" },
   { value: "staff_finance", label: "Staff Finance" },
