@@ -12,6 +12,7 @@ import { useBills, useCreateBill, useUpdateBillPayment, useRevertBillPayment, us
 import { useAuth } from "@/contexts/AuthContext";
 import { BillRatesCard } from "@/components/tagihan/BillRatesCard";
 import { GenerateBillDialog } from "@/components/tagihan/GenerateBillDialog";
+import { BillingStatementDialog } from "@/components/tagihan/BillingStatementDialog";
 import { BillTable } from "@/components/tagihan/BillTable";
 
 import { UnitCombobox } from "@/components/tagihan/UnitCombobox";
@@ -95,7 +96,8 @@ export default function Tagihan() {
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <BillingStatementDialog />
             <GenerateBillDialog />
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
               <DialogTrigger asChild>
