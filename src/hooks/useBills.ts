@@ -40,17 +40,34 @@ export function useBills() {
   return useQuery({
     queryKey: ["bills"],
     queryFn: async (): Promise<Bill[]> => {
-      const { data, error } = await supabase
-        .from("bills")
-        .select(`
-          *,
-          units:unit_id(unit_number),
-          penghuni:penghuni_id(full_name)
-        `)
-        .order("created_at", { ascending: false });
+      // Fetch all bills without the default 1000 row limit
+      const allBills: Bill[] = [];
+      const pageSize = 1000;
+      let from = 0;
+      let hasMore = true;
 
-      if (error) throw error;
-      return data as Bill[];
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("bills")
+          .select(`
+            *,
+            units:unit_id(unit_number),
+            penghuni:penghuni_id(full_name)
+          `)
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+        if (data) {
+          allBills.push(...(data as Bill[]));
+          hasMore = data.length === pageSize;
+          from += pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      return allBills;
     },
   });
 }
