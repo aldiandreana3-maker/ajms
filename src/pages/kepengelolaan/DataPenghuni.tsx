@@ -483,8 +483,7 @@ export default function DataPenghuni() {
                       <TableHead>Nama</TableHead>
                       <TableHead>No. Telepon</TableHead>
                       <TableHead>Email</TableHead>
-                      <TableHead>No. KTP</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>Balik Nama</TableHead>
                       <TableHead>Tipe (m²)</TableHead>
                       {canManage && <TableHead className="text-right">Aksi</TableHead>}
                     </TableRow>
@@ -499,17 +498,6 @@ export default function DataPenghuni() {
                         <TableCell>{p.phone || "-"}</TableCell>
                         <TableCell>{p.email || "-"}</TableCell>
                         <TableCell>{p.ktp_number || "-"}</TableCell>
-                        <TableCell>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              p.is_owner
-                                ? "bg-primary/20 text-primary"
-                                : "bg-secondary text-secondary-foreground"
-                            }`}
-                          >
-                            {p.is_owner ? "Pemilik" : "Penyewa"}
-                          </span>
-                        </TableCell>
                         <TableCell>
                           {p.units?.area_sqm ? `${p.units.area_sqm} m²` : "-"}
                         </TableCell>
