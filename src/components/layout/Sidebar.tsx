@@ -17,6 +17,7 @@ import {
   Headphones,
   Wallet,
   UserCog,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,6 +47,7 @@ const kepengelolaanItems = [
 
 const adminMenuItems = [
   { icon: Shield, label: "Manajemen User", path: "/manajemen-user" },
+  { icon: Settings, label: "Aktivasi Sistem", path: "/aktivasi-sistem" },
 ];
 
 interface SidebarProps {

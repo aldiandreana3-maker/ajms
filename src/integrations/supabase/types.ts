@@ -1106,6 +1106,75 @@ export type Database = {
         }
         Relationships: []
       }
+      system_activation: {
+        Row: {
+          activated_at: string | null
+          created_at: string
+          deactivated_at: string | null
+          id: string
+          system_status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          activated_at?: string | null
+          created_at?: string
+          deactivated_at?: string | null
+          id?: string
+          system_status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          activated_at?: string | null
+          created_at?: string
+          deactivated_at?: string | null
+          id?: string
+          system_status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      system_payments: {
+        Row: {
+          created_at: string
+          due_date: string | null
+          id: string
+          jenis_pembayaran: string
+          nominal: number
+          notes: string | null
+          recorded_by: string | null
+          status: string
+          tanggal_bayar: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          jenis_pembayaran: string
+          nominal: number
+          notes?: string | null
+          recorded_by?: string | null
+          status?: string
+          tanggal_bayar?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          jenis_pembayaran?: string
+          nominal?: number
+          notes?: string | null
+          recorded_by?: string | null
+          status?: string
+          tanggal_bayar?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       units: {
         Row: {
           area_sqm: number | null
