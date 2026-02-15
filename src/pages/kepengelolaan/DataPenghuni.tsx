@@ -50,8 +50,7 @@ const penghuniExportColumns = [
   { header: "Nama Lengkap", key: "full_name", width: 25 },
   { header: "No. Telepon", key: "phone", width: 15 },
   { header: "Email", key: "email", width: 25 },
-  { header: "No. KTP", key: "ktp_number", width: 20 },
-  { header: "Status", key: "status", width: 12 },
+  { header: "Balik Nama", key: "ktp_number", width: 20 },
 ];
 
 export default function DataPenghuni() {
@@ -120,13 +119,12 @@ export default function DataPenghuni() {
         "Nama Lengkap": "",
         "No. Telepon": "",
         "Email": "",
-        "No. KTP": "",
-        "Status": "Pemilik / Penyewa",
+        "Balik Nama": "",
       },
     ];
     const ws = XLSX.utils.json_to_sheet(templateData);
     ws["!cols"] = [
-      { wch: 12 }, { wch: 12 }, { wch: 25 }, { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 12 },
+      { wch: 12 }, { wch: 12 }, { wch: 25 }, { wch: 15 }, { wch: 25 }, { wch: 20 },
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Template");
@@ -172,7 +170,6 @@ export default function DataPenghuni() {
       phone: p.phone || "-",
       email: p.email || "-",
       ktp_number: p.ktp_number || "-",
-      status: p.is_owner ? "Pemilik" : "Penyewa",
     }));
     exportToExcel({
       filename: "Data_Penghuni",
@@ -205,10 +202,10 @@ export default function DataPenghuni() {
               full_name: row["Nama Lengkap"] || row["full_name"] || "",
               phone: String(row["No. Telepon"] || row["phone"] || ""),
               email: row["Email"] || row["email"] || "",
-              ktp_number: String(row["No. KTP"] || row["ktp_number"] || ""),
+              ktp_number: String(row["Balik Nama"] || row["No. KTP"] || row["ktp_number"] || ""),
               unit_number: row["No. Unit"] || row["unit_number"] || "",
               area_sqm: String(row["Tipe (m²)"] || row["area_sqm"] || ""),
-              is_owner: (row["Status"] || row["status"])?.toLowerCase() === "pemilik",
+              is_owner: false,
               is_active: true,
             });
             successCount++;
@@ -394,33 +391,15 @@ export default function DataPenghuni() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="ktp_number">No. KTP</Label>
+                    <Label htmlFor="ktp_number">Balik Nama</Label>
                     <Input
                       id="ktp_number"
                       value={formData.ktp_number}
                       onChange={(e) =>
                         setFormData({ ...formData, ktp_number: e.target.value })
                       }
-                      placeholder="Masukkan no. KTP"
+                      placeholder="Masukkan balik nama"
                     />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="is_owner">Status Kepemilikan</Label>
-                    <Select
-                      value={formData.is_owner ? "owner" : "tenant"}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, is_owner: value === "owner" })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="owner">Pemilik</SelectItem>
-                        <SelectItem value="tenant">Penyewa</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
 
                     <div className="flex justify-end gap-2 pt-4">
