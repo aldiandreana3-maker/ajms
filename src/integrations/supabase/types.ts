@@ -274,6 +274,62 @@ export type Database = {
         }
         Relationships: []
       }
+      bill_payments: {
+        Row: {
+          bill_id: string
+          created_at: string | null
+          id: string
+          is_paid: boolean
+          month_date: string
+          month_label: string
+          month_number: number
+          paid_amount: number | null
+          paid_at: string | null
+          sc_amount: number
+          sf_amount: number
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          bill_id: string
+          created_at?: string | null
+          id?: string
+          is_paid?: boolean
+          month_date: string
+          month_label: string
+          month_number: number
+          paid_amount?: number | null
+          paid_at?: string | null
+          sc_amount?: number
+          sf_amount?: number
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Update: {
+          bill_id?: string
+          created_at?: string | null
+          id?: string
+          is_paid?: boolean
+          month_date?: string
+          month_label?: string
+          month_number?: number
+          paid_amount?: number | null
+          paid_at?: string | null
+          sc_amount?: number
+          sf_amount?: number
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bill_payments_bill_id_fkey"
+            columns: ["bill_id"]
+            isOneToOne: false
+            referencedRelation: "bills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bill_rates: {
         Row: {
           area_label: string
@@ -327,13 +383,21 @@ export type Database = {
           paid_at: string | null
           payment_status: Database["public"]["Enums"]["payment_status"] | null
           penghuni_id: string | null
+          quarter_end: string | null
+          quarter_label: string | null
+          quarter_start: string | null
+          sc_monthly: number | null
+          sc_total: number | null
+          sf_monthly: number | null
+          sf_total: number | null
+          total_amount: number | null
           unit_id: string | null
           unit_number: string | null
           updated_at: string | null
         }
         Insert: {
           amount: number
-          bill_type: Database["public"]["Enums"]["bill_type"]
+          bill_type?: Database["public"]["Enums"]["bill_type"]
           billing_period: string
           created_at?: string | null
           due_date: string
@@ -344,6 +408,14 @@ export type Database = {
           paid_at?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"] | null
           penghuni_id?: string | null
+          quarter_end?: string | null
+          quarter_label?: string | null
+          quarter_start?: string | null
+          sc_monthly?: number | null
+          sc_total?: number | null
+          sf_monthly?: number | null
+          sf_total?: number | null
+          total_amount?: number | null
           unit_id?: string | null
           unit_number?: string | null
           updated_at?: string | null
@@ -361,6 +433,14 @@ export type Database = {
           paid_at?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"] | null
           penghuni_id?: string | null
+          quarter_end?: string | null
+          quarter_label?: string | null
+          quarter_start?: string | null
+          sc_monthly?: number | null
+          sc_total?: number | null
+          sf_monthly?: number | null
+          sf_total?: number | null
+          total_amount?: number | null
           unit_id?: string | null
           unit_number?: string | null
           updated_at?: string | null
@@ -1422,7 +1502,7 @@ export type Database = {
       card_status: "active" | "inactive" | "lost" | "damaged"
       complaint_status: "pending" | "proses" | "selesai"
       news_status: "draft" | "published"
-      payment_status: "unpaid" | "paid" | "overdue"
+      payment_status: "unpaid" | "paid" | "overdue" | "partial"
       permit_status: "pending" | "approved" | "rejected"
       work_order_status: "pending" | "in_progress" | "completed"
     }
@@ -1579,7 +1659,7 @@ export const Constants = {
       card_status: ["active", "inactive", "lost", "damaged"],
       complaint_status: ["pending", "proses", "selesai"],
       news_status: ["draft", "published"],
-      payment_status: ["unpaid", "paid", "overdue"],
+      payment_status: ["unpaid", "paid", "overdue", "partial"],
       permit_status: ["pending", "approved", "rejected"],
       work_order_status: ["pending", "in_progress", "completed"],
     },

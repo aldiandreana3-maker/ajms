@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useBillRates } from "@/hooks/useBillRates";
 import { useUnits } from "@/hooks/useUnits";
-import { useCreateBill } from "@/hooks/useBills";
+import { useCreateQuarterlyBill } from "@/hooks/useBills";
 import { supabase } from "@/integrations/supabase/client";
 import { Zap, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -14,16 +15,28 @@ import { toast } from "sonner";
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
 
+const currentYear = new Date().getFullYear();
+const QUARTERS = [
+  { value: `Q1-${currentYear}`, label: `Jan-Mar ${currentYear}`, start: `${currentYear}-01-01`, end: `${currentYear}-03-31`, quarterLabel: `Jan-Mar ${currentYear}` },
+  { value: `Q2-${currentYear}`, label: `Apr-Jun ${currentYear}`, start: `${currentYear}-04-01`, end: `${currentYear}-06-30`, quarterLabel: `Apr-Jun ${currentYear}` },
+  { value: `Q3-${currentYear}`, label: `Jul-Sep ${currentYear}`, start: `${currentYear}-07-01`, end: `${currentYear}-09-30`, quarterLabel: `Jul-Sep ${currentYear}` },
+  { value: `Q4-${currentYear}`, label: `Okt-Des ${currentYear}`, start: `${currentYear}-10-01`, end: `${currentYear}-12-31`, quarterLabel: `Okt-Des ${currentYear}` },
+  { value: `Q1-${currentYear + 1}`, label: `Jan-Mar ${currentYear + 1}`, start: `${currentYear + 1}-01-01`, end: `${currentYear + 1}-03-31`, quarterLabel: `Jan-Mar ${currentYear + 1}` },
+  { value: `Q2-${currentYear + 1}`, label: `Apr-Jun ${currentYear + 1}`, start: `${currentYear + 1}-04-01`, end: `${currentYear + 1}-06-30`, quarterLabel: `Apr-Jun ${currentYear + 1}` },
+];
+
 export function GenerateBillDialog() {
   const { data: rates } = useBillRates();
   const { units } = useUnits();
-  const createBill = useCreateBill();
+  const createBill = useCreateQuarterlyBill();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [billingPeriod, setBillingPeriod] = useState("");
+  const [selectedQuarter, setSelectedQuarter] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  const quarter = QUARTERS.find((q) => q.value === selectedQuarter);
 
   const toggleUnit = (unitId: string) => {
     setSelectedUnits((prev) =>
@@ -39,8 +52,8 @@ export function GenerateBillDialog() {
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedUnits.length === 0 || !rates || rates.length === 0) {
-      toast.error("Pilih minimal 1 unit dan pastikan tarif sudah dikonfigurasi");
+    if (selectedUnits.length === 0 || !rates || rates.length === 0 || !quarter) {
+      toast.error("Pilih periode dan minimal 1 unit");
       return;
     }
 
@@ -66,38 +79,23 @@ export function GenerateBillDialog() {
           .limit(1)
           .maybeSingle();
 
-        // Use exact SC and SF from tariff
-        const scAmount = matchedRate.monthly_sc;
-        const sfAmount = matchedRate.monthly_sf;
-
         await createBill.mutateAsync({
           unit_id: unitId,
           unit_number: unit.unit_number,
           penghuni_id: penghuniData?.id,
-          bill_type: "ipl",
-          amount: scAmount,
-          billing_period: billingPeriod,
+          quarter_start: quarter.start,
+          quarter_end: quarter.end,
+          quarter_label: quarter.quarterLabel,
+          sc_monthly: matchedRate.monthly_sc,
+          sf_monthly: matchedRate.monthly_sf,
           due_date: dueDate,
           is_auto_generated: true,
-          notes: `SC (Service Charge) - ${matchedRate.area_label} - ${penghuniData?.full_name || 'N/A'}`,
-        });
-        totalBills++;
-
-        await createBill.mutateAsync({
-          unit_id: unitId,
-          unit_number: unit.unit_number,
-          penghuni_id: penghuniData?.id,
-          bill_type: "sinking_fund",
-          amount: sfAmount,
-          billing_period: billingPeriod,
-          due_date: dueDate,
-          is_auto_generated: true,
-          notes: `SF (Sinking Fund) - ${matchedRate.area_label} - ${penghuniData?.full_name || 'N/A'}`,
+          notes: `${matchedRate.area_label} - ${penghuniData?.full_name || 'N/A'}`,
         });
         totalBills++;
       }
 
-      toast.success(`${totalBills} tagihan (SC + SF) berhasil digenerate`);
+      toast.success(`${totalBills} tagihan kuartalan berhasil digenerate`);
       setIsOpen(false);
       setSelectedUnits([]);
     } catch (error: any) {
@@ -117,20 +115,20 @@ export function GenerateBillDialog() {
       </DialogTrigger>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Generate Tagihan IPL (SC + SF)</DialogTitle>
+          <DialogTitle>Generate Tagihan Kuartalan (SC + SF)</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleGenerate} className="space-y-4">
           <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
-            <p className="font-medium">Tagihan otomatis berdasarkan tipe unit:</p>
-            <p className="text-muted-foreground">Setiap unit mendapat 2 tagihan per bulan: SC dan SF sesuai tarif yang sudah ditetapkan.</p>
+            <p className="font-medium">Tagihan per periode 3 bulan:</p>
+            <p className="text-muted-foreground">Setiap unit mendapat 1 tagihan per kuartal dengan rincian SC dan SF per bulan. Penghuni dapat membayar per bulan.</p>
           </div>
 
           {rates && rates.length > 0 && (
             <div className="p-3 border rounded-lg text-sm space-y-1">
-              <p className="font-medium mb-2">Tarif Aktif:</p>
+              <p className="font-medium mb-2">Tarif Aktif (per bulan):</p>
               {rates.map((r) => (
                 <p key={r.id} className="text-muted-foreground">
-                  {r.area_label}: SC {formatCurrency(r.monthly_sc)}/bln + SF {formatCurrency(r.monthly_sf)}/bln
+                  {r.area_label}: SC {formatCurrency(r.monthly_sc)}/bln + SF {formatCurrency(r.monthly_sf)}/bln = {formatCurrency((r.monthly_sc + r.monthly_sf) * 3)}/kuartal
                 </p>
               ))}
             </div>
@@ -138,8 +136,17 @@ export function GenerateBillDialog() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Periode Tagihan</Label>
-              <Input type="date" value={billingPeriod} onChange={(e) => setBillingPeriod(e.target.value)} required />
+              <Label>Periode Kuartal</Label>
+              <Select value={selectedQuarter} onValueChange={setSelectedQuarter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih kuartal..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {QUARTERS.map((q) => (
+                    <SelectItem key={q.value} value={q.value}>{q.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Jatuh Tempo</Label>
@@ -176,9 +183,9 @@ export function GenerateBillDialog() {
             </div>
           </div>
 
-          <Button type="submit" className="w-full" disabled={isGenerating || selectedUnits.length === 0}>
+          <Button type="submit" className="w-full" disabled={isGenerating || selectedUnits.length === 0 || !selectedQuarter}>
             {isGenerating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Generate {selectedUnits.length > 0 ? `${selectedUnits.length * 2} Tagihan (SC + SF)` : "Tagihan"}
+            Generate {selectedUnits.length > 0 ? `${selectedUnits.length} Tagihan Kuartalan` : "Tagihan"}
           </Button>
         </form>
       </DialogContent>
