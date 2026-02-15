@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { BillRatesCard } from "@/components/tagihan/BillRatesCard";
 import { GenerateBillDialog } from "@/components/tagihan/GenerateBillDialog";
 import { BillingStatementDialog } from "@/components/tagihan/BillingStatementDialog";
+import { ManualBillDialog } from "@/components/tagihan/ManualBillDialog";
 import { BillTable } from "@/components/tagihan/BillTable";
 import { Receipt, Loader2, CheckCircle, ShieldAlert, Download } from "lucide-react";
 import { exportToExcel } from "@/lib/exportExcel";
@@ -109,6 +110,7 @@ export default function Tagihan() {
 
           <div className="flex gap-2 flex-wrap">
             <BillingStatementDialog />
+            <ManualBillDialog />
             <GenerateBillDialog />
           </div>
         </div>
