@@ -45,6 +45,7 @@ import * as XLSX from "xlsx";
 
 const penghuniExportColumns = [
   { header: "No. Unit", key: "unit_number", width: 12 },
+  { header: "Tipe (m²)", key: "area_sqm", width: 12 },
   { header: "Nama Lengkap", key: "full_name", width: 25 },
   { header: "No. Telepon", key: "phone", width: 15 },
   { header: "Email", key: "email", width: 25 },
@@ -96,6 +97,7 @@ export default function DataPenghuni() {
     }
     const exportData = penghuni.map((p) => ({
       unit_number: p.unit_number || p.units?.unit_number || "-",
+      area_sqm: p.units?.area_sqm ? `${p.units.area_sqm}` : "-",
       full_name: p.full_name,
       phone: p.phone || "-",
       email: p.email || "-",
