@@ -90,6 +90,28 @@ export default function DataPenghuni() {
     setEditingPenghuni(null);
   };
 
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        "No. Unit": "",
+        "Tipe (m²)": "",
+        "Nama Lengkap": "",
+        "No. Telepon": "",
+        "Email": "",
+        "No. KTP": "",
+        "Status": "Pemilik / Penyewa",
+      },
+    ];
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    ws["!cols"] = [
+      { wch: 12 }, { wch: 12 }, { wch: 25 }, { wch: 15 }, { wch: 25 }, { wch: 20 }, { wch: 12 },
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    XLSX.writeFile(wb, "Template_Data_Penghuni.xlsx");
+    toast.success("Template berhasil diunduh");
+  };
+
   const handleExport = () => {
     if (!penghuni || penghuni.length === 0) {
       toast.error("Tidak ada data untuk diekspor");
@@ -133,10 +155,11 @@ export default function DataPenghuni() {
           try {
             await createPenghuni.mutateAsync({
               full_name: row["Nama Lengkap"] || row["full_name"] || "",
-              phone: row["No. Telepon"] || row["phone"] || "",
+              phone: String(row["No. Telepon"] || row["phone"] || ""),
               email: row["Email"] || row["email"] || "",
-              ktp_number: row["No. KTP"] || row["ktp_number"] || "",
+              ktp_number: String(row["No. KTP"] || row["ktp_number"] || ""),
               unit_number: row["No. Unit"] || row["unit_number"] || "",
+              area_sqm: String(row["Tipe (m²)"] || row["area_sqm"] || ""),
               is_owner: (row["Status"] || row["status"])?.toLowerCase() === "pemilik",
               is_active: true,
             });
@@ -244,6 +267,10 @@ export default function DataPenghuni() {
                 accept=".xlsx,.xls"
                 className="hidden"
               />
+              <Button variant="outline" onClick={handleDownloadTemplate}>
+                <Download className="w-4 h-4 mr-2" />
+                Template
+              </Button>
               <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                 <Upload className="w-4 h-4 mr-2" />
                 Import Excel
