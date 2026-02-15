@@ -51,7 +51,8 @@ function useUserUnits() {
       const { data, error } = await supabase
         .from("penghuni")
         .select("user_id, unit_number")
-        .not("user_id", "is", null);
+        .not("user_id", "is", null)
+        .eq("is_active", true);
       if (error) throw error;
 
       const map = new Map<string, string[]>();
