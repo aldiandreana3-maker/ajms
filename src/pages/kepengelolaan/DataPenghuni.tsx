@@ -401,6 +401,7 @@ export default function DataPenghuni() {
                       <TableHead>Email</TableHead>
                       <TableHead>No. KTP</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Tipe (m²)</TableHead>
                       {canManage && <TableHead className="text-right">Aksi</TableHead>}
                     </TableRow>
                   </TableHeader>
@@ -424,6 +425,9 @@ export default function DataPenghuni() {
                           >
                             {p.is_owner ? "Pemilik" : "Penyewa"}
                           </span>
+                        </TableCell>
+                        <TableCell>
+                          {p.units?.area_sqm ? `${p.units.area_sqm} m²` : "-"}
                         </TableCell>
                         {canManage && (
                           <TableCell className="text-right">
