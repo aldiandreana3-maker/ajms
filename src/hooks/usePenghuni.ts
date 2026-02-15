@@ -35,6 +35,54 @@ interface UpdatePenghuniData extends Partial<CreatePenghuniData> {
   id: string;
 }
 
+export interface PaginatedPenghuniResult {
+  data: Penghuni[];
+  totalCount: number;
+}
+
+// Server-side paginated hook
+export function usePenghuniPaginated(
+  page: number,
+  pageSize: number,
+  search: string = ""
+) {
+  return useQuery({
+    queryKey: ["penghuni-paginated", page, pageSize, search],
+    queryFn: async (): Promise<PaginatedPenghuniResult> => {
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      let query = supabase
+        .from("penghuni")
+        .select(`
+          *,
+          units:unit_id(unit_number, area_sqm, type)
+        `, { count: "exact" });
+
+      if (search.trim()) {
+        const searchTerm = `%${search.trim()}%`;
+        query = query.or(
+          `full_name.ilike.${searchTerm},phone.ilike.${searchTerm},email.ilike.${searchTerm},ktp_number.ilike.${searchTerm},unit_number.ilike.${searchTerm}`
+        );
+      }
+
+      query = query
+        .order("full_name", { ascending: true })
+        .range(from, to);
+
+      const { data, error, count } = await query;
+
+      if (error) throw error;
+      return {
+        data: (data || []) as Penghuni[],
+        totalCount: count || 0,
+      };
+    },
+    placeholderData: (previousData) => previousData,
+  });
+}
+
+// Legacy hook (limited to 1000)
 export function usePenghuni() {
   const queryClient = useQueryClient();
 
@@ -90,6 +138,7 @@ export function usePenghuni() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["penghuni"] });
+      queryClient.invalidateQueries({ queryKey: ["penghuni-paginated"] });
     },
   });
 
@@ -130,6 +179,7 @@ export function usePenghuni() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["penghuni"] });
+      queryClient.invalidateQueries({ queryKey: ["penghuni-paginated"] });
     },
   });
 
@@ -144,6 +194,7 @@ export function usePenghuni() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["penghuni"] });
+      queryClient.invalidateQueries({ queryKey: ["penghuni-paginated"] });
     },
   });
 
