@@ -19,8 +19,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Search, Pencil, Trash2, Users, Download, Upload } from "lucide-react";
-import { usePenghuni } from "@/hooks/usePenghuni";
+import { Plus, Search, Pencil, Trash2, Users, Download, Upload, ChevronLeft, ChevronRight } from "lucide-react";
+import { usePenghuniPaginated, usePenghuni } from "@/hooks/usePenghuni";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import {
@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { exportToExcel } from "@/lib/exportExcel";
 import * as XLSX from "xlsx";
+import { supabase } from "@/integrations/supabase/client";
 
 const penghuniExportColumns = [
   { header: "No. Unit", key: "unit_number", width: 12 },
@@ -54,15 +55,36 @@ const penghuniExportColumns = [
 ];
 
 export default function DataPenghuni() {
-  const { penghuni, isLoading, createPenghuni, updatePenghuni, deletePenghuni } = usePenghuni();
   const { isSuperAdmin, isAdmin } = useAuth();
   const canManage = isSuperAdmin || isAdmin;
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPenghuni, setEditingPenghuni] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  // Debounce search
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearch(value);
+      setCurrentPage(1);
+    }, 400);
+  };
+
+  // Server-side paginated query
+  const { data: paginatedResult, isLoading } = usePenghuniPaginated(currentPage, pageSize, debouncedSearch);
+  const penghuniList = paginatedResult?.data || [];
+  const totalCount = paginatedResult?.totalCount || 0;
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  // Legacy hook for mutations only
+  const { createPenghuni, updatePenghuni, deletePenghuni } = usePenghuni();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -112,12 +134,38 @@ export default function DataPenghuni() {
     toast.success("Template berhasil diunduh");
   };
 
-  const handleExport = () => {
-    if (!penghuni || penghuni.length === 0) {
+  const handleExport = async () => {
+    // Fetch ALL data for export (bypass pagination)
+    let allData: any[] = [];
+    let page = 0;
+    const batchSize = 1000;
+    while (true) {
+      let query = supabase
+        .from("penghuni")
+        .select(`*, units:unit_id(unit_number, area_sqm, type)`)
+        .order("full_name", { ascending: true })
+        .range(page * batchSize, (page + 1) * batchSize - 1);
+      
+      if (debouncedSearch.trim()) {
+        const searchTerm = `%${debouncedSearch.trim()}%`;
+        query = query.or(
+          `full_name.ilike.${searchTerm},phone.ilike.${searchTerm},email.ilike.${searchTerm},ktp_number.ilike.${searchTerm},unit_number.ilike.${searchTerm}`
+        );
+      }
+
+      const { data, error } = await query;
+      if (error) { toast.error("Gagal mengambil data export"); return; }
+      if (!data || data.length === 0) break;
+      allData = [...allData, ...data];
+      if (data.length < batchSize) break;
+      page++;
+    }
+
+    if (allData.length === 0) {
       toast.error("Tidak ada data untuk diekspor");
       return;
     }
-    const exportData = penghuni.map((p) => ({
+    const exportData = allData.map((p: any) => ({
       unit_number: p.unit_number || p.units?.unit_number || "-",
       area_sqm: p.units?.area_sqm ? `${p.units.area_sqm}` : "-",
       full_name: p.full_name,
@@ -132,7 +180,7 @@ export default function DataPenghuni() {
       data: exportData,
       columns: penghuniExportColumns,
     });
-    toast.success("Data berhasil diekspor");
+    toast.success(`${allData.length} data berhasil diekspor`);
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -235,17 +283,7 @@ export default function DataPenghuni() {
     }
   };
 
-  const filteredPenghuni = penghuni?.filter((p) => {
-    const searchLower = searchQuery.toLowerCase();
-    return (
-      p.full_name?.toLowerCase().includes(searchLower) ||
-      p.phone?.toLowerCase().includes(searchLower) ||
-      p.email?.toLowerCase().includes(searchLower) ||
-      p.ktp_number?.toLowerCase().includes(searchLower) ||
-      p.units?.unit_number?.toLowerCase().includes(searchLower) ||
-      p.unit_number?.toLowerCase().includes(searchLower)
-    );
-  });
+  const filteredPenghuni = penghuniList;
 
   return (
     <MainLayout>
@@ -259,7 +297,7 @@ export default function DataPenghuni() {
             </p>
           </div>
           {canManage && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <input
                 type="file"
                 ref={fileInputRef}
@@ -415,7 +453,7 @@ export default function DataPenghuni() {
               <Input
                 placeholder="Cari berdasarkan nama, telepon, email, atau KTP..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -427,7 +465,7 @@ export default function DataPenghuni() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="w-5 h-5" />
-              Daftar Penghuni ({filteredPenghuni?.length || 0})
+              Daftar Penghuni ({totalCount})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -436,6 +474,7 @@ export default function DataPenghuni() {
                 Memuat data...
               </div>
             ) : filteredPenghuni && filteredPenghuni.length > 0 ? (
+              <>
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -500,6 +539,37 @@ export default function DataPenghuni() {
                   </TableBody>
                 </Table>
               </div>
+              {/* Pagination Controls */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Tampilkan</span>
+                  <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setCurrentPage(1); }}>
+                    <SelectTrigger className="w-[70px] h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-muted-foreground">
+                    dari {totalCount} data
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage <= 1}>
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    Hal {currentPage} / {totalPages || 1}
+                  </span>
+                  <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage >= totalPages}>
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+              </>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 {searchQuery
