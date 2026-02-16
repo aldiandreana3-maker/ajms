@@ -171,8 +171,8 @@ export default function AktivasiSistem() {
           </Card>
         )}
 
-        {/* Payment Cards with DOKU - Super Admin Only */}
-        {isSuperAdmin && (
+        {/* Payment Cards with DOKU - Staff and above */}
+        {isStaff && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader className="pb-3">
