@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,61 +7,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSystemStatus, useToggleSystemStatus, useSystemPayments, useDeletePayment } from "@/hooks/useSystemActivation";
-import { Power, PowerOff, CheckCircle2, XCircle, Clock, Loader2, CreditCard, History, ShieldAlert, Trash2 } from "lucide-react";
+import { Power, PowerOff, CheckCircle2, XCircle, Clock, Loader2, CreditCard, History, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { Navigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-declare global {
-  interface Window {
-    snap?: {
-      pay: (token: string, options: {
-        onSuccess?: (result: unknown) => void;
-        onPending?: (result: unknown) => void;
-        onError?: (result: unknown) => void;
-        onClose?: () => void;
-      }) => void;
-    };
-  }
-}
-
 export default function AktivasiSistem() {
-  const { isSuperAdmin, isStaff, isLoading: authLoading, session } = useAuth();
+  const { isSuperAdmin, isStaff, isLoading: authLoading } = useAuth();
   const { data: systemStatus, isLoading } = useSystemStatus();
   const { data: payments, isLoading: paymentsLoading } = useSystemPayments();
   const toggleStatus = useToggleSystemStatus();
   const deletePayment = useDeletePayment();
   const { toast } = useToast();
-  const [payingType, setPayingType] = useState<string | null>(null);
-  const [snapLoaded, setSnapLoaded] = useState(false);
-
-  // Load Midtrans Snap.js from backend config (force fresh load)
-  useEffect(() => {
-    const loadSnap = async () => {
-      try {
-        // Remove any existing snap script to force reload with latest config
-        const existingScript = document.querySelector('script[src*="snap.js"]');
-        if (existingScript) {
-          existingScript.remove();
-          delete window.snap;
-        }
-
-        const { data, error } = await supabase.functions.invoke("midtrans-config");
-        if (error || !data?.client_key) return;
-
-        const script = document.createElement("script");
-        script.src = `${data.snap_url}?t=${Date.now()}`;
-        script.setAttribute("data-client-key", data.client_key);
-        script.onload = () => setSnapLoaded(true);
-        document.head.appendChild(script);
-      } catch (err) {
-        console.error("Failed to load Midtrans:", err);
-      }
-    };
-    loadSnap();
-  }, []);
 
   if (authLoading) {
     return (
@@ -73,50 +31,11 @@ export default function AktivasiSistem() {
     );
   }
 
-  // Only staff+ can access
   if (!isStaff) {
     return <Navigate to="/" replace />;
   }
 
   const isAktif = systemStatus?.system_status === "aktif";
-
-  const handlePayment = async (jenis: "aktivasi" | "bulanan") => {
-    setPayingType(jenis);
-    try {
-      const { data, error } = await supabase.functions.invoke("create-midtrans-transaction", {
-        body: { jenis_pembayaran: jenis },
-      });
-
-      if (error) throw error;
-      if (!data?.token) throw new Error("No payment token received");
-
-      if (!window.snap) {
-        toast({ title: "Midtrans belum siap", description: "Silakan coba lagi dalam beberapa detik", variant: "destructive" });
-        return;
-      }
-
-      window.snap.pay(data.token, {
-        onSuccess: () => {
-          toast({ title: "Pembayaran berhasil!" });
-          window.location.reload();
-        },
-        onPending: () => {
-          toast({ title: "Pembayaran pending", description: "Silakan selesaikan pembayaran Anda" });
-        },
-        onError: () => {
-          toast({ title: "Pembayaran gagal", variant: "destructive" });
-        },
-        onClose: () => {
-          toast({ title: "Pembayaran dibatalkan", variant: "destructive" });
-        },
-      });
-    } catch (err) {
-      console.error("Payment error:", err);
-      toast({ title: "Gagal memulai pembayaran", description: err instanceof Error ? err.message : "Terjadi kesalahan", variant: "destructive" });
-    } finally {
-      setPayingType(null);
-    }
-  };
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
@@ -222,48 +141,15 @@ export default function AktivasiSistem() {
           </Card>
         )}
 
-        {/* Payment Cards with Midtrans - Super Admin Only */}
+        {/* Payment Cards - Super Admin Only (Payment gateway belum dikonfigurasi) */}
         {isSuperAdmin && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <CreditCard className="w-4 h-4" />Biaya Aktivasi
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-foreground">{formatCurrency(6699000)}</p>
-              <p className="text-sm text-muted-foreground mt-1">Pembayaran satu kali untuk mengaktifkan sistem</p>
-              <Button
-                className="mt-4 w-full bg-green-600 hover:bg-green-700"
-                onClick={() => handlePayment("aktivasi")}
-                disabled={payingType === "aktivasi" || !snapLoaded}
-              >
-                {payingType === "aktivasi" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
-                Bayar Aktivasi
-              </Button>
+          <Card className="border-dashed border-muted-foreground/30">
+            <CardContent className="py-8 text-center text-muted-foreground">
+              <CreditCard className="w-8 h-8 mx-auto mb-3 opacity-50" />
+              <p className="font-medium">Payment gateway sedang dalam proses migrasi ke DOKU</p>
+              <p className="text-sm mt-1">Fitur pembayaran online akan segera tersedia kembali</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <History className="w-4 h-4" />Biaya Bulanan
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-foreground">{formatCurrency(1299000)}</p>
-              <p className="text-sm text-muted-foreground mt-1">Biaya pemeliharaan bulanan sistem</p>
-              <Button
-                className="mt-4 w-full"
-                onClick={() => handlePayment("bulanan")}
-                disabled={payingType === "bulanan" || !snapLoaded}
-              >
-                {payingType === "bulanan" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
-                Bayar Bulanan
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
         )}
 
         {/* Payment History */}
