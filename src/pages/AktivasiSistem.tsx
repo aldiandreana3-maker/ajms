@@ -11,6 +11,7 @@ import { Power, PowerOff, CheckCircle2, XCircle, Clock, Loader2, CreditCard, His
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { Navigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AktivasiSistem() {
@@ -20,6 +21,7 @@ export default function AktivasiSistem() {
   const toggleStatus = useToggleSystemStatus();
   const deletePayment = useDeletePayment();
   const { toast } = useToast();
+  const [payingType, setPayingType] = useState<string | null>(null);
 
   if (authLoading) {
     return (
@@ -36,6 +38,34 @@ export default function AktivasiSistem() {
   }
 
   const isAktif = systemStatus?.system_status === "aktif";
+
+  const handlePayment = async (jenis: "aktivasi" | "bulanan") => {
+    setPayingType(jenis);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-doku-transaction", {
+        body: { jenis_pembayaran: jenis },
+      });
+
+      if (error) throw error;
+      if (!data?.payment_url) throw new Error("No payment URL received");
+
+      // Redirect to DOKU checkout page
+      window.open(data.payment_url, "_blank");
+      toast({
+        title: "Halaman pembayaran dibuka",
+        description: "Silakan selesaikan pembayaran di tab baru",
+      });
+    } catch (err) {
+      console.error("Payment error:", err);
+      toast({
+        title: "Gagal memulai pembayaran",
+        description: err instanceof Error ? err.message : "Terjadi kesalahan",
+        variant: "destructive",
+      });
+    } finally {
+      setPayingType(null);
+    }
+  };
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
@@ -141,15 +171,48 @@ export default function AktivasiSistem() {
           </Card>
         )}
 
-        {/* Payment Cards - Super Admin Only (Payment gateway belum dikonfigurasi) */}
+        {/* Payment Cards with DOKU - Super Admin Only */}
         {isSuperAdmin && (
-          <Card className="border-dashed border-muted-foreground/30">
-            <CardContent className="py-8 text-center text-muted-foreground">
-              <CreditCard className="w-8 h-8 mx-auto mb-3 opacity-50" />
-              <p className="font-medium">Payment gateway sedang dalam proses migrasi ke DOKU</p>
-              <p className="text-sm mt-1">Fitur pembayaran online akan segera tersedia kembali</p>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CreditCard className="w-4 h-4" />Biaya Aktivasi
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-foreground">{formatCurrency(6699000)}</p>
+                <p className="text-sm text-muted-foreground mt-1">Pembayaran satu kali untuk mengaktifkan sistem</p>
+                <Button
+                  className="mt-4 w-full bg-green-600 hover:bg-green-700"
+                  onClick={() => handlePayment("aktivasi")}
+                  disabled={!!payingType}
+                >
+                  {payingType === "aktivasi" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                  Bayar Aktivasi
+                </Button>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <History className="w-4 h-4" />Biaya Bulanan
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-2xl font-bold text-foreground">{formatCurrency(1299000)}</p>
+                <p className="text-sm text-muted-foreground mt-1">Biaya pemeliharaan bulanan sistem</p>
+                <Button
+                  className="mt-4 w-full"
+                  onClick={() => handlePayment("bulanan")}
+                  disabled={!!payingType}
+                >
+                  {payingType === "bulanan" ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                  Bayar Bulanan
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {/* Payment History */}
