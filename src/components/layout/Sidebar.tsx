@@ -197,10 +197,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         {/* Tagihan Saya shortcut for penghuni/agent (limited access users) */}
         {!canAccessKepengelolaan && canAccessFinance && (
           <NavLink
-            to="/kepengelolaan/finance"
+            to="/sistem-tagihan"
             className={cn(
               "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group",
-              location.pathname.startsWith("/kepengelolaan/finance")
+              location.pathname === "/sistem-tagihan"
                 ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
                 : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
             )}
