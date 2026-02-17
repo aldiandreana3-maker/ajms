@@ -7,60 +7,14 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Generate SHA-256 digest of request body
-async function generateDigest(jsonBody: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(jsonBody);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = new Uint8Array(hashBuffer);
-  return btoa(String.fromCharCode(...hashArray));
-}
-
-// Generate HMAC-SHA256 signature
-async function generateSignature(
-  clientId: string,
-  requestId: string,
-  requestTimestamp: string,
-  requestTarget: string,
-  digest: string,
-  secretKey: string
-): Promise<string> {
-  const componentSignature =
-    `Client-Id:${clientId}\n` +
-    `Request-Id:${requestId}\n` +
-    `Request-Timestamp:${requestTimestamp}\n` +
-    `Request-Target:${requestTarget}\n` +
-    `Digest:${digest}`;
-
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secretKey),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-
-  const signatureBuffer = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    encoder.encode(componentSignature)
-  );
-
-  const signatureArray = new Uint8Array(signatureBuffer);
-  return `HMACSHA256=${btoa(String.fromCharCode(...signatureArray))}`;
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const DOKU_CLIENT_ID = Deno.env.get("DOKU_CLIENT_ID");
-    const DOKU_SECRET_KEY = Deno.env.get("DOKU_SECRET_KEY");
-    if (!DOKU_CLIENT_ID) throw new Error("DOKU_CLIENT_ID not configured");
-    if (!DOKU_SECRET_KEY) throw new Error("DOKU_SECRET_KEY not configured");
+    const MIDTRANS_SERVER_KEY = Deno.env.get("MIDTRANS_SERVER_KEY");
+    if (!MIDTRANS_SERVER_KEY) throw new Error("MIDTRANS_SERVER_KEY not configured");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -74,7 +28,7 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) throw new Error("Unauthorized");
 
-    // Check role: must be admin or staff
+    // Check role
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
@@ -95,60 +49,51 @@ serve(async (req) => {
     const { jenis_pembayaran, notes } = await req.json();
 
     const nominal = jenis_pembayaran === "aktivasi" ? 6699000 : 1299000;
-    const invoiceNumber = `AJMS-${jenis_pembayaran.toUpperCase()}-${Date.now()}`;
+    const orderId = `AJMS-${jenis_pembayaran.toUpperCase()}-${Date.now()}`;
 
-    // DOKU Checkout API - Production
-    const dokuUrl = "https://api.doku.com/checkout/v1/payment";
-    const requestTarget = "/checkout/v1/payment";
+    // Midtrans Snap API
+    const midtransUrl = "https://app.midtrans.com/snap/v1/transactions";
+    const authString = btoa(`${MIDTRANS_SERVER_KEY}:`);
 
-    const requestBody = JSON.stringify({
-      order: {
-        amount: nominal,
-        invoice_number: invoiceNumber,
+    const requestBody = {
+      transaction_details: {
+        order_id: orderId,
+        gross_amount: nominal,
       },
-      payment: {
-        payment_due_date: 60, // minutes
-      },
-      customer: {
+      customer_details: {
         email: user.email,
-        name: user.user_metadata?.full_name || user.email || "Customer",
+        first_name: user.user_metadata?.full_name || user.email || "Customer",
       },
-    });
+      item_details: [
+        {
+          id: jenis_pembayaran,
+          price: nominal,
+          quantity: 1,
+          name: jenis_pembayaran === "aktivasi" ? "Biaya Aktivasi Sistem AJMS" : "Biaya Bulanan Sistem AJMS",
+        },
+      ],
+    };
 
-    const requestId = crypto.randomUUID();
-    const requestTimestamp = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
-    const digest = await generateDigest(requestBody);
-    const signature = await generateSignature(
-      DOKU_CLIENT_ID,
-      requestId,
-      requestTimestamp,
-      requestTarget,
-      digest,
-      DOKU_SECRET_KEY
-    );
+    console.log("Creating Midtrans transaction:", { orderId, nominal, jenis_pembayaran });
 
-    console.log("Creating DOKU transaction:", { invoiceNumber, nominal, jenis_pembayaran });
-
-    const dokuRes = await fetch(dokuUrl, {
+    const midtransRes = await fetch(midtransUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Client-Id": DOKU_CLIENT_ID,
-        "Request-Id": requestId,
-        "Request-Timestamp": requestTimestamp,
-        "Signature": signature,
+        "Authorization": `Basic ${authString}`,
+        "Accept": "application/json",
       },
-      body: requestBody,
+      body: JSON.stringify(requestBody),
     });
 
-    if (!dokuRes.ok) {
-      const errText = await dokuRes.text();
-      console.error("DOKU error:", dokuRes.status, errText);
-      throw new Error(`DOKU API error: ${dokuRes.status} - ${errText}`);
+    if (!midtransRes.ok) {
+      const errText = await midtransRes.text();
+      console.error("Midtrans error:", midtransRes.status, errText);
+      throw new Error(`Midtrans API error: ${midtransRes.status} - ${errText}`);
     }
 
-    const dokuData = await dokuRes.json();
-    console.log("DOKU response:", JSON.stringify(dokuData));
+    const midtransData = await midtransRes.json();
+    console.log("Midtrans response:", JSON.stringify(midtransData));
 
     // Save payment record
     await supabase.from("system_payments").insert({
@@ -156,15 +101,15 @@ serve(async (req) => {
       nominal,
       tanggal_bayar: new Date().toISOString().split("T")[0],
       status: "pending",
-      notes: notes || `Invoice: ${invoiceNumber}`,
+      notes: notes || `Invoice: ${orderId}`,
       recorded_by: user.id,
     });
 
     return new Response(
       JSON.stringify({
-        payment_url: dokuData.response?.payment?.url || dokuData.payment?.url,
-        order_id: invoiceNumber,
-        message: dokuData.message || [],
+        snap_token: midtransData.token,
+        redirect_url: midtransData.redirect_url,
+        order_id: orderId,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
