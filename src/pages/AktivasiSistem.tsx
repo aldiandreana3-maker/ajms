@@ -49,14 +49,32 @@ export default function AktivasiSistem() {
       });
 
       if (error) throw error;
-      if (!data?.payment_url) throw new Error("No payment URL received");
 
-      // Redirect to DOKU checkout page
-      window.open(data.payment_url, "_blank");
-      toast({
-        title: "Halaman pembayaran dibuka",
-        description: "Silakan selesaikan pembayaran di tab baru",
-      });
+      if (data?.snap_token && (window as any).snap) {
+        (window as any).snap.pay(data.snap_token, {
+          onSuccess: () => {
+            toast({ title: "Pembayaran berhasil!", description: "Terima kasih atas pembayaran Anda." });
+          },
+          onPending: () => {
+            toast({ title: "Pembayaran pending", description: "Silakan selesaikan pembayaran Anda." });
+          },
+          onError: () => {
+            toast({ title: "Pembayaran gagal", description: "Silakan coba lagi.", variant: "destructive" });
+          },
+          onClose: () => {
+            setPayingType(null);
+          },
+        });
+        return;
+      }
+
+      // Fallback: redirect URL
+      if (data?.redirect_url) {
+        window.open(data.redirect_url, "_blank");
+        toast({ title: "Halaman pembayaran dibuka", description: "Silakan selesaikan pembayaran di tab baru" });
+      } else {
+        throw new Error("No payment token or URL received");
+      }
     } catch (err) {
       console.error("Payment error:", err);
       toast({
