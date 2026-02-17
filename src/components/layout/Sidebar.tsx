@@ -46,8 +46,8 @@ const kepengelolaanItems = [
 ];
 
 const adminMenuItems = [
-  { icon: Shield, label: "Manajemen User", path: "/manajemen-user", superAdminOnly: false },
-  { icon: Settings, label: "Aktivasi Sistem", path: "/aktivasi-sistem", superAdminOnly: false },
+  { icon: Shield, label: "Manajemen User", path: "/manajemen-user", adminOnly: true },
+  { icon: Settings, label: "Aktivasi Sistem", path: "/aktivasi-sistem", adminOnly: false },
 ];
 
 interface SidebarProps {
@@ -58,7 +58,7 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, isSuperAdmin, isAdmin, isStaff, isLimitedAccess, user } = useAuth();
+  const { signOut, isSuperAdmin, isAdmin, isStaff, isLimitedAccess, user, role } = useAuth();
   const [kepengelolaanOpen, setKepengelolaanOpen] = useState(
     location.pathname.startsWith("/kepengelolaan")
   );
@@ -213,7 +213,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         )}
 
 
-        {(isSuperAdmin || isAdmin) && (
+        {(isSuperAdmin || isAdmin || role === "staff_tro" || role === "staff_finance") && (
           <>
             {!collapsed && (
               <div className="pt-4 pb-2">
@@ -222,7 +222,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 </span>
               </div>
             )}
-            {adminMenuItems.filter((item) => !item.superAdminOnly || isSuperAdmin).map((item) => {
+            {adminMenuItems.filter((item) => !item.adminOnly || isAdmin).map((item) => {
               const isActive = location.pathname === item.path;
               return (
                 <NavLink
