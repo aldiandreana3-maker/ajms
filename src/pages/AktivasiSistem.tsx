@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export default function AktivasiSistem() {
-  const { isSuperAdmin, isStaff, isLoading: authLoading } = useAuth();
+  const { isSuperAdmin, isAdmin, isStaff, role, isLoading: authLoading } = useAuth();
   const { data: systemStatus, isLoading } = useSystemStatus();
   const { data: payments, isLoading: paymentsLoading } = useSystemPayments();
   const toggleStatus = useToggleSystemStatus();
@@ -33,7 +33,9 @@ export default function AktivasiSistem() {
     );
   }
 
-  if (!isStaff) {
+  const canAccessPayment = isSuperAdmin || isAdmin || role === "staff_tro" || role === "staff_finance";
+
+  if (!canAccessPayment) {
     return <Navigate to="/" replace />;
   }
 
@@ -171,8 +173,8 @@ export default function AktivasiSistem() {
           </Card>
         )}
 
-        {/* Payment Cards with DOKU - Staff and above */}
-        {isStaff && (
+        {/* Payment Cards with DOKU - Admin, Staff TRO, Staff Finance */}
+        {canAccessPayment && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader className="pb-3">
