@@ -25,16 +25,18 @@ export function GlobalSystemGuard({ children }: GlobalSystemGuardProps) {
 
   const isSystemInactive = systemStatus?.system_status === "tidak_aktif";
 
-  // Halaman auth selalu bisa diakses
+  // Halaman yang selalu bisa diakses tanpa blok
   const isAuthPage = location.pathname === "/auth";
+  // Halaman aktivasi bisa diakses oleh user yang sudah login (admin, staff finance, staff tro, dll)
+  const isActivationPage = location.pathname === "/aktivasi-sistem";
 
   // Selama loading, tampilkan anak (jangan block dulu)
   if (isLoading) {
     return <>{children}</>;
   }
 
-  // Jika sistem aktif / super admin / di halaman auth → tampil normal
-  if (!isSystemInactive || isSuperAdmin || isAuthPage) {
+  // Jika sistem aktif / super admin / di halaman auth / di halaman aktivasi → tampil normal
+  if (!isSystemInactive || isSuperAdmin || isAuthPage || isActivationPage) {
     return <>{children}</>;
   }
 
