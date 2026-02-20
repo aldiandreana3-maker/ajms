@@ -1225,6 +1225,42 @@ export type Database = {
         }
         Relationships: []
       }
+      system_notifications: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_read_by: Json
+          message: string
+          target_roles: string[]
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_read_by?: Json
+          message: string
+          target_roles?: string[]
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_read_by?: Json
+          message?: string
+          target_roles?: string[]
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       system_payments: {
         Row: {
           created_at: string
