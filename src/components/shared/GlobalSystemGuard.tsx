@@ -68,7 +68,7 @@ export function GlobalSystemGuard({ children }: GlobalSystemGuardProps) {
             </li>
             <li className="flex items-start gap-2">
               <span className="text-primary font-bold mt-0.5">•</span>
-              Sistem hanya dapat diaktifkan kembali oleh <strong>Super Admin</strong> melalui halaman Aktivasi Sistem.
+              Sistem hanya dapat diaktifkan kembali oleh <strong>Admin</strong>.
             </li>
             <li className="flex items-start gap-2">
               <span className="text-primary font-bold mt-0.5">•</span>
