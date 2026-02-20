@@ -418,13 +418,6 @@ export default function AktivasiSistem() {
                     + {BULANAN_ITEMS.length - 3} lainnya...
                   </li>
                 </ul>
-                {/* Notifikasi info */}
-                <div className="mt-3 flex items-start gap-2 bg-primary/5 border border-primary/10 rounded-md p-2">
-                  <Bell className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-muted-foreground">
-                    Notifikasi otomatis akan dikirim ke seluruh akun Admin, Staff Finance & TRO saat pembayaran dimulai.
-                  </p>
-                </div>
                 <Button
                   className="mt-3 w-full"
                   onClick={() => handlePayment("bulanan")}
