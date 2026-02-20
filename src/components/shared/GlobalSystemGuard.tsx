@@ -108,7 +108,7 @@ export function GlobalSystemGuard({ children }: GlobalSystemGuardProps) {
 
         {/* Footer note */}
         <p className="text-xs text-muted-foreground">
-          AJMS — Apartemen Jati Modern & Serasi
+          AJMS — Apartemen Jarrdin Management Sistem
         </p>
       </div>
     </div>
