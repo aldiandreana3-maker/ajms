@@ -31,6 +31,8 @@ const BULANAN_ITEMS = [
   "Keamanan & update sistem",
   "Monitoring performa",
   "Dukungan teknis lanjutan",
+  "Notifikasi otomatis berita terbaru ke seluruh penghuni & agent",
+  "Notifikasi otomatis tagihan yang belum dibayar ke seluruh penghuni & agent",
 ];
 
 function RincianDialog({
