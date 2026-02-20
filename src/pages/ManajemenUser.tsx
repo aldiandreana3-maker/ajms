@@ -49,23 +49,30 @@ const roleColors: Record<string, string> = {
   staff_outsourcing_parkir: "bg-amber-500/20 text-amber-600 border-amber-500/30",
 };
 
-// Roles available for selection (without duplicate admin and staff)
-const selectableRoles = [
-  { value: "super_admin", label: "Super Admin" },
-  { value: "admin", label: "Admin" },
-  { value: "agent", label: "Agent" },
-  { value: "staff_tro", label: "Staff TRO" },
-  { value: "staff_finance", label: "Staff Finance" },
-  { value: "staff_hrd_ga", label: "Staff HRD/GA" },
-  { value: "staff_engineering", label: "Staff Engineering" },
-  { value: "staff_outsourcing_cleaning", label: "Staff Outsourcing Cleaning" },
-  { value: "staff_outsourcing_security", label: "Staff Outsourcing Security" },
-  { value: "staff_outsourcing_parkir", label: "Staff Outsourcing Parkir" },
-  { value: "penghuni", label: "Penghuni" },
-];
+// Roles available for selection - super_admin hanya terlihat oleh developer (admin@ajms.com)
+const getSelectableRoles = (isDeveloper: boolean) => {
+  const roles = [
+    { value: "admin", label: "Admin" },
+    { value: "agent", label: "Agent" },
+    { value: "staff_tro", label: "Staff TRO" },
+    { value: "staff_finance", label: "Staff Finance" },
+    { value: "staff_hrd_ga", label: "Staff HRD/GA" },
+    { value: "staff_engineering", label: "Staff Engineering" },
+    { value: "staff_outsourcing_cleaning", label: "Staff Outsourcing Cleaning" },
+    { value: "staff_outsourcing_security", label: "Staff Outsourcing Security" },
+    { value: "staff_outsourcing_parkir", label: "Staff Outsourcing Parkir" },
+    { value: "penghuni", label: "Penghuni" },
+  ];
+  if (isDeveloper) {
+    roles.unshift({ value: "super_admin", label: "Super Admin" });
+  }
+  return roles;
+};
 
 export default function ManajemenUser() {
   const { isSuperAdmin, isAdmin, user: currentUser } = useAuth();
+  const isDeveloper = currentUser?.email === "admin@ajms.com";
+
   const { data: users, isLoading } = useUsers();
   const updateRoleMutation = useUpdateUserRole();
   const updateStatusMutation = useUpdateUserStatus();
@@ -248,8 +255,8 @@ export default function ManajemenUser() {
                                     <SelectTrigger>
                                       <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent position="popper" side="bottom" align="start" className="max-h-60 overflow-y-auto">
-                                      {selectableRoles.map((role) => (
+                                     <SelectContent position="popper" side="bottom" align="start" className="max-h-60 overflow-y-auto">
+                                      {getSelectableRoles(isDeveloper).map((role) => (
                                         <SelectItem key={role.value} value={role.value}>
                                           {role.label}
                                         </SelectItem>
