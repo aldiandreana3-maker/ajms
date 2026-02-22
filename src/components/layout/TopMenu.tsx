@@ -9,6 +9,7 @@ import {
   Search,
   LogOut,
   LogIn,
+  Menu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -34,9 +35,11 @@ const menuItems = [
 
 interface TopMenuProps {
   sidebarCollapsed: boolean;
+  isMobile?: boolean;
+  onMobileMenuToggle?: () => void;
 }
 
-export function TopMenu({ sidebarCollapsed }: TopMenuProps) {
+export function TopMenu({ sidebarCollapsed, isMobile, onMobileMenuToggle }: TopMenuProps) {
   const [activeItem, setActiveItem] = useState("Home");
   const navigate = useNavigate();
   const { user, signOut, role } = useAuth();
@@ -63,12 +66,21 @@ export function TopMenu({ sidebarCollapsed }: TopMenuProps) {
     <header
       className={cn(
         "fixed top-0 right-0 z-30 h-16 bg-card border-b border-border transition-all duration-300",
-        sidebarCollapsed ? "left-20" : "left-64"
+        isMobile ? "left-0" : (sidebarCollapsed ? "left-20" : "left-64")
       )}
     >
-      <div className="flex items-center justify-between h-full px-6">
+      <div className="flex items-center justify-between h-full px-4 md:px-6">
+        {/* Mobile hamburger */}
+        {isMobile && (
+          <button
+            onClick={onMobileMenuToggle}
+            className="p-2 rounded-lg hover:bg-muted transition-colors mr-2"
+          >
+            <Menu className="w-5 h-5 text-foreground" />
+          </button>
+        )}
         {/* Left: Menu Items */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 overflow-x-auto flex-shrink min-w-0">
           {menuItems.map((item) => {
             const isActive = activeItem === item.label;
             return (
@@ -142,10 +154,11 @@ export function TopMenu({ sidebarCollapsed }: TopMenuProps) {
           ) : (
             <Button
               onClick={() => navigate("/auth")}
-              className="bg-orange-500 hover:bg-orange-600 text-white shadow-lg"
+              className="bg-login-orange hover:bg-login-orange/90 text-login-orange-foreground shadow-lg"
             >
               <LogIn className="w-4 h-4 mr-2" />
-              Login / Daftar
+              <span className="hidden sm:inline">Login / Daftar</span>
+              <span className="sm:hidden">Login</span>
             </Button>
           )}
         </div>
