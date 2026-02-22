@@ -1,0 +1,380 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { MainLayout } from "@/components/layout/MainLayout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { useWaterMeters } from "@/hooks/useWaterMeters";
+import { usePenghuni } from "@/hooks/usePenghuni";
+import { useFileUpload } from "@/hooks/useFileUpload";
+import { PhotoUpload } from "@/components/shared/PhotoUpload";
+import { PhotoActions } from "@/components/shared/PhotoActions";
+import { TablePagination } from "@/components/shared/TablePagination";
+import { ArrowLeft, Droplets, Plus, ShieldAlert, Search, Trash2 } from "lucide-react";
+import { format } from "date-fns";
+import { id as localeId } from "date-fns/locale";
+import { Combobox } from "@/components/ui/combobox";
+
+export default function Engineering() {
+  const navigate = useNavigate();
+  const { isSuperAdmin, isAdmin, isStaff, isLimitedAccess, user } = useAuth();
+  const canAccess = (isSuperAdmin || isAdmin || isStaff) && !isLimitedAccess;
+
+  const [search, setSearch] = useState("");
+  const [filterMonth, setFilterMonth] = useState("");
+  const [filterYear, setFilterYear] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Form state
+  const [unitNumber, setUnitNumber] = useState("");
+  const [unitId, setUnitId] = useState<string | null>(null);
+  const [penghuniName, setPenghuniName] = useState("");
+  const [meterStart, setMeterStart] = useState("");
+  const [meterEnd, setMeterEnd] = useState("");
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [billingMonth, setBillingMonth] = useState(
+    new Date().toISOString().slice(0, 7)
+  );
+
+  const { data: waterMeters, isLoading, create, isCreating, remove } = useWaterMeters({
+    search,
+    month: filterMonth,
+    year: filterYear,
+  });
+
+  const { penghuni } = usePenghuni();
+  const { uploadFile, uploading } = useFileUpload({ folder: "water-meters" });
+
+  // Build unit options from penghuni data (string array for Combobox)
+  const unitOptionsMap = new Map<string, { name: string; unitId: string | null }>();
+  (penghuni || []).forEach((p) => {
+    if (p.unit_number && !unitOptionsMap.has(p.unit_number)) {
+      unitOptionsMap.set(p.unit_number, { name: p.full_name, unitId: p.unit_id || null });
+    }
+  });
+  const unitOptions = Array.from(unitOptionsMap.keys()).sort();
+
+  const handleUnitSelect = (value: string) => {
+    setUnitNumber(value);
+    const found = unitOptionsMap.get(value);
+    if (found) {
+      setPenghuniName(found.name);
+      setUnitId(found.unitId);
+    } else {
+      setPenghuniName("");
+      setUnitId(null);
+    }
+  };
+
+  const usage = meterEnd && meterStart ? Math.max(0, Number(meterEnd) - Number(meterStart)) : 0;
+  const nominal = usage * 17000;
+
+  const resetForm = () => {
+    setUnitNumber("");
+    setUnitId(null);
+    setPenghuniName("");
+    setMeterStart("");
+    setMeterEnd("");
+    setPhotoFile(null);
+    setBillingMonth(new Date().toISOString().slice(0, 7));
+  };
+
+  const handleSubmit = async () => {
+    if (!unitNumber || !meterStart || !meterEnd) return;
+
+    let photoUrl: string | null = null;
+    if (photoFile) {
+      photoUrl = await uploadFile(photoFile);
+    }
+
+    await create({
+      unit_number: unitNumber,
+      unit_id: unitId,
+      penghuni_name: penghuniName || null,
+      photo_url: photoUrl,
+      meter_start: Number(meterStart),
+      meter_end: Number(meterEnd),
+      billing_month: `${billingMonth}-01`,
+      recorded_by: user?.id,
+      recorded_by_name: user?.email || null,
+    });
+    resetForm();
+    setDialogOpen(false);
+  };
+
+  // Pagination
+  const paginatedData = waterMeters.slice((page - 1) * pageSize, page * pageSize);
+
+  const months = [
+    { value: "1", label: "Januari" }, { value: "2", label: "Februari" },
+    { value: "3", label: "Maret" }, { value: "4", label: "April" },
+    { value: "5", label: "Mei" }, { value: "6", label: "Juni" },
+    { value: "7", label: "Juli" }, { value: "8", label: "Agustus" },
+    { value: "9", label: "September" }, { value: "10", label: "Oktober" },
+    { value: "11", label: "November" }, { value: "12", label: "Desember" },
+  ];
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 5 }, (_, i) => String(currentYear - i));
+
+  if (!canAccess) {
+    return (
+      <MainLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+          <ShieldAlert className="w-16 h-16 text-muted-foreground" />
+          <h1 className="text-2xl font-bold text-foreground">Akses Ditolak</h1>
+          <p className="text-muted-foreground text-center max-w-md">
+            Anda tidak memiliki izin untuk mengakses halaman ini.
+          </p>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  return (
+    <MainLayout>
+      <div className="space-y-6 animate-fade-in">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="rounded-lg">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="flex items-center gap-3">
+            <Droplets className="w-8 h-8 text-primary" />
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Engineering</h1>
+              <p className="text-muted-foreground">Meteran Air</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Filters & Add Button */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row gap-4 items-end">
+              <div className="flex-1">
+                <Label>Cari</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Cari no unit atau nama penghuni..."
+                    value={search}
+                    onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div className="w-full md:w-40">
+                <Label>Bulan</Label>
+                <Select value={filterMonth} onValueChange={(v) => { setFilterMonth(v === "all" ? "" : v); setPage(1); }}>
+                  <SelectTrigger><SelectValue placeholder="Semua" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua</SelectItem>
+                    {months.map((m) => (
+                      <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-full md:w-32">
+                <Label>Tahun</Label>
+                <Select value={filterYear} onValueChange={(v) => { setFilterYear(v === "all" ? "" : v); setPage(1); }}>
+                  <SelectTrigger><SelectValue placeholder="Semua" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua</SelectItem>
+                    {years.map((y) => (
+                      <SelectItem key={y} value={y}>{y}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="gap-2">
+                    <Plus className="w-4 h-4" /> Input Meteran
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Input Meteran Air</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-2">
+                    <div>
+                      <Label>No Unit *</Label>
+                      <Combobox
+                        options={unitOptions}
+                        value={unitNumber}
+                        onChange={handleUnitSelect}
+                        placeholder="Pilih unit..."
+                        searchPlaceholder="Cari unit..."
+                        emptyText="Unit tidak ditemukan"
+                      />
+                    </div>
+                    {penghuniName && (
+                      <div>
+                        <Label>Nama Penghuni</Label>
+                        <Input value={penghuniName} disabled />
+                      </div>
+                    )}
+                    <div>
+                      <Label>Bulan Tagihan *</Label>
+                      <Input
+                        type="month"
+                        value={billingMonth}
+                        onChange={(e) => setBillingMonth(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <PhotoUpload
+                        label="Foto Meteran"
+                        value={photoFile}
+                        onChange={setPhotoFile}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>Meteran Awal *</Label>
+                        <Input
+                          type="number"
+                          value={meterStart}
+                          onChange={(e) => setMeterStart(e.target.value)}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <Label>Meteran Akhir *</Label>
+                        <Input
+                          type="number"
+                          value={meterEnd}
+                          onChange={(e) => setMeterEnd(e.target.value)}
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                    {meterStart && meterEnd && (
+                      <Card className="bg-muted/50">
+                        <CardContent className="pt-4 space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>Pemakaian</span>
+                            <span className="font-semibold">{usage} m³</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Nominal</span>
+                            <span className="font-semibold text-primary">
+                              Rp {nominal.toLocaleString("id-ID")}
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={!unitNumber || !meterStart || !meterEnd || isCreating || uploading}
+                      className="w-full"
+                    >
+                      {isCreating || uploading ? "Menyimpan..." : "Simpan & Buat Tagihan"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Data Meteran Air</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>No Unit</TableHead>
+                    <TableHead>Foto</TableHead>
+                    <TableHead>Meteran Awal</TableHead>
+                    <TableHead>Meteran Akhir</TableHead>
+                    <TableHead>Pemakaian (m³)</TableHead>
+                    <TableHead>Nominal (Rp)</TableHead>
+                    <TableHead>Bulan</TableHead>
+                    <TableHead>Tanggal Input</TableHead>
+                    <TableHead>Petugas</TableHead>
+                    {(isSuperAdmin || isAdmin) && <TableHead>Aksi</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                        Memuat data...
+                      </TableCell>
+                    </TableRow>
+                  ) : paginatedData.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                        Belum ada data meteran air
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    paginatedData.map((wm) => (
+                      <TableRow key={wm.id}>
+                        <TableCell className="font-medium">{wm.unit_number}</TableCell>
+                        <TableCell>
+                          <PhotoActions photoUrl={wm.photo_url} label="Foto Meteran" />
+                        </TableCell>
+                        <TableCell>{wm.meter_start}</TableCell>
+                        <TableCell>{wm.meter_end}</TableCell>
+                        <TableCell>{wm.usage_m3} m³</TableCell>
+                        <TableCell>Rp {Number(wm.nominal).toLocaleString("id-ID")}</TableCell>
+                        <TableCell>
+                          {format(new Date(wm.billing_month), "MMMM yyyy", { locale: localeId })}
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(wm.created_at), "dd/MM/yyyy HH:mm", { locale: localeId })}
+                        </TableCell>
+                        <TableCell>{wm.recorded_by_name || "-"}</TableCell>
+                        {(isSuperAdmin || isAdmin) && (
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                if (confirm("Hapus data meteran ini?")) {
+                                  remove(wm.id);
+                                }
+                              }}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            {waterMeters.length > 0 && (
+              <TablePagination
+                currentPage={page}
+                totalItems={waterMeters.length}
+                itemsPerPage={pageSize}
+                onPageChange={setPage}
+                onItemsPerPageChange={(size) => { setPageSize(size); setPage(1); }}
+              />
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </MainLayout>
+  );
+}

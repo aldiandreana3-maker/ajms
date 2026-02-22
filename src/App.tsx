@@ -29,6 +29,7 @@ import DataPenghuni from "./pages/kepengelolaan/DataPenghuni";
 import TenantRelationOffice from "./pages/kepengelolaan/TenantRelationOffice";
 import Finance from "./pages/kepengelolaan/Finance";
 import HrdGa from "./pages/kepengelolaan/HrdGa";
+import Engineering from "./pages/kepengelolaan/Engineering";
 import AksesUnit from "./pages/kepengelolaan/AksesUnit";
 import AktivasiSistem from "./pages/AktivasiSistem";
 import NotFound from "./pages/NotFound";
@@ -76,6 +77,7 @@ const App = () => (
               <Route path="/kepengelolaan/tro" element={guarded(<TenantRelationOffice />)} />
               <Route path="/kepengelolaan/finance" element={guarded(<Finance />)} />
               <Route path="/kepengelolaan/hrd-ga" element={guarded(<HrdGa />)} />
+              <Route path="/kepengelolaan/engineering" element={guarded(<Engineering />)} />
               <Route path="/kepengelolaan/akses-unit" element={guarded(<AksesUnit />)} />
               <Route path="*" element={<NotFound />} />
             </Routes>
