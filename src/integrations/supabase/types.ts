@@ -1357,6 +1357,65 @@ export type Database = {
         }
         Relationships: []
       }
+      water_meters: {
+        Row: {
+          billing_month: string
+          created_at: string
+          id: string
+          meter_end: number
+          meter_start: number
+          nominal: number | null
+          penghuni_name: string | null
+          photo_url: string | null
+          recorded_by: string | null
+          recorded_by_name: string | null
+          unit_id: string | null
+          unit_number: string
+          updated_at: string
+          usage_m3: number | null
+        }
+        Insert: {
+          billing_month?: string
+          created_at?: string
+          id?: string
+          meter_end?: number
+          meter_start?: number
+          nominal?: number | null
+          penghuni_name?: string | null
+          photo_url?: string | null
+          recorded_by?: string | null
+          recorded_by_name?: string | null
+          unit_id?: string | null
+          unit_number: string
+          updated_at?: string
+          usage_m3?: number | null
+        }
+        Update: {
+          billing_month?: string
+          created_at?: string
+          id?: string
+          meter_end?: number
+          meter_start?: number
+          nominal?: number | null
+          penghuni_name?: string | null
+          photo_url?: string | null
+          recorded_by?: string | null
+          recorded_by_name?: string | null
+          unit_id?: string | null
+          unit_number?: string
+          updated_at?: string
+          usage_m3?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "water_meters_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_orders: {
         Row: {
           assigned_to: string | null
