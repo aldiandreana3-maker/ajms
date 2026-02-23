@@ -8,6 +8,8 @@ export interface WaterMeter {
   unit_number: string;
   penghuni_name: string | null;
   photo_url: string | null;
+  photo_start_url: string | null;
+  photo_end_url: string | null;
   meter_start: number;
   meter_end: number;
   usage_m3: number;
@@ -24,6 +26,8 @@ interface WaterMeterInput {
   unit_number: string;
   penghuni_name?: string | null;
   photo_url?: string | null;
+  photo_start_url?: string | null;
+  photo_end_url?: string | null;
   meter_start: number;
   meter_end: number;
   billing_month: string;
@@ -68,7 +72,6 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
 
   const createMutation = useMutation({
     mutationFn: async (input: WaterMeterInput) => {
-      // Insert water meter reading
       const { data: wmData, error: wmError } = await (supabase as any)
         .from("water_meters")
         .insert(input)
@@ -90,7 +93,6 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
       dueDate.setMonth(dueDate.getMonth() + 1);
       dueDate.setDate(15);
 
-      // Find penghuni for this unit
       const { data: penghuniData } = await supabase
         .from("penghuni")
         .select("id")

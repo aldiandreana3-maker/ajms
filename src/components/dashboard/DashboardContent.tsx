@@ -14,6 +14,7 @@ import {
 import { StatCard } from "./StatCard";
 import { NewsCard } from "./NewsCard";
 import { EditStatDialog } from "./EditStatDialog";
+import { StorageWarning } from "./StorageWarning";
 
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useDashboardSettings } from "@/hooks/useDashboardSettings";
@@ -135,6 +136,9 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
           </button>
         </div>
       </div>
+
+      {/* Storage Warning for Super Admin */}
+      <StorageWarning />
 
       {/* Stats Grid - RED Category (Super Admin Editable) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
