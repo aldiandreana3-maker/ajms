@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { usePenghuni } from "@/hooks/usePenghuni";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { PhotoUpload } from "@/components/shared/PhotoUpload";
 import { Dialog as ViewDialog, DialogContent as ViewDialogContent } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { ArrowLeft, Droplets, Plus, ShieldAlert, Search, Trash2 } from "lucide-react";
 import { format } from "date-fns";
@@ -32,6 +33,7 @@ export default function Engineering() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [viewPhoto, setViewPhoto] = useState<string | null>(null);
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
 
   // Form state
   const [unitNumber, setUnitNumber] = useState("");
@@ -53,7 +55,34 @@ export default function Engineering() {
   const { penghuni } = usePenghuni();
   const { uploadFile, uploading } = useFileUpload({ folder: "water-meters" });
 
-  // Build unit options from penghuni data (string array for Combobox)
+  // Resolve signed URLs for water meter photos
+  useEffect(() => {
+    const resolveUrls = async () => {
+      const photoPaths = waterMeters
+        .filter((wm) => wm.photo_url && !signedUrls[wm.photo_url])
+        .map((wm) => wm.photo_url as string);
+      if (photoPaths.length === 0) return;
+
+      const newUrls: Record<string, string> = {};
+      for (const path of photoPaths) {
+        if (path.startsWith("http")) {
+          newUrls[path] = path;
+        } else {
+          const { data } = await supabase.storage
+            .from("kepenghunian-files")
+            .createSignedUrl(path, 3600);
+          if (data?.signedUrl) {
+            newUrls[path] = data.signedUrl;
+          }
+        }
+      }
+      if (Object.keys(newUrls).length > 0) {
+        setSignedUrls((prev) => ({ ...prev, ...newUrls }));
+      }
+    };
+    resolveUrls();
+  }, [waterMeters]);
+
   const unitOptionsMap = new Map<string, { name: string; unitId: string | null }>();
   (penghuni || []).forEach((p) => {
     if (p.unit_number && !unitOptionsMap.has(p.unit_number)) {
@@ -329,21 +358,23 @@ export default function Engineering() {
                       <TableRow key={wm.id}>
                         <TableCell className="font-medium">{wm.unit_number}</TableCell>
                         <TableCell>
-                          {wm.photo_url ? (
+                          {wm.photo_url && signedUrls[wm.photo_url] ? (
                             <div className="space-y-1">
                               <img
-                                src={wm.photo_url}
+                                src={signedUrls[wm.photo_url]}
                                 alt="Foto meteran"
                                 className="w-16 h-16 object-cover rounded cursor-pointer"
-                                onClick={() => setViewPhoto(wm.photo_url)}
+                                onClick={() => setViewPhoto(signedUrls[wm.photo_url])}
                               />
                               <button
-                                onClick={() => setViewPhoto(wm.photo_url)}
+                                onClick={() => setViewPhoto(signedUrls[wm.photo_url])}
                                 className="text-xs text-primary hover:underline"
                               >
                                 Lihat Foto
                               </button>
                             </div>
+                          ) : wm.photo_url ? (
+                            <span className="text-muted-foreground text-xs">Memuat...</span>
                           ) : (
                             <span className="text-muted-foreground">-</span>
                           )}
