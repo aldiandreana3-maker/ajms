@@ -1366,6 +1366,8 @@ export type Database = {
           meter_start: number
           nominal: number | null
           penghuni_name: string | null
+          photo_end_url: string | null
+          photo_start_url: string | null
           photo_url: string | null
           recorded_by: string | null
           recorded_by_name: string | null
@@ -1382,6 +1384,8 @@ export type Database = {
           meter_start?: number
           nominal?: number | null
           penghuni_name?: string | null
+          photo_end_url?: string | null
+          photo_start_url?: string | null
           photo_url?: string | null
           recorded_by?: string | null
           recorded_by_name?: string | null
@@ -1398,6 +1402,8 @@ export type Database = {
           meter_start?: number
           nominal?: number | null
           penghuni_name?: string | null
+          photo_end_url?: string | null
+          photo_start_url?: string | null
           photo_url?: string | null
           recorded_by?: string | null
           recorded_by_name?: string | null

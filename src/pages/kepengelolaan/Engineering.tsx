@@ -21,6 +21,29 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Combobox } from "@/components/ui/combobox";
 
+// Helper to render a photo cell with signed URL
+function PhotoThumb({ 
+  path, 
+  signedUrls, 
+  onView 
+}: { 
+  path: string | null; 
+  signedUrls: Record<string, string>; 
+  onView: (url: string) => void;
+}) {
+  if (!path) return <span className="text-muted-foreground text-xs">-</span>;
+  const url = signedUrls[path];
+  if (!url) return <span className="text-muted-foreground text-xs">Memuat...</span>;
+  return (
+    <img
+      src={url}
+      alt="Foto meteran"
+      className="w-14 h-14 object-cover rounded cursor-pointer border border-border"
+      onClick={() => onView(url)}
+    />
+  );
+}
+
 export default function Engineering() {
   const navigate = useNavigate();
   const { isSuperAdmin, isAdmin, isStaff, isLimitedAccess, user } = useAuth();
@@ -41,7 +64,8 @@ export default function Engineering() {
   const [penghuniName, setPenghuniName] = useState("");
   const [meterStart, setMeterStart] = useState("");
   const [meterEnd, setMeterEnd] = useState("");
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoStartFile, setPhotoStartFile] = useState<File | null>(null);
+  const [photoEndFile, setPhotoEndFile] = useState<File | null>(null);
   const [billingMonth, setBillingMonth] = useState(
     new Date().toISOString().slice(0, 7)
   );
@@ -58,13 +82,17 @@ export default function Engineering() {
   // Resolve signed URLs for water meter photos
   useEffect(() => {
     const resolveUrls = async () => {
-      const photoPaths = waterMeters
-        .filter((wm) => wm.photo_url && !signedUrls[wm.photo_url])
-        .map((wm) => wm.photo_url as string);
-      if (photoPaths.length === 0) return;
+      const allPaths = new Set<string>();
+      waterMeters.forEach((wm) => {
+        if (wm.photo_start_url && !signedUrls[wm.photo_start_url]) allPaths.add(wm.photo_start_url);
+        if (wm.photo_end_url && !signedUrls[wm.photo_end_url]) allPaths.add(wm.photo_end_url);
+        // Legacy support
+        if (wm.photo_url && !signedUrls[wm.photo_url]) allPaths.add(wm.photo_url);
+      });
+      if (allPaths.size === 0) return;
 
       const newUrls: Record<string, string> = {};
-      for (const path of photoPaths) {
+      for (const path of allPaths) {
         if (path.startsWith("http")) {
           newUrls[path] = path;
         } else {
@@ -112,23 +140,30 @@ export default function Engineering() {
     setPenghuniName("");
     setMeterStart("");
     setMeterEnd("");
-    setPhotoFile(null);
+    setPhotoStartFile(null);
+    setPhotoEndFile(null);
     setBillingMonth(new Date().toISOString().slice(0, 7));
   };
 
   const handleSubmit = async () => {
     if (!unitNumber || !meterStart || !meterEnd) return;
 
-    let photoUrl: string | null = null;
-    if (photoFile) {
-      photoUrl = await uploadFile(photoFile);
+    let photoStartUrl: string | null = null;
+    let photoEndUrl: string | null = null;
+
+    if (photoStartFile) {
+      photoStartUrl = await uploadFile(photoStartFile);
+    }
+    if (photoEndFile) {
+      photoEndUrl = await uploadFile(photoEndFile);
     }
 
     await create({
       unit_number: unitNumber,
       unit_id: unitId,
       penghuni_name: penghuniName || null,
-      photo_url: photoUrl,
+      photo_start_url: photoStartUrl,
+      photo_end_url: photoEndUrl,
       meter_start: Number(meterStart),
       meter_end: Number(meterEnd),
       billing_month: `${billingMonth}-01`,
@@ -261,33 +296,49 @@ export default function Engineering() {
                         onChange={(e) => setBillingMonth(e.target.value)}
                       />
                     </div>
-                    <div>
-                      <PhotoUpload
-                        label="Foto Meteran"
-                        value={photoFile}
-                        onChange={setPhotoFile}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label>Meteran Awal *</Label>
-                        <Input
-                          type="number"
-                          value={meterStart}
-                          onChange={(e) => setMeterStart(e.target.value)}
-                          placeholder="0"
+
+                    {/* Meteran Awal: Foto + Angka */}
+                    <Card className="border-dashed">
+                      <CardContent className="pt-4 space-y-3">
+                        <Label className="text-base font-semibold">Meteran Awal *</Label>
+                        <PhotoUpload
+                          label="Foto Meteran Awal"
+                          value={photoStartFile}
+                          onChange={setPhotoStartFile}
                         />
-                      </div>
-                      <div>
-                        <Label>Meteran Akhir *</Label>
-                        <Input
-                          type="number"
-                          value={meterEnd}
-                          onChange={(e) => setMeterEnd(e.target.value)}
-                          placeholder="0"
+                        <div>
+                          <Label>Angka Meteran Awal</Label>
+                          <Input
+                            type="number"
+                            value={meterStart}
+                            onChange={(e) => setMeterStart(e.target.value)}
+                            placeholder="0"
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Meteran Akhir: Foto + Angka */}
+                    <Card className="border-dashed">
+                      <CardContent className="pt-4 space-y-3">
+                        <Label className="text-base font-semibold">Meteran Akhir *</Label>
+                        <PhotoUpload
+                          label="Foto Meteran Akhir"
+                          value={photoEndFile}
+                          onChange={setPhotoEndFile}
                         />
-                      </div>
-                    </div>
+                        <div>
+                          <Label>Angka Meteran Akhir</Label>
+                          <Input
+                            type="number"
+                            value={meterEnd}
+                            onChange={(e) => setMeterEnd(e.target.value)}
+                            placeholder="0"
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+
                     {meterStart && meterEnd && (
                       <Card className="bg-muted/50">
                         <CardContent className="pt-4 space-y-2">
@@ -329,7 +380,6 @@ export default function Engineering() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>No Unit</TableHead>
-                    <TableHead>Foto</TableHead>
                     <TableHead>Meteran Awal</TableHead>
                     <TableHead>Meteran Akhir</TableHead>
                     <TableHead>Pemakaian (m³)</TableHead>
@@ -343,13 +393,13 @@ export default function Engineering() {
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         Memuat data...
                       </TableCell>
                     </TableRow>
                   ) : paginatedData.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         Belum ada data meteran air
                       </TableCell>
                     </TableRow>
@@ -357,30 +407,28 @@ export default function Engineering() {
                     paginatedData.map((wm) => (
                       <TableRow key={wm.id}>
                         <TableCell className="font-medium">{wm.unit_number}</TableCell>
+                        {/* Meteran Awal: Foto + Angka */}
                         <TableCell>
-                          {wm.photo_url && signedUrls[wm.photo_url] ? (
-                            <div className="space-y-1">
-                              <img
-                                src={signedUrls[wm.photo_url]}
-                                alt="Foto meteran"
-                                className="w-16 h-16 object-cover rounded cursor-pointer"
-                                onClick={() => setViewPhoto(signedUrls[wm.photo_url])}
-                              />
-                              <button
-                                onClick={() => setViewPhoto(signedUrls[wm.photo_url])}
-                                className="text-xs text-primary hover:underline"
-                              >
-                                Lihat Foto
-                              </button>
-                            </div>
-                          ) : wm.photo_url ? (
-                            <span className="text-muted-foreground text-xs">Memuat...</span>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
+                          <div className="flex flex-col items-center gap-1">
+                            <PhotoThumb
+                              path={wm.photo_start_url || wm.photo_url}
+                              signedUrls={signedUrls}
+                              onView={setViewPhoto}
+                            />
+                            <span className="font-semibold text-sm">{wm.meter_start}</span>
+                          </div>
                         </TableCell>
-                        <TableCell>{wm.meter_start}</TableCell>
-                        <TableCell>{wm.meter_end}</TableCell>
+                        {/* Meteran Akhir: Foto + Angka */}
+                        <TableCell>
+                          <div className="flex flex-col items-center gap-1">
+                            <PhotoThumb
+                              path={wm.photo_end_url}
+                              signedUrls={signedUrls}
+                              onView={setViewPhoto}
+                            />
+                            <span className="font-semibold text-sm">{wm.meter_end}</span>
+                          </div>
+                        </TableCell>
                         <TableCell>{wm.usage_m3} m³</TableCell>
                         <TableCell>Rp {Number(wm.nominal).toLocaleString("id-ID")}</TableCell>
                         <TableCell>
