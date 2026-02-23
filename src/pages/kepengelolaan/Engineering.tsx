@@ -13,7 +13,7 @@ import { useWaterMeters } from "@/hooks/useWaterMeters";
 import { usePenghuni } from "@/hooks/usePenghuni";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { PhotoUpload } from "@/components/shared/PhotoUpload";
-import { PhotoActions } from "@/components/shared/PhotoActions";
+import { Dialog as ViewDialog, DialogContent as ViewDialogContent } from "@/components/ui/dialog";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { ArrowLeft, Droplets, Plus, ShieldAlert, Search, Trash2 } from "lucide-react";
 import { format } from "date-fns";
@@ -31,6 +31,7 @@ export default function Engineering() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [viewPhoto, setViewPhoto] = useState<string | null>(null);
 
   // Form state
   const [unitNumber, setUnitNumber] = useState("");
@@ -328,7 +329,24 @@ export default function Engineering() {
                       <TableRow key={wm.id}>
                         <TableCell className="font-medium">{wm.unit_number}</TableCell>
                         <TableCell>
-                          <PhotoActions photoUrl={wm.photo_url} label="Foto Meteran" />
+                          {wm.photo_url ? (
+                            <div className="space-y-1">
+                              <img
+                                src={wm.photo_url}
+                                alt="Foto meteran"
+                                className="w-16 h-16 object-cover rounded cursor-pointer"
+                                onClick={() => setViewPhoto(wm.photo_url)}
+                              />
+                              <button
+                                onClick={() => setViewPhoto(wm.photo_url)}
+                                className="text-xs text-primary hover:underline"
+                              >
+                                Lihat Foto
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
                         </TableCell>
                         <TableCell>{wm.meter_start}</TableCell>
                         <TableCell>{wm.meter_end}</TableCell>
@@ -375,6 +393,14 @@ export default function Engineering() {
           </CardContent>
         </Card>
       </div>
+      {/* Photo View Dialog */}
+      <ViewDialog open={!!viewPhoto} onOpenChange={() => setViewPhoto(null)}>
+        <ViewDialogContent className="max-w-2xl">
+          {viewPhoto && (
+            <img src={viewPhoto} alt="Foto Meteran" className="w-full h-auto rounded-lg" />
+          )}
+        </ViewDialogContent>
+      </ViewDialog>
     </MainLayout>
   );
 }
