@@ -111,8 +111,15 @@ export default function Engineering() {
     resolveUrls();
   }, [waterMeters]);
 
+  // Build unit → penghuni map, prioritising is_owner=true, then latest created_at
   const unitOptionsMap = new Map<string, { name: string; unitId: string | null }>();
-  (penghuni || []).forEach((p) => {
+  const sortedPenghuni = [...(penghuni || [])].sort((a, b) => {
+    // Owners first, then by created_at descending
+    if (a.is_owner && !b.is_owner) return -1;
+    if (!a.is_owner && b.is_owner) return 1;
+    return (b.created_at || "").localeCompare(a.created_at || "");
+  });
+  sortedPenghuni.forEach((p) => {
     if (p.unit_number && !unitOptionsMap.has(p.unit_number)) {
       unitOptionsMap.set(p.unit_number, { name: p.full_name, unitId: p.unit_id || null });
     }
