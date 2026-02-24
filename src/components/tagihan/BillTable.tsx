@@ -107,7 +107,8 @@ export function BillTable({
               <TableHead>Periode</TableHead>
               <TableHead>SC/bln</TableHead>
               <TableHead>SF/bln</TableHead>
-              <TableHead>Total Kuartal</TableHead>
+              <TableHead>Lain-lain</TableHead>
+              <TableHead>Total</TableHead>
               <TableHead>Terbayar</TableHead>
               <TableHead>Status</TableHead>
               {hasActions && <TableHead>{showInvoice && !onDelete ? "Invoice" : "Aksi"}</TableHead>}
@@ -117,7 +118,7 @@ export function BillTable({
             {paginatedBills.map((b) => {
               const isExpanded = expandedBill === b.id;
               const paidMonths = b.bill_payments?.filter((p) => p.is_paid).length || 0;
-              const colSpan = hasActions ? 10 : 9;
+              const colSpan = hasActions ? 11 : 10;
 
               return (
                 <>{/* Main row */}
@@ -135,6 +136,7 @@ export function BillTable({
                     </TableCell>
                     <TableCell>{formatCurrency(b.sc_monthly)}</TableCell>
                     <TableCell>{formatCurrency(b.sf_monthly)}</TableCell>
+                    <TableCell>{formatCurrency(Math.max(0, (b.total_amount || 0) - (b.sc_total || 0) - (b.sf_total || 0)))}</TableCell>
                     <TableCell className="font-bold">{formatCurrency(b.total_amount)}</TableCell>
                     <TableCell>
                       <span className="text-sm">{paidMonths}/3 bulan</span>
@@ -240,7 +242,7 @@ export function BillTable({
             })}
             {paginatedBills.length === 0 && (
               <TableRow>
-                <TableCell colSpan={hasActions ? 10 : 9} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={hasActions ? 11 : 10} className="text-center text-muted-foreground py-8">
                   {searchQuery ? "Tidak ditemukan tagihan yang cocok" : "Tidak ada tagihan"}
                 </TableCell>
               </TableRow>

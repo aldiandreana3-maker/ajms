@@ -101,6 +101,10 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
         .limit(1)
         .single();
 
+      // Build proper period label from billing month
+      const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+      const periodLabel = `${monthNames[billingDate.getMonth()]} ${billingDate.getFullYear()}`;
+
       const { error: billError } = await supabase
         .from("bills")
         .insert({
@@ -114,6 +118,7 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
           due_date: dueDate.toISOString().split("T")[0],
           payment_status: "unpaid" as const,
           is_auto_generated: true,
+          quarter_label: periodLabel,
           notes: `Pemakaian air: ${usage} m³ (Meteran ${input.meter_start} → ${input.meter_end})`,
         });
 
