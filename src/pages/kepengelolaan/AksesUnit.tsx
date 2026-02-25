@@ -107,6 +107,8 @@ export default function AksesUnit() {
   const isLoading = usersLoading || unitsLoading;
 
   const filteredUsers = users?.filter((u) => {
+    // Sembunyikan akun developer kecuali untuk super admin
+    if (u.email === "admin@ajms.com" && !isSuperAdmin) return false;
     const q = search.toLowerCase();
     const units = unitMap?.get(u.id) || [];
     return (
