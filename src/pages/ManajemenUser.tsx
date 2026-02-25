@@ -186,7 +186,7 @@ export default function ManajemenUser() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users?.map((u) => (
+                  {users?.filter((u) => isDeveloper || u.email !== "admin@ajms.com").map((u) => (
                     <TableRow key={u.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
