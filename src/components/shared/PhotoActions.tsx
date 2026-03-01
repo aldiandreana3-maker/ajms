@@ -4,19 +4,11 @@ import { Eye, Download, Image, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-interface PhotoActionsProps {
-  photoUrl: string | null | undefined;
-  label?: string;
-  size?: "sm" | "default";
-}
-
 // Helper to get signed URL for storage paths
 async function getDisplayUrl(photoUrl: string): Promise<string> {
-  // If it's already a full URL (http/https), return as-is
   if (photoUrl.startsWith("http://") || photoUrl.startsWith("https://")) {
     return photoUrl;
   }
-  // Otherwise, treat as storage path and get signed URL
   const { data, error } = await supabase.storage
     .from("kepenghunian-files")
     .createSignedUrl(photoUrl, 3600);
@@ -25,6 +17,18 @@ async function getDisplayUrl(photoUrl: string): Promise<string> {
     return photoUrl;
   }
   return data.signedUrl;
+}
+
+function isVideoUrl(url: string): boolean {
+  const videoExts = [".mp4", ".webm", ".ogg", ".mov", ".avi", ".mkv"];
+  const lower = url.toLowerCase();
+  return videoExts.some((ext) => lower.includes(ext));
+}
+
+interface PhotoActionsProps {
+  photoUrl: string | null | undefined;
+  label?: string;
+  size?: "sm" | "default";
 }
 
 export function PhotoActions({ photoUrl, label = "Foto", size = "sm" }: PhotoActionsProps) {
@@ -60,29 +64,20 @@ export function PhotoActions({ photoUrl, label = "Foto", size = "sm" }: PhotoAct
       window.URL.revokeObjectURL(blobUrl);
       document.body.removeChild(a);
     } catch (error) {
-      // Fallback: open in new tab
       const url = await getDisplayUrl(photoUrl);
       window.open(url, "_blank");
     }
   };
 
+  const isVideo = isVideoUrl(photoUrl);
+
   return (
     <>
       <div className="flex items-center gap-1">
-        <Button
-          variant="outline"
-          size={size}
-          onClick={() => setIsOpen(true)}
-          className="h-7 px-2"
-        >
+        <Button variant="outline" size={size} onClick={() => setIsOpen(true)} className="h-7 px-2">
           <Eye className="w-3 h-3" />
         </Button>
-        <Button
-          variant="outline"
-          size={size}
-          onClick={handleDownload}
-          className="h-7 px-2"
-        >
+        <Button variant="outline" size={size} onClick={handleDownload} className="h-7 px-2">
           <Download className="w-3 h-3" />
         </Button>
       </div>
@@ -100,6 +95,12 @@ export function PhotoActions({ photoUrl, label = "Foto", size = "sm" }: PhotoAct
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
+            ) : isVideo ? (
+              <video
+                src={displayUrl || ""}
+                controls
+                className="w-full rounded-lg max-h-[70vh]"
+              />
             ) : (
               <img
                 src={displayUrl || ""}
@@ -123,15 +124,30 @@ interface PhotoCellProps {
     url: string | null | undefined;
     label: string;
   }[];
+  showThumbnail?: boolean;
 }
 
-export function PhotoCell({ photos }: PhotoCellProps) {
+export function PhotoCell({ photos, showThumbnail = false }: PhotoCellProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<{ url: string; label: string } | null>(null);
   const [displayUrl, setDisplayUrl] = useState<string | null>(null);
+  const [thumbnailUrls, setThumbnailUrls] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(false);
-  
+
   const validPhotos = photos.filter((p) => p.url);
+
+  // Load thumbnail URLs
+  useEffect(() => {
+    if (showThumbnail && validPhotos.length > 0) {
+      validPhotos.forEach((photo, index) => {
+        if (photo.url && !thumbnailUrls[index]) {
+          getDisplayUrl(photo.url).then((url) => {
+            setThumbnailUrls((prev) => ({ ...prev, [index]: url }));
+          });
+        }
+      });
+    }
+  }, [showThumbnail, validPhotos.length]);
 
   useEffect(() => {
     if (selectedPhoto && isOpen) {
@@ -166,25 +182,59 @@ export function PhotoCell({ photos }: PhotoCellProps) {
     }
   };
 
+  const openPreview = (photo: { url: string; label: string }) => {
+    setSelectedPhoto(photo);
+    setDisplayUrl(null);
+    setIsOpen(true);
+  };
+
   return (
     <>
       <div className="flex flex-wrap gap-1">
-        {validPhotos.map((photo, index) => (
-          <Button
-            key={index}
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setSelectedPhoto({ url: photo.url!, label: photo.label });
-              setDisplayUrl(null);
-              setIsOpen(true);
-            }}
-            className="h-6 px-2 text-xs"
-          >
-            <Eye className="w-3 h-3 mr-1" />
-            {photo.label}
-          </Button>
-        ))}
+        {validPhotos.map((photo, index) => {
+          const isVideo = isVideoUrl(photo.url!);
+          
+          if (showThumbnail) {
+            return (
+              <div key={index} className="space-y-1">
+                {isVideo ? (
+                  <div
+                    className="w-16 h-16 bg-muted rounded flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => openPreview({ url: photo.url!, label: photo.label })}
+                  >
+                    <span className="text-xs text-muted-foreground font-medium">▶ Video</span>
+                  </div>
+                ) : (
+                  <img
+                    src={thumbnailUrls[index] || ""}
+                    alt={photo.label}
+                    className="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => openPreview({ url: photo.url!, label: photo.label })}
+                  />
+                )}
+                <button
+                  onClick={() => openPreview({ url: photo.url!, label: photo.label })}
+                  className="text-xs text-primary hover:underline block"
+                >
+                  Lihat {photo.label}
+                </button>
+              </div>
+            );
+          }
+
+          return (
+            <Button
+              key={index}
+              variant="outline"
+              size="sm"
+              onClick={() => openPreview({ url: photo.url!, label: photo.label })}
+              className="h-6 px-2 text-xs"
+            >
+              <Eye className="w-3 h-3 mr-1" />
+              {photo.label}
+            </Button>
+          );
+        })}
       </div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -201,6 +251,12 @@ export function PhotoCell({ photos }: PhotoCellProps) {
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 </div>
+              ) : isVideoUrl(selectedPhoto.url) ? (
+                <video
+                  src={displayUrl || ""}
+                  controls
+                  className="w-full rounded-lg max-h-[70vh]"
+                />
               ) : (
                 <img
                   src={displayUrl || ""}
@@ -208,8 +264,8 @@ export function PhotoCell({ photos }: PhotoCellProps) {
                   className="w-full h-auto rounded-lg max-h-[70vh] object-contain"
                 />
               )}
-              <Button 
-                onClick={() => handleDownload(selectedPhoto.url, selectedPhoto.label)} 
+              <Button
+                onClick={() => handleDownload(selectedPhoto.url, selectedPhoto.label)}
                 className="w-full sm:w-auto"
                 disabled={loading}
               >

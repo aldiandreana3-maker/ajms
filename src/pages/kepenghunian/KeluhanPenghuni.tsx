@@ -294,8 +294,9 @@ export default function KeluhanPenghuni() {
                         <TableCell>
                           <PhotoCell
                             photos={[
-                              { url: k.photo_url, label: "Foto" },
+                              { url: k.photo_url, label: "Foto/Video" },
                             ]}
+                            showThumbnail
                           />
                         </TableCell>
                         <TableCell>
