@@ -122,11 +122,20 @@ export function PhotoUpload({
 
       {preview || value ? (
         <div className="relative border rounded-lg overflow-hidden">
-          <img
-            src={preview || (value ? URL.createObjectURL(value) : "")}
-            alt="Preview"
-            className="w-full h-32 object-cover"
-          />
+          {value?.type.startsWith("video/") ? (
+            <video
+              src={preview || (value ? URL.createObjectURL(value) : "")}
+              className="w-full h-32 object-cover"
+              muted
+              playsInline
+            />
+          ) : (
+            <img
+              src={preview || (value ? URL.createObjectURL(value) : "")}
+              alt="Preview"
+              className="w-full h-32 object-cover"
+            />
+          )}
           <Button
             type="button"
             variant="destructive"
