@@ -7,12 +7,11 @@ import {
   MessageSquareWarning,
   Wrench,
   Car,
-  ArrowRight,
   Loader2,
-  LogIn,
 } from "lucide-react";
 import { StatCard } from "./StatCard";
-import { NewsCard } from "./NewsCard";
+import { NewsSlider } from "./NewsSlider";
+import { ServiceGrid } from "./ServiceGrid";
 import { EditStatDialog } from "./EditStatDialog";
 import { StorageWarning } from "./StorageWarning";
 
@@ -23,7 +22,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 interface DashboardContentProps {
-  onOpenKepenghunian: () => void;
+  onOpenKepenghunian?: () => void;
 }
 
 interface EditDialogState {
@@ -125,16 +124,7 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
           </h1>
           <p className="text-muted-foreground">Ringkasan data apartemen hari ini</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onOpenKepenghunian}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-accent text-accent-foreground rounded-xl font-semibold shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
-          >
-            <Users className="w-5 h-5" />
-            Kepenghunian
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
+        
       </div>
 
       {/* Storage Warning for Super Admin */}
@@ -157,19 +147,22 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
       </div>
 
       {/* Stats Grid - BLUE Category (User Data) - Clickable */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {blueCategoryStats.map((stat, index) => (
           <StatCard key={stat.title} {...stat} delay={(index + 3) * 100} />
         ))}
       </div>
 
-      {/* News Section */}
+      {/* Service Grid - Kepenghunian */}
+      <ServiceGrid />
+
+      {/* News Slider */}
       {newsLoading ? (
         <div className="flex justify-center py-8">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
       ) : (
-        <NewsCard 
+        <NewsSlider 
           news={formattedNews.length > 0 ? formattedNews : [
             {
               id: 0,
