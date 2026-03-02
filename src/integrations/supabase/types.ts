@@ -545,6 +545,186 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_attendance: {
+        Row: {
+          attendance_date: string
+          check_in_photo_url: string | null
+          check_in_time: string | null
+          check_out_photo_url: string | null
+          check_out_time: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attendance_date?: string
+          check_in_photo_url?: string | null
+          check_in_time?: string | null
+          check_out_photo_url?: string | null
+          check_out_time?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attendance_date?: string
+          check_in_photo_url?: string | null
+          check_in_time?: string | null
+          check_out_photo_url?: string | null
+          check_out_time?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      employee_leaves: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          end_date: string
+          id: string
+          leave_type: string
+          notes: string | null
+          reason: string | null
+          start_date: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          end_date: string
+          id?: string
+          leave_type?: string
+          notes?: string | null
+          reason?: string | null
+          start_date: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          end_date?: string
+          id?: string
+          leave_type?: string
+          notes?: string | null
+          reason?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      employee_overtimes: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          end_time: string
+          hours: number | null
+          id: string
+          notes: string | null
+          overtime_date: string
+          reason: string | null
+          start_time: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          end_time: string
+          hours?: number | null
+          id?: string
+          notes?: string | null
+          overtime_date: string
+          reason?: string | null
+          start_time: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          end_time?: string
+          hours?: number | null
+          id?: string
+          notes?: string | null
+          overtime_date?: string
+          reason?: string | null
+          start_time?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      employee_permits: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          document_url: string | null
+          id: string
+          notes: string | null
+          permit_date: string
+          permit_type: string
+          reason: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          document_url?: string | null
+          id?: string
+          notes?: string | null
+          permit_date: string
+          permit_type?: string
+          reason: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          document_url?: string | null
+          id?: string
+          notes?: string | null
+          permit_date?: string
+          permit_type?: string
+          reason?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       expenses: {
         Row: {
           amount: number
