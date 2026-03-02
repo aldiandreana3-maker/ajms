@@ -12,6 +12,7 @@ import {
 import { StatCard } from "./StatCard";
 import { NewsSlider } from "./NewsSlider";
 import { ServiceGrid } from "./ServiceGrid";
+import { EmployeeGrid } from "./EmployeeGrid";
 import { EditStatDialog } from "./EditStatDialog";
 import { StorageWarning } from "./StorageWarning";
 
@@ -152,6 +153,9 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
           <StatCard key={stat.title} {...stat} delay={(index + 3) * 100} />
         ))}
       </div>
+
+      {/* Employee Grid - Karyawan (Staff/Admin only) */}
+      <EmployeeGrid />
 
       {/* Service Grid - Kepenghunian */}
       <ServiceGrid />

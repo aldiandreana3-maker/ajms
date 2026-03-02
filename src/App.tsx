@@ -32,6 +32,10 @@ import HrdGa from "./pages/kepengelolaan/HrdGa";
 import Engineering from "./pages/kepengelolaan/Engineering";
 import AksesUnit from "./pages/kepengelolaan/AksesUnit";
 import AktivasiSistem from "./pages/AktivasiSistem";
+import Absen from "./pages/karyawan/Absen";
+import Cuti from "./pages/karyawan/Cuti";
+import Lembur from "./pages/karyawan/Lembur";
+import Izin from "./pages/karyawan/Izin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -79,6 +83,10 @@ const App = () => (
               <Route path="/kepengelolaan/hrd-ga" element={guarded(<HrdGa />)} />
               <Route path="/kepengelolaan/engineering" element={guarded(<Engineering />)} />
               <Route path="/kepengelolaan/akses-unit" element={guarded(<AksesUnit />)} />
+              <Route path="/karyawan/absen" element={guarded(<Absen />)} />
+              <Route path="/karyawan/cuti" element={guarded(<Cuti />)} />
+              <Route path="/karyawan/lembur" element={guarded(<Lembur />)} />
+              <Route path="/karyawan/izin" element={guarded(<Izin />)} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </GlobalSystemGuard>
