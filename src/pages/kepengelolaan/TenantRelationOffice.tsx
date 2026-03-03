@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShieldAlert, UserCheck, ArrowLeft, ArrowRight } from "lucide-react";
+import { ShieldAlert, UserCheck, ArrowLeft, ArrowRight, ClipboardCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -20,6 +20,13 @@ const troServices = [
     description: "Kelola akun pengguna dan unit yang dipegang",
     color: "info",
     path: "/kepengelolaan/akses-unit",
+  },
+  {
+    icon: ClipboardCheck,
+    title: "Laporan Inspeksi Lapangan",
+    description: "Laporan hasil inspeksi dan perbaikan unit",
+    color: "warning",
+    path: "/kepengelolaan/laporan-inspeksi",
   },
 ];
 

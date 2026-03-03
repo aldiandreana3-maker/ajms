@@ -803,6 +803,62 @@ export type Database = {
         }
         Relationships: []
       }
+      field_inspections: {
+        Row: {
+          completed_by: string | null
+          completed_by_name: string | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          finding_description: string
+          id: string
+          photo_after_url: string | null
+          photo_before_url: string | null
+          unit_id: string | null
+          unit_number: string
+          updated_at: string
+          work_status: string
+        }
+        Insert: {
+          completed_by?: string | null
+          completed_by_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          finding_description: string
+          id?: string
+          photo_after_url?: string | null
+          photo_before_url?: string | null
+          unit_id?: string | null
+          unit_number: string
+          updated_at?: string
+          work_status?: string
+        }
+        Update: {
+          completed_by?: string | null
+          completed_by_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          finding_description?: string
+          id?: string
+          photo_after_url?: string | null
+          photo_before_url?: string | null
+          unit_id?: string | null
+          unit_number?: string
+          updated_at?: string
+          work_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_inspections_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       foreign_guest_reports: {
         Row: {
           birth_date: string
