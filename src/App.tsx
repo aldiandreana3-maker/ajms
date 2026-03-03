@@ -30,6 +30,8 @@ import TenantRelationOffice from "./pages/kepengelolaan/TenantRelationOffice";
 import Finance from "./pages/kepengelolaan/Finance";
 import HrdGa from "./pages/kepengelolaan/HrdGa";
 import Engineering from "./pages/kepengelolaan/Engineering";
+import MeteranAir from "./pages/kepengelolaan/MeteranAir";
+import LaporanInspeksi from "./pages/kepengelolaan/LaporanInspeksi";
 import AksesUnit from "./pages/kepengelolaan/AksesUnit";
 import AktivasiSistem from "./pages/AktivasiSistem";
 import Absen from "./pages/karyawan/Absen";
@@ -82,6 +84,8 @@ const App = () => (
               <Route path="/kepengelolaan/finance" element={guarded(<Finance />)} />
               <Route path="/kepengelolaan/hrd-ga" element={guarded(<HrdGa />)} />
               <Route path="/kepengelolaan/engineering" element={guarded(<Engineering />)} />
+              <Route path="/kepengelolaan/engineering/meteran-air" element={guarded(<MeteranAir />)} />
+              <Route path="/kepengelolaan/laporan-inspeksi" element={guarded(<LaporanInspeksi />)} />
               <Route path="/kepengelolaan/akses-unit" element={guarded(<AksesUnit />)} />
               <Route path="/karyawan/absen" element={guarded(<Absen />)} />
               <Route path="/karyawan/cuti" element={guarded(<Cuti />)} />
