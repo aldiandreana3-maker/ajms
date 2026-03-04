@@ -106,3 +106,53 @@ export function useCreatePayroll() {
     },
   });
 }
+
+export function useUpdatePayroll() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, ...data }: {
+      id: string;
+      base_salary: number;
+      allowance: number;
+      deductions: number;
+      total_salary: number;
+    }) => {
+      const { error } = await supabase
+        .from("employee_payroll")
+        .update(data)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employee-payroll"] });
+      toast({ title: "Berhasil", description: "Slip gaji berhasil diperbarui" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Gagal", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
+export function useDeletePayroll() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("employee_payroll")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employee-payroll"] });
+      toast({ title: "Berhasil", description: "Slip gaji berhasil dihapus" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Gagal", description: error.message, variant: "destructive" });
+    },
+  });
+}

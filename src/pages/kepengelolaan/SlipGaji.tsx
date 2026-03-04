@@ -1,16 +1,17 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShieldAlert, ArrowLeft, Loader2, Plus } from "lucide-react";
+import { ShieldAlert, ArrowLeft, Loader2, Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { usePayrollList, useEmployeeSummary, useCreatePayroll } from "@/hooks/usePayroll";
+import { usePayrollList, useEmployeeSummary, useCreatePayroll, useUpdatePayroll, useDeletePayroll } from "@/hooks/usePayroll";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
@@ -160,6 +161,53 @@ function CreatePayrollDialog({ staffProfiles }: { staffProfiles: any[] }) {
   );
 }
 
+function EditPayrollDialog({ payroll, onClose }: { payroll: any; onClose: () => void }) {
+  const [baseSalary, setBaseSalary] = useState(Number(payroll.base_salary));
+  const [allowance, setAllowance] = useState(Number(payroll.allowance));
+  const [deductions, setDeductions] = useState(Number(payroll.deductions));
+  const updatePayroll = useUpdatePayroll();
+
+  const totalSalary = baseSalary + allowance - deductions;
+
+  const handleSubmit = () => {
+    updatePayroll.mutate({
+      id: payroll.id,
+      base_salary: baseSalary,
+      allowance,
+      deductions,
+      total_salary: totalSalary,
+    }, { onSuccess: onClose });
+  };
+
+  return (
+    <DialogContent className="max-w-md">
+      <DialogHeader><DialogTitle>Edit Slip Gaji — {payroll.employee_name}</DialogTitle></DialogHeader>
+      <div className="space-y-4">
+        <div>
+          <Label>Gaji Pokok</Label>
+          <Input type="number" value={baseSalary} onChange={e => setBaseSalary(Number(e.target.value))} />
+        </div>
+        <div>
+          <Label>Tunjangan / Lembur</Label>
+          <Input type="number" value={allowance} onChange={e => setAllowance(Number(e.target.value))} />
+        </div>
+        <div>
+          <Label>Potongan</Label>
+          <Input type="number" value={deductions} onChange={e => setDeductions(Number(e.target.value))} />
+        </div>
+        <div className="flex justify-between items-center p-3 rounded-lg bg-muted">
+          <span className="font-medium">Total Gaji</span>
+          <span className="text-lg font-bold text-primary">{formatCurrency(totalSalary)}</span>
+        </div>
+        <Button className="w-full" onClick={handleSubmit} disabled={updatePayroll.isPending}>
+          {updatePayroll.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+          Simpan Perubahan
+        </Button>
+      </div>
+    </DialogContent>
+  );
+}
+
 export default function SlipGaji() {
   const navigate = useNavigate();
   const { isSuperAdmin, isAdmin, isLimitedAccess } = useAuth();
@@ -170,6 +218,8 @@ export default function SlipGaji() {
   const [filterYear, setFilterYear] = useState(now.getFullYear());
   const { data: payrolls, isLoading } = usePayrollList(filterMonth, filterYear);
   const { data: staffProfiles } = useStaffProfiles();
+  const deletePayroll = useDeletePayroll();
+  const [editingPayroll, setEditingPayroll] = useState<any>(null);
 
   if (!canAccess) {
     return (
@@ -234,6 +284,7 @@ export default function SlipGaji() {
                       <TableHead className="text-right">Tunjangan</TableHead>
                       <TableHead className="text-right">Potongan</TableHead>
                       <TableHead className="text-right">Total Gaji</TableHead>
+                      <TableHead className="text-center">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -248,6 +299,37 @@ export default function SlipGaji() {
                         <TableCell className="text-right">{formatCurrency(Number(p.allowance))}</TableCell>
                         <TableCell className="text-right text-destructive">{formatCurrency(Number(p.deductions))}</TableCell>
                         <TableCell className="text-right font-bold text-primary">{formatCurrency(Number(p.total_salary))}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-center gap-1">
+                            <Button size="sm" variant="ghost" onClick={() => setEditingPayroll(p)}>
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Hapus Slip Gaji</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Apakah Anda yakin ingin menghapus slip gaji untuk <strong>{p.employee_name}</strong>? Tindakan ini tidak dapat dibatalkan.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    onClick={() => deletePayroll.mutate(p.id)}
+                                  >
+                                    Hapus
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -256,6 +338,11 @@ export default function SlipGaji() {
             )}
           </CardContent>
         </Card>
+
+        {/* Edit Dialog */}
+        <Dialog open={!!editingPayroll} onOpenChange={(open) => !open && setEditingPayroll(null)}>
+          {editingPayroll && <EditPayrollDialog payroll={editingPayroll} onClose={() => setEditingPayroll(null)} />}
+        </Dialog>
       </div>
     </MainLayout>
   );
