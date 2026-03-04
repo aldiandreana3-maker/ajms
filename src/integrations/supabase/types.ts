@@ -680,6 +680,66 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_payroll: {
+        Row: {
+          allowance: number
+          base_salary: number
+          created_at: string
+          created_by: string | null
+          deductions: number
+          employee_name: string
+          id: string
+          notes: string | null
+          period_month: number
+          period_year: number
+          total_attendance: number
+          total_leaves: number
+          total_overtimes: number
+          total_permits: number
+          total_salary: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allowance?: number
+          base_salary?: number
+          created_at?: string
+          created_by?: string | null
+          deductions?: number
+          employee_name: string
+          id?: string
+          notes?: string | null
+          period_month: number
+          period_year: number
+          total_attendance?: number
+          total_leaves?: number
+          total_overtimes?: number
+          total_permits?: number
+          total_salary?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allowance?: number
+          base_salary?: number
+          created_at?: string
+          created_by?: string | null
+          deductions?: number
+          employee_name?: string
+          id?: string
+          notes?: string | null
+          period_month?: number
+          period_year?: number
+          total_attendance?: number
+          total_leaves?: number
+          total_overtimes?: number
+          total_permits?: number
+          total_salary?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       employee_permits: {
         Row: {
           approved_at: string | null
