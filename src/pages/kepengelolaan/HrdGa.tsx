@@ -1,46 +1,43 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShieldAlert, UserCog, ArrowLeft, Loader2 } from "lucide-react";
+import { ShieldAlert, UserCog, ArrowLeft, ArrowRight, ClipboardList, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useAllAttendance } from "@/hooks/useEmployeeAttendance";
-import { useEmployeeLeaves, useUpdateLeaveStatus } from "@/hooks/useEmployeeLeaves";
-import { useEmployeeOvertimes, useUpdateOvertimeStatus } from "@/hooks/useEmployeeOvertimes";
-import { useEmployeePermits, useUpdatePermitStatus } from "@/hooks/useEmployeePermits";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 
-function useProfiles() {
-  return useQuery({
-    queryKey: ["all-profiles-for-hrd"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("id, full_name, email");
-      if (error) throw error;
-      return data;
-    },
-  });
-}
+const hrdServices = [
+  {
+    icon: ClipboardList,
+    title: "Rekap Karyawan",
+    description: "Rekap absensi, cuti, lembur & izin karyawan",
+    color: "primary",
+    path: "/kepengelolaan/hrd-ga/rekap",
+  },
+  {
+    icon: Receipt,
+    title: "Slip Gaji",
+    description: "Input dan perhitungan slip gaji karyawan",
+    color: "success",
+    path: "/kepengelolaan/hrd-ga/slip-gaji",
+  },
+];
+
+const colorStyles: Record<string, { icon: string; hover: string }> = {
+  primary: {
+    icon: "bg-primary text-primary-foreground",
+    hover: "hover:border-primary/50",
+  },
+  success: {
+    icon: "bg-success text-white",
+    hover: "hover:border-success/50",
+  },
+};
 
 export default function HrdGa() {
   const navigate = useNavigate();
   const { isSuperAdmin, isAdmin, isLimitedAccess } = useAuth();
   const canAccess = (isSuperAdmin || isAdmin) && !isLimitedAccess;
-
-  const { data: profiles } = useProfiles();
-  const { data: attendance, isLoading: attLoading } = useAllAttendance();
-  const { data: leaves, isLoading: leaveLoading } = useEmployeeLeaves();
-  const { data: overtimes, isLoading: otLoading } = useEmployeeOvertimes();
-  const { data: permits, isLoading: permLoading } = useEmployeePermits();
-  const updateLeave = useUpdateLeaveStatus();
-  const updateOvertime = useUpdateOvertimeStatus();
-  const updatePermit = useUpdatePermitStatus();
-
-  const getName = (userId: string) => profiles?.find(p => p.id === userId)?.full_name || "Unknown";
 
   if (!canAccess) {
     return (
@@ -54,19 +51,6 @@ export default function HrdGa() {
     );
   }
 
-  const statusBadge = (status: string) => {
-    switch (status) {
-      case "hadir": return <Badge className="bg-success text-white">Hadir</Badge>;
-      case "terlambat": return <Badge variant="destructive">Terlambat</Badge>;
-      case "approved": return <Badge className="bg-success text-white">Disetujui</Badge>;
-      case "rejected": return <Badge variant="destructive">Ditolak</Badge>;
-      case "pending": return <Badge variant="secondary">Pending</Badge>;
-      default: return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  const formatTime = (t: string | null) => t ? new Date(t).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "-";
-
   return (
     <MainLayout>
       <div className="space-y-6 animate-fade-in">
@@ -78,156 +62,41 @@ export default function HrdGa() {
             <UserCog className="w-8 h-8 text-primary" />
             <div>
               <h1 className="text-2xl font-bold text-foreground">HRD & GA</h1>
-              <p className="text-muted-foreground">Rekap Absensi, Cuti, Lembur & Izin</p>
+              <p className="text-muted-foreground">Manajemen kepegawaian dan penggajian</p>
             </div>
           </div>
         </div>
 
-        <Tabs defaultValue="absensi">
-          <TabsList className="grid grid-cols-4 w-full">
-            <TabsTrigger value="absensi">Absensi</TabsTrigger>
-            <TabsTrigger value="cuti">Cuti</TabsTrigger>
-            <TabsTrigger value="lembur">Lembur</TabsTrigger>
-            <TabsTrigger value="izin">Izin</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="absensi">
-            <Card>
-              <CardHeader><CardTitle>Rekap Kehadiran</CardTitle></CardHeader>
-              <CardContent>
-                {attLoading ? <div className="flex justify-center py-4"><Loader2 className="w-6 h-6 animate-spin" /></div> : (
-                  <div className="overflow-auto">
-                    <Table>
-                      <TableHeader><TableRow>
-                        <TableHead>Nama</TableHead><TableHead>Tanggal</TableHead><TableHead>Masuk</TableHead><TableHead>Pulang</TableHead><TableHead>Status</TableHead>
-                      </TableRow></TableHeader>
-                      <TableBody>
-                        {attendance?.map(a => (
-                          <TableRow key={a.id}>
-                            <TableCell>{getName(a.user_id)}</TableCell>
-                            <TableCell>{new Date(a.attendance_date).toLocaleDateString("id-ID")}</TableCell>
-                            <TableCell>{formatTime(a.check_in_time)}</TableCell>
-                            <TableCell>{formatTime(a.check_out_time)}</TableCell>
-                            <TableCell>{statusBadge(a.status)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {hrdServices.map((service, index) => {
+            const styles = colorStyles[service.color];
+            return (
+              <Card
+                key={service.title}
+                onClick={() => navigate(service.path)}
+                className={cn(
+                  "group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 animate-scale-in",
+                  styles.hover
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="cuti">
-            <Card>
-              <CardHeader><CardTitle>Rekap Cuti</CardTitle></CardHeader>
-              <CardContent>
-                {leaveLoading ? <div className="flex justify-center py-4"><Loader2 className="w-6 h-6 animate-spin" /></div> : (
-                  <div className="overflow-auto">
-                    <Table>
-                      <TableHeader><TableRow>
-                        <TableHead>Nama</TableHead><TableHead>Jenis</TableHead><TableHead>Mulai</TableHead><TableHead>Selesai</TableHead><TableHead>Status</TableHead><TableHead>Aksi</TableHead>
-                      </TableRow></TableHeader>
-                      <TableBody>
-                        {leaves?.map(l => (
-                          <TableRow key={l.id}>
-                            <TableCell>{getName(l.user_id)}</TableCell>
-                            <TableCell>{l.leave_type}</TableCell>
-                            <TableCell>{new Date(l.start_date).toLocaleDateString("id-ID")}</TableCell>
-                            <TableCell>{new Date(l.end_date).toLocaleDateString("id-ID")}</TableCell>
-                            <TableCell>{statusBadge(l.status)}</TableCell>
-                            <TableCell>
-                              {l.status === "pending" && (
-                                <div className="flex gap-1">
-                                  <Button size="sm" variant="outline" className="text-success" onClick={() => updateLeave.mutate({ id: l.id, status: "approved" })}>✓</Button>
-                                  <Button size="sm" variant="outline" className="text-destructive" onClick={() => updateLeave.mutate({ id: l.id, status: "rejected" })}>✗</Button>
-                                </div>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                style={{ animationDelay: `${index * 100}ms` }}
+              >
+                <CardHeader>
+                  <div className={cn("w-14 h-14 rounded-xl flex items-center justify-center mb-2", styles.icon)}>
+                    <service.icon className="w-7 h-7" />
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="lembur">
-            <Card>
-              <CardHeader><CardTitle>Rekap Lembur</CardTitle></CardHeader>
-              <CardContent>
-                {otLoading ? <div className="flex justify-center py-4"><Loader2 className="w-6 h-6 animate-spin" /></div> : (
-                  <div className="overflow-auto">
-                    <Table>
-                      <TableHeader><TableRow>
-                        <TableHead>Nama</TableHead><TableHead>Tanggal</TableHead><TableHead>Mulai</TableHead><TableHead>Selesai</TableHead><TableHead>Jam</TableHead><TableHead>Status</TableHead><TableHead>Aksi</TableHead>
-                      </TableRow></TableHeader>
-                      <TableBody>
-                        {overtimes?.map(o => (
-                          <TableRow key={o.id}>
-                            <TableCell>{getName(o.user_id)}</TableCell>
-                            <TableCell>{new Date(o.overtime_date).toLocaleDateString("id-ID")}</TableCell>
-                            <TableCell>{o.start_time}</TableCell>
-                            <TableCell>{o.end_time}</TableCell>
-                            <TableCell>{o.hours ? `${Number(o.hours).toFixed(1)}` : "-"}</TableCell>
-                            <TableCell>{statusBadge(o.status)}</TableCell>
-                            <TableCell>
-                              {o.status === "pending" && (
-                                <div className="flex gap-1">
-                                  <Button size="sm" variant="outline" className="text-success" onClick={() => updateOvertime.mutate({ id: o.id, status: "approved" })}>✓</Button>
-                                  <Button size="sm" variant="outline" className="text-destructive" onClick={() => updateOvertime.mutate({ id: o.id, status: "rejected" })}>✗</Button>
-                                </div>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                  <CardTitle className="group-hover:text-primary transition-colors">{service.title}</CardTitle>
+                  <CardDescription>{service.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2 text-primary text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                    Buka Layanan
+                    <ArrowRight className="w-4 h-4" />
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="izin">
-            <Card>
-              <CardHeader><CardTitle>Rekap Izin</CardTitle></CardHeader>
-              <CardContent>
-                {permLoading ? <div className="flex justify-center py-4"><Loader2 className="w-6 h-6 animate-spin" /></div> : (
-                  <div className="overflow-auto">
-                    <Table>
-                      <TableHeader><TableRow>
-                        <TableHead>Nama</TableHead><TableHead>Jenis</TableHead><TableHead>Tanggal</TableHead><TableHead>Alasan</TableHead><TableHead>Status</TableHead><TableHead>Aksi</TableHead>
-                      </TableRow></TableHeader>
-                      <TableBody>
-                        {permits?.map(p => (
-                          <TableRow key={p.id}>
-                            <TableCell>{getName(p.user_id)}</TableCell>
-                            <TableCell>{p.permit_type}</TableCell>
-                            <TableCell>{new Date(p.permit_date).toLocaleDateString("id-ID")}</TableCell>
-                            <TableCell className="max-w-[200px] truncate">{p.reason}</TableCell>
-                            <TableCell>{statusBadge(p.status)}</TableCell>
-                            <TableCell>
-                              {p.status === "pending" && (
-                                <div className="flex gap-1">
-                                  <Button size="sm" variant="outline" className="text-success" onClick={() => updatePermit.mutate({ id: p.id, status: "approved" })}>✓</Button>
-                                  <Button size="sm" variant="outline" className="text-destructive" onClick={() => updatePermit.mutate({ id: p.id, status: "rejected" })}>✗</Button>
-                                </div>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
     </MainLayout>
   );
