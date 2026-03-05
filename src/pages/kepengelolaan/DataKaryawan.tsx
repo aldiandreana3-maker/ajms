@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEmployeeBiodataList, useCreateEmployeeBiodata, useUpdateEmployeeBiodata, useDeleteEmployeeBiodata, EmployeeBiodata } from "@/hooks/useEmployeeBiodata";
 import { useUsers } from "@/hooks/useUserManagement";
+import { useFileUpload } from "@/hooks/useFileUpload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,9 +12,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShieldAlert, ArrowLeft, Plus, Pencil, Trash2, Users, Search } from "lucide-react";
+import { ShieldAlert, ArrowLeft, Plus, Pencil, Trash2, Users, Search, Upload, User } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function DataKaryawan() {
   const navigate = useNavigate();
@@ -25,10 +27,14 @@ export default function DataKaryawan() {
   const createBiodata = useCreateEmployeeBiodata();
   const updateBiodata = useUpdateEmployeeBiodata();
   const deleteBiodata = useDeleteEmployeeBiodata();
+  const { uploadFile, uploading } = useFileUpload({ bucket: "kepenghunian-files", folder: "employee-photos" });
 
   const [showDialog, setShowDialog] = useState(false);
   const [editData, setEditData] = useState<EmployeeBiodata | null>(null);
   const [search, setSearch] = useState("");
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
     user_id: "",
@@ -42,6 +48,33 @@ export default function DataKaryawan() {
     bank_name: "",
     avatar_url: "",
   });
+
+  // Load signed URLs for avatars
+  useEffect(() => {
+    const loadSignedUrls = async () => {
+      const urls: Record<string, string> = {};
+      for (const b of biodataList) {
+        if (b.avatar_url) {
+          const { data } = await supabase.storage
+            .from("kepenghunian-files")
+            .createSignedUrl(b.avatar_url, 3600);
+          if (data?.signedUrl) urls[b.id] = data.signedUrl;
+        }
+      }
+      setSignedUrls(urls);
+    };
+    if (biodataList.length > 0) loadSignedUrls();
+  }, [biodataList]);
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarPreview(URL.createObjectURL(file));
+    const path = await uploadFile(file);
+    if (path) {
+      setForm((p) => ({ ...p, avatar_url: path }));
+    }
+  };
 
   // Filter staff users (not penghuni/agent)
   const staffUsers = users.filter(
@@ -59,6 +92,7 @@ export default function DataKaryawan() {
 
   const openCreate = () => {
     setEditData(null);
+    setAvatarPreview(null);
     setForm({
       user_id: "",
       full_name: "",
@@ -76,6 +110,7 @@ export default function DataKaryawan() {
 
   const openEdit = (data: EmployeeBiodata) => {
     setEditData(data);
+    setAvatarPreview(signedUrls[data.id] || null);
     setForm({
       user_id: data.user_id,
       full_name: data.full_name,
@@ -210,8 +245,8 @@ export default function DataKaryawan() {
                   <TableRow key={b.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        {b.avatar_url ? (
-                          <img src={b.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+                        {signedUrls[b.id] ? (
+                          <img src={signedUrls[b.id]} alt="" className="w-8 h-8 rounded-full object-cover" />
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
                             {b.full_name.charAt(0)}
@@ -329,8 +364,35 @@ export default function DataKaryawan() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>URL Foto Profil</Label>
-                <Input value={form.avatar_url} onChange={(e) => setForm((p) => ({ ...p, avatar_url: e.target.value }))} placeholder="https://..." />
+                <Label>Foto Profil</Label>
+                <div className="flex items-center gap-4">
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="" className="w-14 h-14 rounded-full object-cover border" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
+                      <User className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handlePhotoUpload}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      {uploading ? "Mengupload..." : "Upload Foto"}
+                    </Button>
+                  </div>
+                </div>
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setShowDialog(false)}>Batal</Button>
