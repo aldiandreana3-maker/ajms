@@ -11,10 +11,12 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShieldAlert, ArrowLeft, Plus, Pencil, Trash2, Users, Search, Upload, User } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { ShieldAlert, ArrowLeft, Plus, Pencil, Trash2, Users, Search, Upload, User, Check, ChevronsUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function DataKaryawan() {
@@ -311,18 +313,38 @@ export default function DataKaryawan() {
               {!editData && (
                 <div className="space-y-2">
                   <Label>Pilih Karyawan</Label>
-                  <Select value={form.user_id} onValueChange={handleUserSelect}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih karyawan..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableUsers.map((u) => (
-                        <SelectItem key={u.id} value={u.id}>
-                          {u.full_name || u.email} ({u.role})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
+                        {form.user_id
+                          ? availableUsers.find((u) => u.id === form.user_id)
+                            ? `${availableUsers.find((u) => u.id === form.user_id)?.full_name || availableUsers.find((u) => u.id === form.user_id)?.email} (${availableUsers.find((u) => u.id === form.user_id)?.role})`
+                            : "Pilih karyawan..."
+                          : "Pilih karyawan..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Ketik nama karyawan..." />
+                        <CommandList>
+                          <CommandEmpty>Tidak ditemukan.</CommandEmpty>
+                          <CommandGroup>
+                            {availableUsers.map((u) => (
+                              <CommandItem
+                                key={u.id}
+                                value={`${u.full_name || ""} ${u.email}`}
+                                onSelect={() => handleUserSelect(u.id)}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", form.user_id === u.id ? "opacity-100" : "opacity-0")} />
+                                {u.full_name || u.email} ({u.role})
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               )}
               <div className="space-y-2">
