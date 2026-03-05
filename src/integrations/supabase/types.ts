@@ -587,6 +587,54 @@ export type Database = {
         }
         Relationships: []
       }
+      employee_biodata: {
+        Row: {
+          address: string | null
+          avatar_url: string | null
+          bank_account_number: string | null
+          bank_name: string | null
+          birth_date: string | null
+          birth_place: string | null
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          avatar_url?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          birth_date?: string | null
+          birth_place?: string | null
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          avatar_url?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          birth_date?: string | null
+          birth_place?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       employee_leaves: {
         Row: {
           approved_at: string | null

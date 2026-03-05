@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShieldAlert, UserCog, ArrowLeft, ArrowRight, ClipboardList, Receipt } from "lucide-react";
+import { ShieldAlert, UserCog, ArrowLeft, ArrowRight, ClipboardList, Receipt, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +21,13 @@ const hrdServices = [
     color: "success",
     path: "/kepengelolaan/hrd-ga/slip-gaji",
   },
+  {
+    icon: Users,
+    title: "Data Karyawan",
+    description: "Kelengkapan data pribadi karyawan",
+    color: "info",
+    path: "/kepengelolaan/hrd-ga/data-karyawan",
+  },
 ];
 
 const colorStyles: Record<string, { icon: string; hover: string }> = {
@@ -31,6 +38,10 @@ const colorStyles: Record<string, { icon: string; hover: string }> = {
   success: {
     icon: "bg-success text-white",
     hover: "hover:border-success/50",
+  },
+  info: {
+    icon: "bg-blue-600 text-white",
+    hover: "hover:border-blue-600/50",
   },
 };
 
