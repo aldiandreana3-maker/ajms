@@ -31,6 +31,7 @@ import Finance from "./pages/kepengelolaan/Finance";
 import HrdGa from "./pages/kepengelolaan/HrdGa";
 import RekapKaryawan from "./pages/kepengelolaan/RekapKaryawan";
 import SlipGaji from "./pages/kepengelolaan/SlipGaji";
+import DataKaryawan from "./pages/kepengelolaan/DataKaryawan";
 import Engineering from "./pages/kepengelolaan/Engineering";
 import MeteranAir from "./pages/kepengelolaan/MeteranAir";
 import LaporanInspeksi from "./pages/kepengelolaan/LaporanInspeksi";
@@ -87,6 +88,7 @@ const App = () => (
               <Route path="/kepengelolaan/hrd-ga" element={guarded(<HrdGa />)} />
               <Route path="/kepengelolaan/hrd-ga/rekap" element={guarded(<RekapKaryawan />)} />
               <Route path="/kepengelolaan/hrd-ga/slip-gaji" element={guarded(<SlipGaji />)} />
+              <Route path="/kepengelolaan/hrd-ga/data-karyawan" element={guarded(<DataKaryawan />)} />
               <Route path="/kepengelolaan/engineering" element={guarded(<Engineering />)} />
               <Route path="/kepengelolaan/engineering/meteran-air" element={guarded(<MeteranAir />)} />
               <Route path="/kepengelolaan/laporan-inspeksi" element={guarded(<LaporanInspeksi />)} />
