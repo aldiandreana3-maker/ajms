@@ -28,8 +28,8 @@ export function SystemInactiveGuard({ children }: SystemInactiveGuardProps) {
   const isSystemInactive = systemStatus?.system_status === "tidak_aktif";
   const canAccessActivation = isSuperAdmin || isAdmin || role === "staff_tro" || role === "staff_finance";
 
-  // While loading or system is active, render children normally
-  if (isLoading || !isSystemInactive) {
+  // While loading, system is active, or user is Super Admin → render children normally
+  if (isLoading || !isSystemInactive || isSuperAdmin) {
     return <>{children}</>;
   }
 
