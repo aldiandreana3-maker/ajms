@@ -28,6 +28,7 @@ import PelayananPaket from "./pages/kepenghunian/PelayananPaket";
 import DataPenghuni from "./pages/kepengelolaan/DataPenghuni";
 import TenantRelationOffice from "./pages/kepengelolaan/TenantRelationOffice";
 import Finance from "./pages/kepengelolaan/Finance";
+import SistemKasir from "./pages/kepengelolaan/SistemKasir";
 import HrdGa from "./pages/kepengelolaan/HrdGa";
 import RekapKaryawan from "./pages/kepengelolaan/RekapKaryawan";
 import SlipGaji from "./pages/kepengelolaan/SlipGaji";
