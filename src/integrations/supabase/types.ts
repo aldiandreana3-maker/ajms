@@ -462,6 +462,133 @@ export type Database = {
           },
         ]
       }
+      cashier_queues: {
+        Row: {
+          called_at: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          queue_date: string
+          queue_number: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          called_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          queue_date?: string
+          queue_number: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          called_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          queue_date?: string
+          queue_number?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cashier_transaction_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_name: string
+          price: number
+          quantity: number
+          total: number
+          transaction_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_name: string
+          price?: number
+          quantity?: number
+          total?: number
+          transaction_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_name?: string
+          price?: number
+          quantity?: number
+          total?: number
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cashier_transaction_items_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "cashier_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cashier_transactions: {
+        Row: {
+          cashier_id: string | null
+          created_at: string
+          customer_name: string
+          id: string
+          payment_method: string
+          queue_id: string | null
+          queue_number: string
+          subtotal: number
+          total_amount: number
+          transaction_date: string
+          transaction_id: string
+          updated_at: string
+        }
+        Insert: {
+          cashier_id?: string | null
+          created_at?: string
+          customer_name: string
+          id?: string
+          payment_method?: string
+          queue_id?: string | null
+          queue_number: string
+          subtotal?: number
+          total_amount?: number
+          transaction_date?: string
+          transaction_id: string
+          updated_at?: string
+        }
+        Update: {
+          cashier_id?: string | null
+          created_at?: string
+          customer_name?: string
+          id?: string
+          payment_method?: string
+          queue_id?: string | null
+          queue_number?: string
+          subtotal?: number
+          total_amount?: number
+          transaction_date?: string
+          transaction_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cashier_transactions_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "cashier_queues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commercial_tenants: {
         Row: {
           business_name: string

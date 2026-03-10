@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShieldAlert, Wallet, ArrowLeft, Receipt, Eye } from "lucide-react";
+import { ShieldAlert, Wallet, ArrowLeft, Receipt, Eye, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Finance() {
@@ -62,6 +62,31 @@ export default function Finance() {
               <CardContent>
                 <p className="text-sm text-muted-foreground">
                   Atur tarif per tipe unit, generate tagihan otomatis, dan kelola pembayaran penghuni.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Admin: Sistem Kasir */}
+          {canManage && (
+            <Card
+              className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all duration-200 group"
+              onClick={() => navigate("/kepengelolaan/finance/kasir")}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
+                    <ShoppingCart className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Sistem Kasir</CardTitle>
+                    <CardDescription>Antrian, pembayaran, dan struk</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Kelola nomor antrian, proses pembayaran, dan cetak struk secara otomatis.
                 </p>
               </CardContent>
             </Card>
