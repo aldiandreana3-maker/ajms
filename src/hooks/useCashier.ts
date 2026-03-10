@@ -15,11 +15,18 @@ export interface QueueItem {
   created_at: string;
 }
 
-export interface TransactionItem {
-  item_name: string;
-  quantity: number;
-  price: number;
-  total: number;
+export interface UnitBill {
+  id: string;
+  unit_number: string | null;
+  bill_type: string;
+  billing_period: string;
+  amount: number;
+  total_amount: number | null;
+  payment_status: string | null;
+  quarter_label: string | null;
+  sc_total: number | null;
+  sf_total: number | null;
+  notes: string | null;
 }
 
 export interface CashierTransaction {
@@ -74,7 +81,6 @@ export function useCashier() {
   const takeQueue = useMutation({
     mutationFn: async () => {
       const todayDate = today();
-      // Get the last queue number for today
       const { data: lastQueue } = await supabase
         .from("cashier_queues")
         .select("queue_number")
@@ -146,22 +152,34 @@ export function useCashier() {
     },
   });
 
-  // Complete a transaction
+  // Fetch bills for a unit number
+  const fetchUnitBills = async (unitNumber: string): Promise<UnitBill[]> => {
+    const { data, error } = await supabase
+      .from("bills")
+      .select("id, unit_number, bill_type, billing_period, amount, total_amount, payment_status, quarter_label, sc_total, sf_total, notes")
+      .eq("unit_number", unitNumber)
+      .in("payment_status", ["unpaid", "partial"])
+      .order("billing_period", { ascending: false });
+    if (error) throw error;
+    return (data || []) as UnitBill[];
+  };
+
+  // Complete transaction with selected bills
   const completeTransaction = useMutation({
     mutationFn: async ({
       queueId,
       queueNumber,
-      customerName,
-      items,
+      unitNumber,
+      selectedBills,
       paymentMethod,
     }: {
       queueId: string;
       queueNumber: string;
-      customerName: string;
-      items: TransactionItem[];
+      unitNumber: string;
+      selectedBills: UnitBill[];
       paymentMethod: string;
     }) => {
-      const subtotal = items.reduce((s, i) => s + i.total, 0);
+      const totalAmount = selectedBills.reduce((s, b) => s + Number(b.total_amount || b.amount), 0);
       const txId = `TXN-${format(new Date(), "yyyyMMdd-HHmmss")}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -172,10 +190,10 @@ export function useCashier() {
           queue_id: queueId,
           transaction_id: txId,
           queue_number: queueNumber,
-          customer_name: customerName,
+          customer_name: unitNumber,
           payment_method: paymentMethod,
-          subtotal,
-          total_amount: subtotal,
+          subtotal: totalAmount,
+          total_amount: totalAmount,
           cashier_id: user?.id || null,
           transaction_date: today(),
         })
@@ -184,13 +202,13 @@ export function useCashier() {
 
       if (txError) throw txError;
 
-      // Insert items
-      const itemsToInsert = items.map((item) => ({
+      // Insert items from bills
+      const itemsToInsert = selectedBills.map((bill) => ({
         transaction_id: tx.id,
-        item_name: item.item_name,
-        quantity: item.quantity,
-        price: item.price,
-        total: item.total,
+        item_name: `${bill.bill_type.toUpperCase()} - ${bill.quarter_label || bill.billing_period}`,
+        quantity: 1,
+        price: Number(bill.total_amount || bill.amount),
+        total: Number(bill.total_amount || bill.amount),
       }));
 
       const { error: itemsError } = await supabase
@@ -199,13 +217,28 @@ export function useCashier() {
 
       if (itemsError) throw itemsError;
 
+      // Mark bills as paid
+      for (const bill of selectedBills) {
+        await supabase
+          .from("bills")
+          .update({
+            payment_status: "paid",
+            paid_at: new Date().toISOString(),
+            paid_amount: Number(bill.total_amount || bill.amount),
+          })
+          .eq("id", bill.id);
+      }
+
       // Mark queue as completed
       await supabase
         .from("cashier_queues")
         .update({ status: "completed", completed_at: new Date().toISOString() })
         .eq("id", queueId);
 
-      return { ...tx, items } as CashierTransaction & { items: TransactionItem[] };
+      return {
+        ...tx,
+        items: itemsToInsert.map((i) => ({ item_name: i.item_name, quantity: i.quantity, price: i.price, total: i.total })),
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cashier-queues"] });
@@ -235,5 +268,6 @@ export function useCashier() {
     takeQueue,
     callNext,
     completeTransaction,
+    fetchUnitBills,
   };
 }
