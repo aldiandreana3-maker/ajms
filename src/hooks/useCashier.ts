@@ -262,6 +262,7 @@ export function useCashier() {
     queues,
     queuesLoading,
     transactions,
+    allTransactions,
     transactionsLoading,
     waitingQueues,
     calledQueue,
