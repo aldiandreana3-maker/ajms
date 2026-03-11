@@ -63,19 +63,21 @@ export function useCashier() {
     },
   });
 
-  // Fetch today's transactions
-  const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
-    queryKey: ["cashier-transactions", today()],
+  // Fetch all transactions (filtering done client-side)
+  const { data: allTransactions = [], isLoading: transactionsLoading } = useQuery({
+    queryKey: ["cashier-transactions-all"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("cashier_transactions")
         .select("*")
-        .eq("transaction_date", today())
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as CashierTransaction[];
     },
   });
+
+  // Filter today's transactions for dashboard stats
+  const transactions = allTransactions.filter((t) => t.transaction_date === today());
 
   // Take a queue number
   const takeQueue = useMutation({
