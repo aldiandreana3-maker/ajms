@@ -193,6 +193,10 @@ export default function SistemKasir() {
   const [selectedBillIds, setSelectedBillIds] = useState<Set<string>>(new Set());
   const [loadingBills, setLoadingBills] = useState(false);
 
+  // Transaction filter state
+  const [txSearch, setTxSearch] = useState("");
+  const [txDateFilter, setTxDateFilter] = useState<DateFilterType>("today");
+
   const [paymentMethod, setPaymentMethod] = useState("transfer");
   const [receiptDialog, setReceiptDialog] = useState(false);
   const [lastReceipt, setLastReceipt] = useState<any>(null);
