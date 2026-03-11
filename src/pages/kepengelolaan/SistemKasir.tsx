@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCashier, UnitBill, CashierTransaction } from "@/hooks/useCashier";
+import { useCashier, UnitBillWithPayments, BillPaymentItem, CashierTransaction } from "@/hooks/useCashier";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -40,7 +40,6 @@ function billTypeLabel(type: string) {
   return map[type] || type.toUpperCase();
 }
 
-// Generate unit options
 interface UnitOption { label: string; value: string; }
 function generateAllUnits(): UnitOption[] {
   const units: UnitOption[] = [];
@@ -65,7 +64,6 @@ function generateAllUnits(): UnitOption[] {
 }
 const ALL_UNITS = generateAllUnits();
 
-// Print queue ticket
 function printQueueTicket(queueNumber: string) {
   const now = new Date();
   const dateStr = format(now, "dd MMMM yyyy", { locale: idLocale });
@@ -97,65 +95,111 @@ function printQueueTicket(queueNumber: string) {
   w.document.close();
 }
 
-// Print receipt - updated for unit-based billing
-function printReceipt(tx: {
+// Print invoice-style receipt
+function printInvoiceReceipt(data: {
   transaction_id: string;
   queue_number: string;
-  customer_name: string; // now stores unit_number
-  items: { item_name: string; quantity: number; price: number; total: number }[];
-  total_amount: number;
-  payment_method: string;
+  unitNumber: string;
+  payments: BillPaymentItem[];
+  totalAmount: number;
+  totalPaid: number;
+  paymentMethod: string;
   created_at: string;
 }) {
-  const now = new Date(tx.created_at);
-  const dateStr = format(now, "dd MMMM yyyy HH:mm:ss", { locale: idLocale });
-  const methodLabel = tx.payment_method === "transfer" ? "Transfer" : "QRIS";
-  const itemsHtml = tx.items
-    .map(
-      (i) =>
-        `<tr><td style="text-align:left">${i.item_name}</td><td style="text-align:right">${formatRupiah(i.total)}</td></tr>`
-    )
-    .join("");
-  const w = window.open("", "_blank", "width=400,height=600");
+  const now = new Date(data.created_at);
+  const dateStr = format(now, "dd MMMM yyyy", { locale: idLocale });
+  const timeStr = format(now, "HH:mm:ss") + " WIB";
+  const methodLabel = data.paymentMethod === "transfer" ? "Transfer" : "QRIS";
+
+  const rowsHtml = data.payments.map((p) => `
+    <tr>
+      <td style="padding:6px 8px;border:1px solid #e2e8f0;font-size:12px;">${p.month_label}</td>
+      <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:right;font-size:12px;">${formatRupiah(Number(p.sc_amount))}</td>
+      <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:right;font-size:12px;">${formatRupiah(Number(p.sf_amount))}</td>
+      <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:right;font-size:12px;">${formatRupiah(Number(p.total_amount))}</td>
+      <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;font-size:12px;color:#16a34a;font-weight:600;">Terbayar</td>
+    </tr>
+  `).join("");
+
+  const totalSC = data.payments.reduce((s, p) => s + Number(p.sc_amount), 0);
+  const totalSF = data.payments.reduce((s, p) => s + Number(p.sf_amount), 0);
+
+  const w = window.open("", "_blank", "width=700,height=900");
   if (!w) return;
   w.document.write(`
-    <html><head><title>Struk Pembayaran</title>
+    <html><head><title>Invoice Pembayaran</title>
     <style>
       * { margin:0; padding:0; box-sizing:border-box; }
-      body { font-family:'Segoe UI',sans-serif; padding:24px; background:#fff; font-size:13px; max-width:360px; margin:auto; }
-      h2 { text-align:center; font-size:16px; margin-bottom:4px; }
-      .sub { text-align:center; color:#64748b; font-size:12px; margin-bottom:12px; }
-      .divider { border:none; border-top:1px dashed #cbd5e1; margin:10px 0; }
-      .row { display:flex; justify-content:space-between; margin:4px 0; }
+      body { font-family:'Segoe UI',sans-serif; padding:32px; background:#fff; font-size:13px; max-width:650px; margin:auto; }
+      h1 { text-align:center; font-size:22px; letter-spacing:4px; font-weight:800; margin-bottom:4px; }
+      .sub { text-align:center; color:#64748b; font-size:11px; margin-bottom:20px; }
+      .section-title { font-size:11px; font-weight:700; color:#1e40af; letter-spacing:1px; margin-bottom:8px; margin-top:20px; }
+      .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 40px; }
+      .info-row { display:flex; justify-content:space-between; margin:3px 0; font-size:12px; }
+      .info-row span:first-child { color:#64748b; }
+      .info-row span:last-child { font-weight:600; }
       table { width:100%; border-collapse:collapse; margin:8px 0; }
-      th, td { padding:4px 2px; font-size:12px; }
-      th { text-align:left; border-bottom:1px solid #e2e8f0; }
-      .total-row { font-weight:700; font-size:15px; }
-      .footer { text-align:center; color:#94a3b8; font-size:11px; margin-top:16px; }
-      @media print { body { padding:8px; } }
+      th { padding:6px 8px; border:1px solid #e2e8f0; background:#f8fafc; font-size:11px; text-align:center; font-weight:700; }
+      .summary { border:1px solid #e2e8f0; border-radius:8px; padding:12px 16px; margin-top:16px; }
+      .summary-row { display:flex; justify-content:space-between; margin:4px 0; font-size:13px; }
+      .summary-total { font-weight:800; font-size:15px; border-top:2px solid #1e293b; padding-top:8px; margin-top:8px; }
+      .status-badge { display:inline-block; padding:6px 24px; border-radius:6px; font-weight:700; font-size:13px; margin:16px auto; text-align:center; }
+      .status-paid { background:#dcfce7; color:#166534; border:1px solid #86efac; }
+      .footer { text-align:center; color:#94a3b8; font-size:10px; margin-top:20px; border-top:1px solid #e2e8f0; padding-top:12px; }
+      hr.divider { border:none; border-top:2px solid #1e293b; margin:16px 0; }
+      @media print { body { padding:16px; } }
     </style></head><body>
-    <h2>STRUK PEMBAYARAN</h2>
-    <div class="sub">LOKET FINANCE - AJMS</div>
+    <h1>INVOICE</h1>
+    <div class="sub">Apartment Management System</div>
     <hr class="divider"/>
-    <div class="row"><span>No. Antrian</span><b>${tx.queue_number}</b></div>
-    <div class="row"><span>ID Transaksi</span><b>${tx.transaction_id}</b></div>
-    <div class="row"><span>No. Unit</span><b>${tx.customer_name}</b></div>
-    <div class="row"><span>Tanggal</span><span>${dateStr}</span></div>
-    <hr class="divider"/>
-    <table><thead><tr><th>Tagihan</th><th style="text-align:right">Nominal</th></tr></thead>
-    <tbody>${itemsHtml}</tbody></table>
-    <hr class="divider"/>
-    <div class="row total-row"><span>TOTAL</span><span>${formatRupiah(tx.total_amount)}</span></div>
-    <div class="row"><span>Metode Pembayaran</span><span>${methodLabel}</span></div>
-    <hr class="divider"/>
-    <div class="footer">Terima kasih atas pembayaran Anda</div>
+    <div class="info-grid">
+      <div>
+        <div class="section-title">DATA PEMBAYARAN</div>
+        <div class="info-row"><span>No. Unit</span><span>${data.unitNumber}</span></div>
+        <div class="info-row"><span>No. Antrian</span><span>${data.queue_number}</span></div>
+        <div class="info-row"><span>Metode</span><span>${methodLabel}</span></div>
+      </div>
+      <div>
+        <div class="section-title">INFORMASI INVOICE</div>
+        <div class="info-row"><span>ID Transaksi</span><span>${data.transaction_id}</span></div>
+        <div class="info-row"><span>Tanggal</span><span>${dateStr}</span></div>
+        <div class="info-row"><span>Jam</span><span>${timeStr}</span></div>
+      </div>
+    </div>
+    <div class="section-title" style="margin-top:24px;">RINCIAN TAGIHAN YANG DIBAYAR</div>
+    <table>
+      <thead><tr>
+        <th>BULAN</th><th>SERVICE CHARGE</th><th>SINKING FUND</th><th>TOTAL</th><th>STATUS</th>
+      </tr></thead>
+      <tbody>
+        ${rowsHtml}
+        <tr style="font-weight:700;background:#f8fafc;">
+          <td style="padding:6px 8px;border:1px solid #e2e8f0;font-size:12px;font-weight:700;">TOTAL</td>
+          <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:right;font-size:12px;">${formatRupiah(totalSC)}</td>
+          <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:right;font-size:12px;">${formatRupiah(totalSF)}</td>
+          <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:right;font-size:12px;">${formatRupiah(data.totalAmount)}</td>
+          <td style="padding:6px 8px;border:1px solid #e2e8f0;text-align:center;font-size:12px;">${data.payments.length}/${data.payments.length}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="summary">
+      <div class="summary-row"><span>Total Tagihan</span><span>${formatRupiah(data.totalAmount)}</span></div>
+      <div class="summary-row"><span>Total Terbayar</span><span>${formatRupiah(data.totalPaid)}</span></div>
+      <div class="summary-row summary-total"><span>Sisa Tagihan</span><span style="color:#dc2626;">${formatRupiah(data.totalAmount - data.totalPaid)}</span></div>
+    </div>
+    <div style="text-align:center;margin-top:16px;">
+      <span class="status-badge status-paid">Lunas</span>
+    </div>
+    <div class="footer">
+      Invoice dibuat pada: ${dateStr} pukul ${timeStr}<br/>
+      Dokumen ini dicetak secara otomatis oleh sistem
+    </div>
     <script>window.onload=function(){window.print();}</script>
     </body></html>
   `);
   w.document.close();
 }
 
-// Play notification sound
 function playCallSound() {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -183,17 +227,14 @@ export default function SistemKasir() {
   const canAccess = isSuperAdmin || isAdmin || isStaff;
   const cashier = useCashier();
 
-  // Unit search state
   const [unitOpen, setUnitOpen] = useState(false);
   const [unitSearch, setUnitSearch] = useState("");
   const [selectedUnit, setSelectedUnit] = useState("");
 
-  // Bills state
-  const [unitBills, setUnitBills] = useState<UnitBill[]>([]);
-  const [selectedBillIds, setSelectedBillIds] = useState<Set<string>>(new Set());
+  const [unitBills, setUnitBills] = useState<UnitBillWithPayments[]>([]);
+  const [selectedPaymentIds, setSelectedPaymentIds] = useState<Set<string>>(new Set());
   const [loadingBills, setLoadingBills] = useState(false);
 
-  // Transaction filter state
   const [txSearch, setTxSearch] = useState("");
   const [txDateFilter, setTxDateFilter] = useState<DateFilterType>("today");
 
@@ -211,7 +252,7 @@ export default function SistemKasir() {
     setSelectedUnit(unitCode);
     setUnitOpen(false);
     setUnitSearch("");
-    setSelectedBillIds(new Set());
+    setSelectedPaymentIds(new Set());
     setLoadingBills(true);
     try {
       const bills = await cashier.fetchUnitBills(unitCode);
@@ -223,17 +264,21 @@ export default function SistemKasir() {
     }
   };
 
-  const toggleBill = (billId: string) => {
-    setSelectedBillIds((prev) => {
+  const togglePayment = (paymentId: string) => {
+    setSelectedPaymentIds((prev) => {
       const next = new Set(prev);
-      if (next.has(billId)) next.delete(billId);
-      else next.add(billId);
+      if (next.has(paymentId)) next.delete(paymentId);
+      else next.add(paymentId);
       return next;
     });
   };
 
-  const selectedBills = unitBills.filter((b) => selectedBillIds.has(b.id));
-  const grandTotal = selectedBills.reduce((s, b) => s + Number(b.total_amount || b.amount), 0);
+  // Gather all unpaid monthly payments across all bills
+  const allUnpaidPayments: BillPaymentItem[] = unitBills.flatMap((b) =>
+    b.bill_payments.filter((p) => !p.is_paid)
+  );
+  const selectedPayments = allUnpaidPayments.filter((p) => selectedPaymentIds.has(p.id));
+  const grandTotal = selectedPayments.reduce((s, p) => s + Number(p.total_amount), 0);
 
   const handleTakeQueue = async () => {
     const result = await cashier.takeQueue.mutateAsync();
@@ -246,22 +291,27 @@ export default function SistemKasir() {
   };
 
   const handleSubmitPayment = async () => {
-    if (!cashier.calledQueue || !selectedUnit || selectedBills.length === 0) return;
+    if (!cashier.calledQueue || !selectedUnit || selectedPayments.length === 0) return;
 
     const result = await cashier.completeTransaction.mutateAsync({
       queueId: cashier.calledQueue.id,
       queueNumber: cashier.calledQueue.queue_number,
       unitNumber: selectedUnit,
-      selectedBills,
+      selectedPayments,
       paymentMethod,
     });
 
     if (result) {
-      setLastReceipt({ ...result });
+      setLastReceipt({
+        ...result,
+        unitNumber: selectedUnit,
+        payments: selectedPayments,
+        totalPaid: grandTotal,
+      });
       setReceiptDialog(true);
       setSelectedUnit("");
       setUnitBills([]);
-      setSelectedBillIds(new Set());
+      setSelectedPaymentIds(new Set());
       setPaymentMethod("transfer");
     }
   };
@@ -281,7 +331,6 @@ export default function SistemKasir() {
   return (
     <MainLayout>
       <div className="space-y-6 animate-fade-in">
-        {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/kepengelolaan/finance")} className="rounded-lg">
             <ArrowLeft className="w-5 h-5" />
@@ -615,9 +664,9 @@ export default function SistemKasir() {
                         </Popover>
                       </div>
 
-                      {/* Bills list */}
+                      {/* Bills with monthly breakdown */}
                       {selectedUnit && (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                           <Label>Tagihan Unit {selectedUnit}</Label>
                           {loadingBills ? (
                             <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
@@ -629,41 +678,113 @@ export default function SistemKasir() {
                               Tidak ada tagihan yang belum dibayar untuk unit ini
                             </div>
                           ) : (
-                            <div className="space-y-2">
+                            <div className="space-y-6">
                               {unitBills.map((bill) => (
-                                <div
-                                  key={bill.id}
-                                  className={cn(
-                                    "flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
-                                    selectedBillIds.has(bill.id) ? "bg-primary/5 border-primary/30" : "bg-muted/50 hover:bg-muted"
-                                  )}
-                                  onClick={() => toggleBill(bill.id)}
-                                >
-                                  <Checkbox
-                                    checked={selectedBillIds.has(bill.id)}
-                                    onCheckedChange={() => toggleBill(bill.id)}
-                                    className="mt-0.5"
-                                  />
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center justify-between gap-2">
-                                      <span className="font-medium text-sm">{billTypeLabel(bill.bill_type)}</span>
-                                      <span className="font-bold text-sm">{formatRupiah(Number(bill.total_amount || bill.amount))}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      {bill.quarter_label && (
-                                        <Badge variant="outline" className="text-xs">{bill.quarter_label}</Badge>
-                                      )}
+                                <Card key={bill.id} className="border">
+                                  <CardHeader className="py-3 px-4">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-semibold text-sm">{billTypeLabel(bill.bill_type)}</span>
+                                        {bill.quarter_label && (
+                                          <Badge variant="outline" className="text-xs">{bill.quarter_label}</Badge>
+                                        )}
+                                      </div>
                                       <Badge variant={bill.payment_status === "partial" ? "secondary" : "destructive"} className="text-xs">
-                                        {bill.payment_status === "partial" ? "Sebagian" : "Belum Bayar"}
+                                        {bill.payment_status === "partial" ? "Sebagian Terbayar" : "Belum Bayar"}
                                       </Badge>
                                     </div>
-                                    {(bill.sc_total || bill.sf_total) && (
-                                      <p className="text-xs text-muted-foreground mt-1">
-                                        SC: {formatRupiah(Number(bill.sc_total || 0))} | SF: {formatRupiah(Number(bill.sf_total || 0))}
-                                      </p>
+                                  </CardHeader>
+                                  <CardContent className="px-4 pb-4 pt-0">
+                                    {bill.bill_payments.length > 0 ? (
+                                      <div className="overflow-x-auto">
+                                        <Table>
+                                          <TableHeader>
+                                            <TableRow>
+                                              <TableHead className="w-10"></TableHead>
+                                              <TableHead>Bulan</TableHead>
+                                              <TableHead className="text-right">Service Charge</TableHead>
+                                              <TableHead className="text-right">Sinking Fund</TableHead>
+                                              <TableHead className="text-right">Total</TableHead>
+                                              <TableHead className="text-center">Status</TableHead>
+                                            </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                            {bill.bill_payments.map((payment) => (
+                                              <TableRow key={payment.id} className={cn(
+                                                payment.is_paid ? "opacity-60" : "cursor-pointer hover:bg-muted/50",
+                                                selectedPaymentIds.has(payment.id) && "bg-primary/5"
+                                              )}
+                                                onClick={() => !payment.is_paid && togglePayment(payment.id)}
+                                              >
+                                                <TableCell>
+                                                  {!payment.is_paid && (
+                                                    <Checkbox
+                                                      checked={selectedPaymentIds.has(payment.id)}
+                                                      onCheckedChange={() => togglePayment(payment.id)}
+                                                    />
+                                                  )}
+                                                </TableCell>
+                                                <TableCell className="font-medium text-sm">{payment.month_label}</TableCell>
+                                                <TableCell className="text-right text-sm">{formatRupiah(Number(payment.sc_amount))}</TableCell>
+                                                <TableCell className="text-right text-sm">{formatRupiah(Number(payment.sf_amount))}</TableCell>
+                                                <TableCell className="text-right text-sm font-medium">{formatRupiah(Number(payment.total_amount))}</TableCell>
+                                                <TableCell className="text-center">
+                                                  <Badge variant={payment.is_paid ? "default" : "destructive"} className={cn("text-xs", payment.is_paid && "bg-green-600")}>
+                                                    {payment.is_paid ? "Terbayar" : "Belum Bayar"}
+                                                  </Badge>
+                                                </TableCell>
+                                              </TableRow>
+                                            ))}
+                                            {/* Total row */}
+                                            <TableRow className="bg-muted/50 font-semibold">
+                                              <TableCell></TableCell>
+                                              <TableCell className="text-sm font-bold">TOTAL</TableCell>
+                                              <TableCell className="text-right text-sm">{formatRupiah(Number(bill.sc_total || 0))}</TableCell>
+                                              <TableCell className="text-right text-sm">{formatRupiah(Number(bill.sf_total || 0))}</TableCell>
+                                              <TableCell className="text-right text-sm font-bold">{formatRupiah(Number(bill.total_amount || bill.amount))}</TableCell>
+                                              <TableCell className="text-center text-xs">
+                                                {bill.bill_payments.filter((p) => p.is_paid).length}/{bill.bill_payments.length}
+                                              </TableCell>
+                                            </TableRow>
+                                          </TableBody>
+                                        </Table>
+                                      </div>
+                                    ) : (
+                                      /* Non-quarterly bill (no monthly breakdown) */
+                                      <div
+                                        className={cn(
+                                          "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                                          selectedPaymentIds.has(bill.id) ? "bg-primary/5 border-primary/30" : "bg-muted/50 hover:bg-muted"
+                                        )}
+                                        onClick={() => {
+                                          // For non-quarterly bills, use bill.id as a pseudo-payment selection
+                                          setSelectedPaymentIds((prev) => {
+                                            const next = new Set(prev);
+                                            if (next.has(bill.id)) next.delete(bill.id);
+                                            else next.add(bill.id);
+                                            return next;
+                                          });
+                                        }}
+                                      >
+                                        <Checkbox
+                                          checked={selectedPaymentIds.has(bill.id)}
+                                          onCheckedChange={() => {
+                                            setSelectedPaymentIds((prev) => {
+                                              const next = new Set(prev);
+                                              if (next.has(bill.id)) next.delete(bill.id);
+                                              else next.add(bill.id);
+                                              return next;
+                                            });
+                                          }}
+                                        />
+                                        <div className="flex-1 flex items-center justify-between">
+                                          <span className="text-sm font-medium">{billTypeLabel(bill.bill_type)}</span>
+                                          <span className="font-bold text-sm">{formatRupiah(Number(bill.total_amount || bill.amount))}</span>
+                                        </div>
+                                      </div>
                                     )}
-                                  </div>
-                                </div>
+                                  </CardContent>
+                                </Card>
                               ))}
                             </div>
                           )}
@@ -671,7 +792,7 @@ export default function SistemKasir() {
                       )}
 
                       {/* Payment Method */}
-                      {selectedBills.length > 0 && (
+                      {selectedPayments.length > 0 && (
                         <div>
                           <Label>Metode Pembayaran</Label>
                           <Select value={paymentMethod} onValueChange={setPaymentMethod}>
@@ -693,7 +814,7 @@ export default function SistemKasir() {
                 <div className="space-y-4">
                   <Card className="sticky top-4">
                     <CardHeader>
-                      <CardTitle className="text-lg">Ringkasan</CardTitle>
+                      <CardTitle className="text-lg">Ringkasan Pembayaran</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {selectedUnit && (
@@ -702,15 +823,17 @@ export default function SistemKasir() {
                           <span className="font-mono font-bold">{selectedUnit}</span>
                         </div>
                       )}
-                      <div className="space-y-2">
-                        {selectedBills.map((bill) => (
-                          <div key={bill.id} className="flex justify-between text-sm">
-                            <span className="text-muted-foreground truncate mr-2">{billTypeLabel(bill.bill_type)}</span>
-                            <span className="whitespace-nowrap">{formatRupiah(Number(bill.total_amount || bill.amount))}</span>
-                          </div>
-                        ))}
-                      </div>
-                      {selectedBills.length > 0 && (
+                      {selectedPayments.length > 0 && (
+                        <div className="space-y-2">
+                          {selectedPayments.map((p) => (
+                            <div key={p.id} className="flex justify-between text-sm">
+                              <span className="text-muted-foreground truncate mr-2">{p.month_label}</span>
+                              <span className="whitespace-nowrap">{formatRupiah(Number(p.total_amount))}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {selectedPayments.length > 0 ? (
                         <>
                           <div className="border-t pt-3 flex justify-between items-center">
                             <span className="font-bold text-lg">Total</span>
@@ -722,13 +845,12 @@ export default function SistemKasir() {
                             onClick={handleSubmitPayment}
                             disabled={cashier.completeTransaction.isPending || grandTotal <= 0}
                           >
-                            {cashier.completeTransaction.isPending ? "Memproses..." : "Selesai & Cetak Struk"}
+                            {cashier.completeTransaction.isPending ? "Memproses..." : "Selesai & Cetak Invoice"}
                           </Button>
                         </>
-                      )}
-                      {selectedBills.length === 0 && (
+                      ) : (
                         <p className="text-sm text-muted-foreground text-center py-4">
-                          {selectedUnit ? "Pilih tagihan yang akan dibayar" : "Cari dan pilih unit terlebih dahulu"}
+                          {selectedUnit ? "Pilih bulan tagihan yang akan dibayar" : "Cari dan pilih unit terlebih dahulu"}
                         </p>
                       )}
                     </CardContent>
@@ -765,17 +887,36 @@ export default function SistemKasir() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">No. Unit</span>
-                  <span className="font-mono font-bold">{lastReceipt.customer_name}</span>
+                  <span className="font-mono font-bold">{lastReceipt.unitNumber || lastReceipt.customer_name}</span>
                 </div>
+                {lastReceipt.payments && (
+                  <div className="border-t pt-2 mt-2 space-y-1">
+                    {lastReceipt.payments.map((p: BillPaymentItem) => (
+                      <div key={p.id} className="flex justify-between text-xs">
+                        <span>{p.month_label}</span>
+                        <span>{formatRupiah(Number(p.total_amount))}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <Button
                 className="w-full"
                 onClick={() => {
-                  printReceipt(lastReceipt);
+                  printInvoiceReceipt({
+                    transaction_id: lastReceipt.transaction_id,
+                    queue_number: lastReceipt.queue_number,
+                    unitNumber: lastReceipt.unitNumber || lastReceipt.customer_name,
+                    payments: lastReceipt.payments || [],
+                    totalAmount: Number(lastReceipt.total_amount),
+                    totalPaid: Number(lastReceipt.totalPaid || lastReceipt.total_amount),
+                    paymentMethod: lastReceipt.payment_method,
+                    created_at: lastReceipt.created_at,
+                  });
                   setReceiptDialog(false);
                 }}
               >
-                <Printer className="w-4 h-4 mr-2" /> Cetak Struk
+                <Printer className="w-4 h-4 mr-2" /> Cetak Invoice
               </Button>
             </div>
           )}
