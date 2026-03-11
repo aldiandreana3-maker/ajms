@@ -317,105 +317,158 @@ export default function SistemKasir() {
 
           {/* Dashboard Tab */}
           <TabsContent value="dashboard" className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-primary/10 rounded-xl">
-                      <DollarSign className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Pemasukan Hari Ini</p>
-                      <p className="text-xl font-bold">{formatRupiah(cashier.todayTotal)}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-accent/10 rounded-xl">
-                      <ShoppingCart className="w-6 h-6 text-accent" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Total Transaksi</p>
-                      <p className="text-xl font-bold">{cashier.transactions.length}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-yellow-500/10 rounded-xl">
-                      <Clock className="w-6 h-6 text-yellow-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Antrian Menunggu</p>
-                      <p className="text-xl font-bold">{cashier.waitingQueues.length}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 bg-green-500/10 rounded-xl">
-                      <Users className="w-6 h-6 text-green-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Selesai Dilayani</p>
-                      <p className="text-xl font-bold">{cashier.completedQueues.length}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            {(() => {
+              const dateFiltered = txDateFilter === "all"
+                ? cashier.allTransactions
+                : txDateFilter === "today"
+                  ? cashier.transactions
+                  : filterByDate(cashier.allTransactions, txDateFilter);
+              const filteredTx = txSearch
+                ? dateFiltered.filter((tx) =>
+                    tx.transaction_id.toLowerCase().includes(txSearch.toLowerCase()) ||
+                    tx.customer_name.toLowerCase().includes(txSearch.toLowerCase()) ||
+                    tx.queue_number.toLowerCase().includes(txSearch.toLowerCase())
+                  )
+                : dateFiltered;
+              const filteredTotal = filteredTx.reduce((s, t) => s + Number(t.total_amount), 0);
 
-            {/* Transaction list */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Daftar Transaksi Hari Ini</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {cashier.transactions.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">Belum ada transaksi hari ini</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>ID Transaksi</TableHead>
-                          <TableHead>Antrian</TableHead>
-                          <TableHead>No. Unit</TableHead>
-                          <TableHead>Metode</TableHead>
-                          <TableHead className="text-right">Total</TableHead>
-                          <TableHead>Waktu</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {cashier.transactions.map((tx) => (
-                          <TableRow key={tx.id}>
-                            <TableCell className="font-mono text-xs">{tx.transaction_id}</TableCell>
-                            <TableCell><Badge variant="outline">{tx.queue_number}</Badge></TableCell>
-                            <TableCell className="font-mono font-medium">{tx.customer_name}</TableCell>
-                            <TableCell>
-                              <Badge variant="secondary">
-                                {tx.payment_method === "transfer" ? "Transfer" : "QRIS"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right font-medium">{formatRupiah(Number(tx.total_amount))}</TableCell>
-                            <TableCell className="text-muted-foreground text-xs">
-                              {format(new Date(tx.created_at), "HH:mm")}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+              const handleExport = () => {
+                exportToExcel({
+                  filename: `transaksi-kasir-${format(new Date(), "yyyy-MM-dd")}`,
+                  sheetName: "Transaksi",
+                  data: filteredTx.map((tx) => ({
+                    ...tx,
+                    total_formatted: formatRupiah(Number(tx.total_amount)),
+                    method_label: tx.payment_method === "transfer" ? "Transfer" : "QRIS",
+                    waktu: format(new Date(tx.created_at), "dd/MM/yyyy HH:mm"),
+                  })),
+                  columns: [
+                    { header: "ID Transaksi", key: "transaction_id", width: 30 },
+                    { header: "No. Antrian", key: "queue_number", width: 12 },
+                    { header: "No. Unit", key: "customer_name", width: 12 },
+                    { header: "Metode", key: "method_label", width: 12 },
+                    { header: "Total", key: "total_formatted", width: 20 },
+                    { header: "Tanggal", key: "waktu", width: 20 },
+                  ],
+                });
+              };
+
+              return (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="flex items-center gap-3">
+                          <div className="p-3 bg-primary/10 rounded-xl">
+                            <DollarSign className="w-6 h-6 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Pemasukan (Filter)</p>
+                            <p className="text-xl font-bold">{formatRupiah(filteredTotal)}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="flex items-center gap-3">
+                          <div className="p-3 bg-accent/10 rounded-xl">
+                            <ShoppingCart className="w-6 h-6 text-accent" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Total Transaksi</p>
+                            <p className="text-xl font-bold">{filteredTx.length}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="flex items-center gap-3">
+                          <div className="p-3 bg-yellow-500/10 rounded-xl">
+                            <Clock className="w-6 h-6 text-yellow-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Antrian Menunggu</p>
+                            <p className="text-xl font-bold">{cashier.waitingQueues.length}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="pt-6">
+                        <div className="flex items-center gap-3">
+                          <div className="p-3 bg-green-500/10 rounded-xl">
+                            <Users className="w-6 h-6 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Selesai Dilayani</p>
+                            <p className="text-xl font-bold">{cashier.completedQueues.length}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <CardTitle className="text-lg">Daftar Transaksi</CardTitle>
+                        <Button variant="outline" size="sm" onClick={handleExport} disabled={filteredTx.length === 0}>
+                          <Download className="w-4 h-4 mr-2" />
+                          Export Excel
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <DataFilterBar
+                        searchValue={txSearch}
+                        onSearchChange={setTxSearch}
+                        dateFilter={txDateFilter}
+                        onDateFilterChange={setTxDateFilter}
+                        searchPlaceholder="Cari ID transaksi, unit, antrian..."
+                      />
+                      {filteredTx.length === 0 ? (
+                        <p className="text-muted-foreground text-center py-8">Tidak ada transaksi ditemukan</p>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>ID Transaksi</TableHead>
+                                <TableHead>Antrian</TableHead>
+                                <TableHead>No. Unit</TableHead>
+                                <TableHead>Metode</TableHead>
+                                <TableHead className="text-right">Total</TableHead>
+                                <TableHead>Waktu</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {filteredTx.map((tx) => (
+                                <TableRow key={tx.id}>
+                                  <TableCell className="font-mono text-xs">{tx.transaction_id}</TableCell>
+                                  <TableCell><Badge variant="outline">{tx.queue_number}</Badge></TableCell>
+                                  <TableCell className="font-mono font-medium">{tx.customer_name}</TableCell>
+                                  <TableCell>
+                                    <Badge variant="secondary">
+                                      {tx.payment_method === "transfer" ? "Transfer" : "QRIS"}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right font-medium">{formatRupiah(Number(tx.total_amount))}</TableCell>
+                                  <TableCell className="text-muted-foreground text-xs">
+                                    {format(new Date(tx.created_at), "dd/MM/yyyy HH:mm")}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </>
+              );
+            })()}
           </TabsContent>
 
           {/* Queue Tab */}
