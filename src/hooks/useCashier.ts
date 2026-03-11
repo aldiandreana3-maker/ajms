@@ -244,7 +244,7 @@ export function useCashier() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["cashier-queues"] });
-      queryClient.invalidateQueries({ queryKey: ["cashier-transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["cashier-transactions-all"] });
       toast({ title: "Transaksi berhasil disimpan" });
     },
     onError: (error: Error) => {
