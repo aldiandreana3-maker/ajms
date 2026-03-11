@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCashier, UnitBill } from "@/hooks/useCashier";
+import { useCashier, UnitBill, CashierTransaction } from "@/hooks/useCashier";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,9 +15,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Checkbox } from "@/components/ui/checkbox";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
+import { exportToExcel } from "@/lib/exportExcel";
 import {
   ArrowLeft, Ticket, Megaphone, ShoppingCart, LayoutDashboard,
-  Printer, ShieldAlert, Volume2, DollarSign, Users, Clock, Search, ChevronsUpDown, Check, Loader2,
+  Printer, ShieldAlert, Volume2, DollarSign, Users, Clock, Search, ChevronsUpDown, Check, Loader2, Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
