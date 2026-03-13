@@ -672,6 +672,137 @@ export type Database = {
         }
         Relationships: []
       }
+      electric_meters: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          install_date: string | null
+          kwh_balance: number
+          meter_number: string
+          meter_status: string
+          meter_type: string
+          penghuni_name: string | null
+          price_per_kwh: number
+          unit_id: string | null
+          unit_number: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          install_date?: string | null
+          kwh_balance?: number
+          meter_number: string
+          meter_status?: string
+          meter_type?: string
+          penghuni_name?: string | null
+          price_per_kwh?: number
+          unit_id?: string | null
+          unit_number: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          install_date?: string | null
+          kwh_balance?: number
+          meter_number?: string
+          meter_status?: string
+          meter_type?: string
+          penghuni_name?: string | null
+          price_per_kwh?: number
+          unit_id?: string | null
+          unit_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "electric_meters_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      electric_transactions: {
+        Row: {
+          balance_after: number
+          balance_before: number
+          created_at: string
+          id: string
+          kwh_amount: number
+          meter_id: string | null
+          meter_number: string
+          nominal: number
+          notes: string | null
+          operator_id: string | null
+          operator_name: string | null
+          penghuni_name: string | null
+          price_per_kwh: number
+          transaction_date: string
+          unit_id: string | null
+          unit_number: string
+          updated_at: string
+        }
+        Insert: {
+          balance_after?: number
+          balance_before?: number
+          created_at?: string
+          id?: string
+          kwh_amount: number
+          meter_id?: string | null
+          meter_number: string
+          nominal: number
+          notes?: string | null
+          operator_id?: string | null
+          operator_name?: string | null
+          penghuni_name?: string | null
+          price_per_kwh: number
+          transaction_date?: string
+          unit_id?: string | null
+          unit_number: string
+          updated_at?: string
+        }
+        Update: {
+          balance_after?: number
+          balance_before?: number
+          created_at?: string
+          id?: string
+          kwh_amount?: number
+          meter_id?: string | null
+          meter_number?: string
+          nominal?: number
+          notes?: string | null
+          operator_id?: string | null
+          operator_name?: string | null
+          penghuni_name?: string | null
+          price_per_kwh?: number
+          transaction_date?: string
+          unit_id?: string | null
+          unit_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "electric_transactions_meter_id_fkey"
+            columns: ["meter_id"]
+            isOneToOne: false
+            referencedRelation: "electric_meters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "electric_transactions_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_attendance: {
         Row: {
           attendance_date: string
