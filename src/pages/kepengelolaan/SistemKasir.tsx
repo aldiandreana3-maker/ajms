@@ -511,58 +511,7 @@ export default function SistemKasir() {
             })()}
           </TabsContent>
 
-          {/* Queue Tab */}
-          <TabsContent value="queue" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="border-2 border-dashed border-primary/30">
-                <CardContent className="flex flex-col items-center justify-center py-12 space-y-6">
-                  <div className="p-6 bg-primary/10 rounded-full">
-                    <Ticket className="w-16 h-16 text-primary" />
-                  </div>
-                  <h2 className="text-xl font-bold text-foreground">Ambil Nomor Antrian</h2>
-                  <p className="text-muted-foreground text-center max-w-sm">
-                    Tekan tombol di bawah untuk mengambil nomor antrian. Tiket akan dicetak otomatis.
-                  </p>
-                  <Button size="lg" className="text-lg px-8 py-6" onClick={handleTakeQueue} disabled={cashier.takeQueue.isPending}>
-                    <Ticket className="w-5 h-5 mr-2" />
-                    {cashier.takeQueue.isPending ? "Memproses..." : "Ambil Nomor Antrian"}
-                  </Button>
-                </CardContent>
-              </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Status Antrian Hari Ini</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                    <span className="text-sm font-medium">Menunggu</span>
-                    <Badge variant="outline" className="text-yellow-600">{cashier.waitingQueues.length}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                    <span className="text-sm font-medium">Dipanggil</span>
-                    <Badge variant="outline" className="text-blue-600">
-                      {cashier.calledQueue ? cashier.calledQueue.queue_number : "-"}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                    <span className="text-sm font-medium">Selesai</span>
-                    <Badge variant="outline" className="text-green-600">{cashier.completedQueues.length}</Badge>
-                  </div>
-                  {cashier.waitingQueues.length > 0 && (
-                    <div className="pt-2">
-                      <p className="text-xs text-muted-foreground mb-2">Antrian menunggu:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {cashier.waitingQueues.map((q) => (
-                          <Badge key={q.id} variant="secondary" className="text-sm">{q.queue_number}</Badge>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
 
           {/* Call Tab */}
           <TabsContent value="call" className="space-y-4">
