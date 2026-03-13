@@ -8,6 +8,7 @@ import {
   Globe,
   Wrench,
   Package,
+  Ticket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
