@@ -8,6 +8,7 @@ import {
   Globe,
   Wrench,
   Package,
+  Ticket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -61,6 +62,12 @@ const services = [
     color: "bg-success",
     path: "/kepenghunian/pelayanan-paket",
     restrictedRoles: ["staff_tro", "admin", "super_admin"],
+  },
+  {
+    icon: Ticket,
+    title: "Ambil Antrian",
+    color: "bg-primary",
+    path: "/kepengelolaan/finance/kasir",
   },
 ];
 
