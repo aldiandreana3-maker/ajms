@@ -38,6 +38,7 @@ import MeteranAir from "./pages/kepengelolaan/MeteranAir";
 import LaporanInspeksi from "./pages/kepengelolaan/LaporanInspeksi";
 import AksesUnit from "./pages/kepengelolaan/AksesUnit";
 import AktivasiSistem from "./pages/AktivasiSistem";
+import AmbilAntrian from "./pages/AmbilAntrian";
 import Absen from "./pages/karyawan/Absen";
 import Cuti from "./pages/karyawan/Cuti";
 import Lembur from "./pages/karyawan/Lembur";
@@ -66,6 +67,7 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/aktivasi-sistem" element={<AktivasiSistem />} />
               <Route path="/kepenghunian/pelayanan-paket" element={<PelayananPaket />} />
+              <Route path="/ambil-antrian" element={<AmbilAntrian />} />
 
               {/* Guarded - juga diblock oleh GlobalSystemGuard untuk non-super-admin */}
               <Route path="/tentang-kami" element={guarded(<TentangKami />)} />
