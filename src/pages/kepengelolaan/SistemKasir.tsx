@@ -280,11 +280,6 @@ export default function SistemKasir() {
   const selectedPayments = allUnpaidPayments.filter((p) => selectedPaymentIds.has(p.id));
   const grandTotal = selectedPayments.reduce((s, p) => s + Number(p.total_amount), 0);
 
-  const handleTakeQueue = async () => {
-    const result = await cashier.takeQueue.mutateAsync();
-    if (result) printQueueTicket(result.queue_number);
-  };
-
   const handleCallNext = async () => {
     const result = await cashier.callNext.mutateAsync();
     if (result) playCallSound();
