@@ -13,6 +13,9 @@ import { useElectricTransactions } from "@/hooks/useElectricTransactions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 
+// Helper to get profile data from query result
+
+
 export default function KasirListrik() {
   const navigate = useNavigate();
   const { user } = useAuth();
