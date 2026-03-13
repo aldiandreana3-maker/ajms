@@ -64,36 +64,7 @@ function generateAllUnits(): UnitOption[] {
 }
 const ALL_UNITS = generateAllUnits();
 
-function printQueueTicket(queueNumber: string) {
-  const now = new Date();
-  const dateStr = format(now, "dd MMMM yyyy", { locale: idLocale });
-  const timeStr = format(now, "HH:mm:ss");
-  const w = window.open("", "_blank", "width=320,height=480");
-  if (!w) return;
-  w.document.write(`
-    <html><head><title>Nomor Antrian</title>
-    <style>
-      * { margin:0; padding:0; box-sizing:border-box; }
-      body { font-family: 'Segoe UI', sans-serif; text-align:center; padding:24px; background:#fff; }
-      .title { font-size:14px; font-weight:600; letter-spacing:2px; color:#64748b; margin-bottom:8px; }
-      .number { font-size:64px; font-weight:800; color:#0f172a; margin:16px 0; letter-spacing:4px; }
-      .date { font-size:13px; color:#64748b; margin-bottom:4px; }
-      .msg { font-size:12px; color:#94a3b8; margin-top:16px; border-top:1px dashed #e2e8f0; padding-top:12px; }
-      .divider { border:none; border-top:2px dashed #e2e8f0; margin:12px 0; }
-      @media print { body { padding:8px; } }
-    </style></head><body>
-    <div class="title">NOMOR ANTRIAN</div>
-    <hr class="divider" />
-    <div class="number">${queueNumber}</div>
-    <hr class="divider" />
-    <div class="date">${dateStr}</div>
-    <div class="date">${timeStr}</div>
-    <div class="msg">Silakan menunggu hingga nomor Anda dipanggil</div>
-    <script>window.onload=function(){window.print();}</script>
-    </body></html>
-  `);
-  w.document.close();
-}
+
 
 // Print invoice-style receipt
 function printInvoiceReceipt(data: {
