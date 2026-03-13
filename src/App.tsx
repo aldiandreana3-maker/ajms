@@ -38,6 +38,7 @@ import MeteranAir from "./pages/kepengelolaan/MeteranAir";
 import LaporanInspeksi from "./pages/kepengelolaan/LaporanInspeksi";
 import AksesUnit from "./pages/kepengelolaan/AksesUnit";
 import AktivasiSistem from "./pages/AktivasiSistem";
+import AmbilAntrian from "./pages/AmbilAntrian";
 import Absen from "./pages/karyawan/Absen";
 import Cuti from "./pages/karyawan/Cuti";
 import Lembur from "./pages/karyawan/Lembur";
