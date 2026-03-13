@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShieldAlert, Wallet, ArrowLeft, Receipt, Eye, ShoppingCart } from "lucide-react";
+import { ShieldAlert, Wallet, ArrowLeft, Receipt, Eye, ShoppingCart, Zap, History, Gauge, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Finance() {
