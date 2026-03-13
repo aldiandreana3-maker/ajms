@@ -63,6 +63,12 @@ const services = [
     path: "/kepenghunian/pelayanan-paket",
     restrictedRoles: ["staff_tro", "admin", "super_admin"],
   },
+  {
+    icon: Ticket,
+    title: "Ambil Antrian",
+    color: "bg-primary",
+    path: "/kepengelolaan/finance/kasir",
+  },
 ];
 
 export function ServiceGrid() {
