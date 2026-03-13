@@ -19,7 +19,8 @@ import { useProfile } from "@/hooks/useProfile";
 export default function KasirListrik() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { profile } = useProfile();
+  const profileQuery = useProfile();
+  const profile = profileQuery.data;
   const { meters } = useElectricMeters();
   const { createTransaction } = useElectricTransactions();
 

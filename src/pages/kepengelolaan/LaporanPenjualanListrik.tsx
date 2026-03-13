@@ -49,18 +49,33 @@ export default function LaporanPenjualanListrik() {
 
   const handleExportExcel = () => {
     const rows = filteredTx.map((t) => ({
-      Tanggal: format(parseISO(t.transaction_date), "dd/MM/yyyy HH:mm"),
-      Unit: t.unit_number,
-      Penghuni: t.penghuni_name || "-",
-      "No. Meter": t.meter_number,
-      "Nominal (Rp)": t.nominal,
-      "kWh": t.kwh_amount,
-      "Harga/kWh": t.price_per_kwh,
-      Kasir: t.operator_name || "-",
-      Catatan: t.notes || "",
+      tanggal: format(parseISO(t.transaction_date), "dd/MM/yyyy HH:mm"),
+      unit: t.unit_number,
+      penghuni: t.penghuni_name || "-",
+      meter: t.meter_number,
+      nominal: t.nominal,
+      kwh: t.kwh_amount,
+      harga_kwh: t.price_per_kwh,
+      kasir: t.operator_name || "-",
+      catatan: t.notes || "",
     }));
     const label = reportType === "daily" ? "Harian" : reportType === "monthly" ? "Bulanan" : "Tahunan";
-    exportToExcel(rows, `Laporan_Listrik_${label}_${format(now, "yyyyMMdd")}`);
+    exportToExcel({
+      filename: `Laporan_Listrik_${label}_${format(now, "yyyyMMdd")}`,
+      sheetName: "Laporan Listrik",
+      data: rows,
+      columns: [
+        { header: "Tanggal", key: "tanggal", width: 20 },
+        { header: "Unit", key: "unit", width: 12 },
+        { header: "Penghuni", key: "penghuni", width: 20 },
+        { header: "No. Meter", key: "meter", width: 15 },
+        { header: "Nominal (Rp)", key: "nominal", width: 15 },
+        { header: "kWh", key: "kwh", width: 10 },
+        { header: "Harga/kWh", key: "harga_kwh", width: 12 },
+        { header: "Kasir", key: "kasir", width: 15 },
+        { header: "Catatan", key: "catatan", width: 20 },
+      ],
+    });
   };
 
   const handlePrintPDF = () => {

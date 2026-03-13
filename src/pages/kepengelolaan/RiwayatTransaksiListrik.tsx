@@ -104,8 +104,14 @@ export default function RiwayatTransaksiListrik() {
           </CardContent>
         </Card>
 
-        {totalPages > 1 && (
-          <TablePagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />
+        {filtered.length > perPage && (
+          <TablePagination
+            currentPage={page}
+            totalItems={filtered.length}
+            itemsPerPage={perPage}
+            onPageChange={setPage}
+            onItemsPerPageChange={() => {}}
+          />
         )}
       </div>
     </MainLayout>
