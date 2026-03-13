@@ -67,7 +67,7 @@ const services = [
     icon: Ticket,
     title: "Ambil Antrian",
     color: "bg-primary",
-    path: "/kepengelolaan/finance/kasir",
+    path: "/ambil-antrian",
   },
 ];
 
