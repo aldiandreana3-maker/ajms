@@ -92,6 +92,106 @@ export default function Finance() {
             </Card>
           )}
 
+          {/* Kasir Listrik - Admin */}
+          {canManage && (
+            <Card
+              className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all duration-200 group"
+              onClick={() => navigate("/kepengelolaan/finance/kasir-listrik")}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
+                    <Zap className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Kasir Listrik</CardTitle>
+                    <CardDescription>Pembelian listrik prabayar</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Proses pembelian token listrik prabayar untuk penghuni apartemen.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Riwayat Transaksi Listrik - Admin */}
+          {canManage && (
+            <Card
+              className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all duration-200 group"
+              onClick={() => navigate("/kepengelolaan/finance/riwayat-listrik")}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
+                    <History className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Riwayat Transaksi Listrik</CardTitle>
+                    <CardDescription>Semua transaksi listrik</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Lihat riwayat seluruh transaksi pembelian listrik penghuni.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Data Meter Listrik - Admin */}
+          {canManage && (
+            <Card
+              className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all duration-200 group"
+              onClick={() => navigate("/kepengelolaan/finance/data-meter-listrik")}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
+                    <Gauge className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Data Meter Listrik</CardTitle>
+                    <CardDescription>Kelola meter per unit</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Kelola data meter listrik, saldo kWh, dan harga per kWh setiap unit.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Laporan Penjualan Listrik - Admin */}
+          {canManage && (
+            <Card
+              className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all duration-200 group"
+              onClick={() => navigate("/kepengelolaan/finance/laporan-listrik")}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
+                    <BarChart3 className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Laporan Penjualan Listrik</CardTitle>
+                    <CardDescription>Laporan harian, bulanan, tahunan</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Lihat ringkasan penjualan listrik dengan export PDF dan Excel.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* All users: Tagihan Saya */}
           <Card
             className="cursor-pointer hover:shadow-lg hover:border-accent/40 transition-all duration-200 group"
