@@ -340,14 +340,10 @@ export default function SistemKasir() {
         </div>
 
         <Tabs defaultValue="dashboard" className="space-y-4">
-          <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+          <TabsList className="grid grid-cols-3 w-full max-w-xl">
             <TabsTrigger value="dashboard" className="gap-1.5">
               <LayoutDashboard className="w-4 h-4" />
               <span className="hidden sm:inline">Dashboard</span>
-            </TabsTrigger>
-            <TabsTrigger value="queue" className="gap-1.5">
-              <Ticket className="w-4 h-4" />
-              <span className="hidden sm:inline">Antrian</span>
             </TabsTrigger>
             <TabsTrigger value="call" className="gap-1.5">
               <Megaphone className="w-4 h-4" />
