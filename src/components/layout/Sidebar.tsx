@@ -19,6 +19,8 @@ import {
   UserCog,
   Settings,
   Wrench,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -45,6 +47,8 @@ const kepengelolaanItems = [
   { icon: Wallet, label: "Finance", path: "/kepengelolaan/finance" },
   { icon: UserCog, label: "HRD & GA", path: "/kepengelolaan/hrd-ga" },
   { icon: Wrench, label: "Engineering", path: "/kepengelolaan/engineering" },
+  { icon: ShieldCheck, label: "Security", path: "/kepengelolaan/security" },
+  { icon: Sparkles, label: "House Keeping", path: "/kepengelolaan/housekeeping" },
 ];
 
 const adminMenuItems = [

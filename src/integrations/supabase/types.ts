@@ -1368,6 +1368,60 @@ export type Database = {
           },
         ]
       }
+      housekeeping_tasks: {
+        Row: {
+          area_name: string
+          assigned_to: string | null
+          completed_at: string | null
+          completed_by: string | null
+          completed_by_name: string | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          id: string
+          notes: string | null
+          photo_url: string | null
+          status: string
+          task_date: string
+          task_description: string
+          updated_at: string
+        }
+        Insert: {
+          area_name: string
+          assigned_to?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          completed_by_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          notes?: string | null
+          photo_url?: string | null
+          status?: string
+          task_date?: string
+          task_description: string
+          updated_at?: string
+        }
+        Update: {
+          area_name?: string
+          assigned_to?: string | null
+          completed_at?: string | null
+          completed_by?: string | null
+          completed_by_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          notes?: string | null
+          photo_url?: string | null
+          status?: string
+          task_date?: string
+          task_description?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       keluhan: {
         Row: {
           created_at: string | null
@@ -1794,6 +1848,48 @@ export type Database = {
           is_active?: boolean | null
           phone?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      security_patrols: {
+        Row: {
+          created_at: string
+          id: string
+          location: string
+          notes: string | null
+          officer_id: string | null
+          officer_name: string | null
+          patrol_date: string
+          patrol_time: string
+          photo_url: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          location: string
+          notes?: string | null
+          officer_id?: string | null
+          officer_name?: string | null
+          patrol_date?: string
+          patrol_time?: string
+          photo_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          location?: string
+          notes?: string | null
+          officer_id?: string | null
+          officer_name?: string | null
+          patrol_date?: string
+          patrol_time?: string
+          photo_url?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
