@@ -19,7 +19,8 @@ import { id as localeId } from "date-fns/locale";
 export default function Security() {
   const navigate = useNavigate();
   const { user, isSuperAdmin, isAdmin, isLimitedAccess } = useAuth();
-  const { profile } = useProfile();
+  const profileQuery = useProfile();
+  const profile = profileQuery.data;
   const { patrols, addPatrol, uploadPhoto } = useSecurityPatrols();
   const [open, setOpen] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);

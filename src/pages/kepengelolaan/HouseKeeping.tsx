@@ -27,7 +27,8 @@ const AREA_OPTIONS = [
 export default function HouseKeeping() {
   const navigate = useNavigate();
   const { user, isSuperAdmin, isAdmin, isLimitedAccess } = useAuth();
-  const { profile } = useProfile();
+  const profileQuery = useProfile();
+  const profile = profileQuery.data;
   const { tasks, addTask, updateTask } = useHousekeeping();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ area_name: "", task_description: "", assigned_to: "" });
