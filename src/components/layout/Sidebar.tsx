@@ -47,6 +47,8 @@ const kepengelolaanItems = [
   { icon: Wallet, label: "Finance", path: "/kepengelolaan/finance" },
   { icon: UserCog, label: "HRD & GA", path: "/kepengelolaan/hrd-ga" },
   { icon: Wrench, label: "Engineering", path: "/kepengelolaan/engineering" },
+  { icon: ShieldCheck, label: "Security", path: "/kepengelolaan/security" },
+  { icon: Sparkles, label: "House Keeping", path: "/kepengelolaan/housekeeping" },
 ];
 
 const adminMenuItems = [
