@@ -19,6 +19,8 @@ import {
   UserCog,
   Settings,
   Wrench,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
