@@ -65,13 +65,6 @@ export default function Security() {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setForm(f => ({ ...f, photo: file }));
-      setPhotoPreview(URL.createObjectURL(file));
-    }
-  };
 
   const statusColor = (s: string) => {
     if (s === "aman") return "bg-green-500/10 text-green-700 border-green-300";
