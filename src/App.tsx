@@ -42,6 +42,7 @@ import MeteranAir from "./pages/kepengelolaan/MeteranAir";
 import Security from "./pages/kepengelolaan/Security";
 import HouseKeeping from "./pages/kepengelolaan/HouseKeeping";
 import LaporanInspeksi from "./pages/kepengelolaan/LaporanInspeksi";
+import LaporanKerja from "./pages/kepengelolaan/LaporanKerja";
 import AksesUnit from "./pages/kepengelolaan/AksesUnit";
 import AktivasiSistem from "./pages/AktivasiSistem";
 import AmbilAntrian from "./pages/AmbilAntrian";
