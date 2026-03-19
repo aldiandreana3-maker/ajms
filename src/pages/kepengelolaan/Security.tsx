@@ -12,7 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSecurityPatrols } from "@/hooks/useSecurityPatrols";
 import { useProfile } from "@/hooks/useProfile";
-import { ArrowLeft, Plus, Shield, Camera, MapPin, Clock, Image } from "lucide-react";
+import { ArrowLeft, Plus, Shield, Camera, MapPin, Clock } from "lucide-react";
+import { CameraCapture } from "@/components/shared/CameraCapture";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 
@@ -23,7 +24,7 @@ export default function Security() {
   const profile = profileQuery.data;
   const { patrols, addPatrol, uploadPhoto } = useSecurityPatrols();
   const [open, setOpen] = useState(false);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [form, setForm] = useState({ location: "", status: "aman", notes: "", photo: null as File | null });
   const [loading, setLoading] = useState(false);
@@ -57,20 +58,12 @@ export default function Security() {
         officer_name: profile?.full_name || user?.email || "",
       });
       setForm({ location: "", status: "aman", notes: "", photo: null });
-      setPhotoPreview(null);
       setOpen(false);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setForm(f => ({ ...f, photo: file }));
-      setPhotoPreview(URL.createObjectURL(file));
-    }
-  };
 
   const statusColor = (s: string) => {
     if (s === "aman") return "bg-green-500/10 text-green-700 border-green-300";
@@ -114,9 +107,11 @@ export default function Security() {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Foto Patroli</label>
-                  <Input type="file" accept="image/*" capture="environment" onChange={handleFileChange} />
-                  {photoPreview && <img src={photoPreview} alt="Preview" className="mt-2 rounded-lg max-h-40 object-cover" />}
+                  <CameraCapture
+                    label="Foto Patroli"
+                    value={form.photo}
+                    onChange={(file) => setForm(f => ({ ...f, photo: file }))}
+                  />
                 </div>
                 <div>
                   <label className="text-sm font-medium">Catatan</label>
