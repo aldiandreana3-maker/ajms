@@ -12,6 +12,7 @@ import {
 import { StatCard } from "./StatCard";
 import { NewsSlider } from "./NewsSlider";
 import { ServiceGrid } from "./ServiceGrid";
+import { WorkReportChart } from "./WorkReportChart";
 import { EmployeeGrid } from "./EmployeeGrid";
 import { EditStatDialog } from "./EditStatDialog";
 import { StorageWarning } from "./StorageWarning";
@@ -159,6 +160,9 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
 
       {/* Service Grid - Kepenghunian */}
       <ServiceGrid />
+
+      {/* Work Report Chart */}
+      <WorkReportChart />
 
       {/* News Slider */}
       {newsLoading ? (
