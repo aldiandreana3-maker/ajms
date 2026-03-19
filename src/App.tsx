@@ -42,6 +42,7 @@ import MeteranAir from "./pages/kepengelolaan/MeteranAir";
 import Security from "./pages/kepengelolaan/Security";
 import HouseKeeping from "./pages/kepengelolaan/HouseKeeping";
 import LaporanInspeksi from "./pages/kepengelolaan/LaporanInspeksi";
+import LaporanKerja from "./pages/kepengelolaan/LaporanKerja";
 import AksesUnit from "./pages/kepengelolaan/AksesUnit";
 import AktivasiSistem from "./pages/AktivasiSistem";
 import AmbilAntrian from "./pages/AmbilAntrian";
@@ -106,6 +107,7 @@ const App = () => (
               <Route path="/kepengelolaan/engineering" element={guarded(<Engineering />)} />
               <Route path="/kepengelolaan/engineering/meteran-air" element={guarded(<MeteranAir />)} />
               <Route path="/kepengelolaan/laporan-inspeksi" element={guarded(<LaporanInspeksi />)} />
+              <Route path="/kepengelolaan/laporan-kerja" element={guarded(<LaporanKerja />)} />
               <Route path="/kepengelolaan/akses-unit" element={guarded(<AksesUnit />)} />
               <Route path="/kepengelolaan/security" element={guarded(<Security />)} />
               <Route path="/kepengelolaan/housekeeping" element={guarded(<HouseKeeping />)} />

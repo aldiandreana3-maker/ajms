@@ -1,10 +1,12 @@
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, BarChart3 } from "lucide-react";
+import { Loader2, BarChart3, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 
 const COLORS = [
@@ -81,6 +83,7 @@ function useWorkReportData() {
 
 export function WorkReportChart() {
   const { isAdmin, isSuperAdmin, role } = useAuth();
+  const navigate = useNavigate();
   const isStaff = isAdmin || isSuperAdmin || (role && role.startsWith("staff"));
   const { data, isLoading } = useWorkReportData();
 
@@ -152,10 +155,15 @@ export function WorkReportChart() {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <BarChart3 className="w-5 h-5 text-primary" />
-          Laporan Kerja
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <BarChart3 className="w-5 h-5 text-primary" />
+            Laporan Kerja
+          </CardTitle>
+          <Button variant="ghost" size="sm" className="text-xs" onClick={() => navigate("/kepengelolaan/laporan-kerja")}>
+            Detail <ArrowRight className="w-3.5 h-3.5 ml-1" />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="w-full" style={{ height: 280 }}>
