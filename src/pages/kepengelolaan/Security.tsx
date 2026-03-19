@@ -24,7 +24,7 @@ export default function Security() {
   const profile = profileQuery.data;
   const { patrols, addPatrol, uploadPhoto } = useSecurityPatrols();
   const [open, setOpen] = useState(false);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [form, setForm] = useState({ location: "", status: "aman", notes: "", photo: null as File | null });
   const [loading, setLoading] = useState(false);
