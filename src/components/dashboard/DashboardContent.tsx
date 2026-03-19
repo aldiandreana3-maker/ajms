@@ -161,6 +161,9 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
       {/* Service Grid - Kepenghunian */}
       <ServiceGrid />
 
+      {/* Work Report Chart */}
+      <WorkReportChart />
+
       {/* News Slider */}
       {newsLoading ? (
         <div className="flex justify-center py-8">
