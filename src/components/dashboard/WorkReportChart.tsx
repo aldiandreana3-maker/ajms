@@ -46,7 +46,7 @@ function useWorkReportData() {
       ]);
 
       const keluhanData = keluhanRes.data || [];
-      const keluhanDone = keluhanData.filter(k => k.status === "resolved" || k.status === "closed").length;
+      const keluhanDone = keluhanData.filter(k => k.status === "selesai").length;
       const keluhanTotal = keluhanData.length;
 
       const inspectionData = inspectionRes.data || [];
