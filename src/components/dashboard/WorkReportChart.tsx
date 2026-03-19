@@ -83,6 +83,7 @@ function useWorkReportData() {
 
 export function WorkReportChart() {
   const { isAdmin, isSuperAdmin, role } = useAuth();
+  const navigate = useNavigate();
   const isStaff = isAdmin || isSuperAdmin || (role && role.startsWith("staff"));
   const { data, isLoading } = useWorkReportData();
 
