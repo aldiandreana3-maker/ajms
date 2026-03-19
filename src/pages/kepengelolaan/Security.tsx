@@ -12,7 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSecurityPatrols } from "@/hooks/useSecurityPatrols";
 import { useProfile } from "@/hooks/useProfile";
-import { ArrowLeft, Plus, Shield, Camera, MapPin, Clock, Image } from "lucide-react";
+import { ArrowLeft, Plus, Shield, Camera, MapPin, Clock } from "lucide-react";
+import { CameraCapture } from "@/components/shared/CameraCapture";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 
