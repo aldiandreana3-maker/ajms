@@ -58,7 +58,6 @@ export default function Security() {
         officer_name: profile?.full_name || user?.email || "",
       });
       setForm({ location: "", status: "aman", notes: "", photo: null });
-      setPhotoPreview(null);
       setOpen(false);
     } finally {
       setLoading(false);
