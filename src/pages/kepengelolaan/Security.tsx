@@ -108,9 +108,11 @@ export default function Security() {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Foto Patroli</label>
-                  <Input type="file" accept="image/*" capture="environment" onChange={handleFileChange} />
-                  {photoPreview && <img src={photoPreview} alt="Preview" className="mt-2 rounded-lg max-h-40 object-cover" />}
+                  <CameraCapture
+                    label="Foto Patroli"
+                    value={form.photo}
+                    onChange={(file) => setForm(f => ({ ...f, photo: file }))}
+                  />
                 </div>
                 <div>
                   <label className="text-sm font-medium">Catatan</label>
