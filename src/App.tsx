@@ -97,6 +97,7 @@ const App = () => (
               <Route path="/kepengelolaan/tro" element={guarded(<TenantRelationOffice />)} />
               <Route path="/kepengelolaan/finance" element={guarded(<Finance />)} />
               <Route path="/kepengelolaan/finance/kasir" element={guarded(<SistemKasir />)} />
+              <Route path="/kepengelolaan/finance/kelistrikan" element={guarded(<Kelistrikan />)} />
               <Route path="/kepengelolaan/finance/kasir-listrik" element={guarded(<KasirListrik />)} />
               <Route path="/kepengelolaan/finance/riwayat-listrik" element={guarded(<RiwayatTransaksiListrik />)} />
               <Route path="/kepengelolaan/finance/data-meter-listrik" element={guarded(<DataMeterListrik />)} />
