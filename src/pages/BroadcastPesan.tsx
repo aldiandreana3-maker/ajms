@@ -45,19 +45,19 @@ export default function BroadcastPesan() {
   const [content, setContent] = useState("");
   const [targetType, setTargetType] = useState<TargetType>("all");
   const [selectedTowers, setSelectedTowers] = useState<string[]>([]);
-  const [unitInput, setUnitInput] = useState("");
   const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
+  const [unitSearch, setUnitSearch] = useState("");
   const [penghuniList, setPenghuniList] = useState<{ user_id: string; full_name: string; unit_number: string | null }[]>([]);
   const [selectedPenghuni, setSelectedPenghuni] = useState<string[]>([]);
   const [penghuniSearch, setPenghuniSearch] = useState("");
-  const [loadingPenghuni, setLoadingPenghuni] = useState(false);
+  const [loadingData, setLoadingData] = useState(false);
 
   const canAccess = isSuperAdmin || isAdmin;
 
-  // Load penghuni list when custom target selected
+  // Load penghuni data when unit or custom target selected
   useEffect(() => {
-    if (targetType === "custom" && penghuniList.length === 0) {
-      setLoadingPenghuni(true);
+    if ((targetType === "custom" || targetType === "unit") && penghuniList.length === 0) {
+      setLoadingData(true);
       supabase
         .from("penghuni")
         .select("user_id, full_name, unit_number")
@@ -66,10 +66,13 @@ export default function BroadcastPesan() {
         .order("full_name")
         .then(({ data }) => {
           setPenghuniList(data || []);
-          setLoadingPenghuni(false);
+          setLoadingData(false);
         });
     }
   }, [targetType]);
+
+  // Derive unique unit numbers from penghuni data
+  const uniqueUnits = [...new Set(penghuniList.map((p) => p.unit_number).filter(Boolean) as string[])].sort();
 
   if (!user || !canAccess) {
     return (
