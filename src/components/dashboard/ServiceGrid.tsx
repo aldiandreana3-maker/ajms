@@ -73,6 +73,12 @@ const services = [
     restrictedRoles: ["admin", "super_admin"],
   },
   {
+    icon: Bell,
+    title: "Pesan",
+    color: "bg-warning",
+    path: "/kepenghunian/pesan",
+  },
+  {
     icon: Ticket,
     title: "Ambil Antrian",
     color: "bg-primary",
