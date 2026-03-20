@@ -349,8 +349,13 @@ function DivisionSlide({ division, index, total }: { division: DivisionData; ind
   );
 }
 
-function exportDivisionExcel(division: DivisionData) {
-  const transformed = division.rawData.map(row => {
+async function exportDivisionExcel(division: DivisionData) {
+  const table = DIVISION_TABLE_MAP[division.name];
+  if (!table) return;
+  const orderCol = TABLE_ORDER_MAP[table] || "created_at";
+  const rawData = await fetchAllRows(table, orderCol);
+  
+  const transformed = rawData.map(row => {
     const newRow: Record<string, any> = {};
     division.exportColumns.forEach(col => {
       let val = row[col.key] ?? "-";
@@ -368,7 +373,7 @@ function exportDivisionExcel(division: DivisionData) {
   XLSX.writeFile(wb, `Laporan_${division.name.replace(/\s+/g, "_")}.xlsx`);
 }
 
-function exportAllExcel(divisions: DivisionData[]) {
+async function exportAllExcel(divisions: DivisionData[]) {
   const wb = XLSX.utils.book_new();
 
   // Summary sheet
@@ -384,9 +389,17 @@ function exportAllExcel(divisions: DivisionData[]) {
   summaryWs["!cols"] = [{ wch: 25 }, { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 10 }, { wch: 15 }];
   XLSX.utils.book_append_sheet(wb, summaryWs, "Ringkasan");
 
-  // Per-division sheets
-  divisions.forEach(div => {
-    const data = div.rawData.map(row => {
+  // Per-division sheets - fetch all data in parallel
+  const allRawData = await Promise.all(
+    divisions.map(div => {
+      const table = DIVISION_TABLE_MAP[div.name];
+      if (!table) return Promise.resolve([]);
+      return fetchAllRows(table, TABLE_ORDER_MAP[table] || "created_at");
+    })
+  );
+
+  divisions.forEach((div, idx) => {
+    const data = allRawData[idx].map(row => {
       const newRow: Record<string, any> = {};
       div.exportColumns.forEach(col => {
         let val = row[col.key] ?? "-";
@@ -404,32 +417,6 @@ function exportAllExcel(divisions: DivisionData[]) {
 
   XLSX.writeFile(wb, `Laporan_Kerja_Semua_Divisi_${format(new Date(), "yyyyMMdd")}.xlsx`);
 }
-
-function exportPowerPoint(divisions: DivisionData[]) {
-  // Export as a multi-sheet Excel styled as presentation data
-  const wb = XLSX.utils.book_new();
-
-  // Title slide data
-  const titleData = [
-    { "": "LAPORAN KERJA KEPENGELOLAAN" },
-    { "": `AJMS - ${format(new Date(), "dd MMMM yyyy", { locale: localeId })}` },
-    { "": "" },
-  ];
-  const titleWs = XLSX.utils.json_to_sheet(titleData);
-  titleWs["!cols"] = [{ wch: 50 }];
-  XLSX.utils.book_append_sheet(wb, titleWs, "Cover");
-
-  // Summary slide
-  const summaryRows = divisions.map(d => ({
-    Divisi: d.name,
-    "Penyelesaian (%)": d.total > 0 ? `${Math.round((d.done / d.total) * 100)}%` : "0%",
-    Selesai: d.done,
-    Total: d.total,
-    Keterangan: d.description,
-  }));
-  const sumWs = XLSX.utils.json_to_sheet(summaryRows);
-  sumWs["!cols"] = [{ wch: 25 }, { wch: 18 }, { wch: 10 }, { wch: 10 }, { wch: 45 }];
-  XLSX.utils.book_append_sheet(wb, sumWs, "Ringkasan Divisi");
 
   // Detail per division
   divisions.forEach(div => {
