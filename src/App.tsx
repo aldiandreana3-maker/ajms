@@ -78,6 +78,8 @@ const App = () => (
               <Route path="/aktivasi-sistem" element={<AktivasiSistem />} />
               <Route path="/kepenghunian/pelayanan-paket" element={<PelayananPaket />} />
               <Route path="/ambil-antrian" element={<AmbilAntrian />} />
+              <Route path="/kepenghunian/broadcast-pesan" element={guarded(<BroadcastPesan />)} />
+              <Route path="/kepenghunian/pesan" element={guarded(<PesanPenghuni />)} />
 
               {/* Guarded - juga diblock oleh GlobalSystemGuard untuk non-super-admin */}
               <Route path="/tentang-kami" element={guarded(<TentangKami />)} />

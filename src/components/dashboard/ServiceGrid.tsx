@@ -65,6 +65,13 @@ const services = [
     restrictedRoles: ["staff_tro", "admin", "super_admin"],
   },
   {
+    icon: Megaphone,
+    title: "Broadcast Pesan",
+    color: "bg-primary",
+    path: "/kepenghunian/broadcast-pesan",
+    restrictedRoles: ["admin", "super_admin"],
+  },
+  {
     icon: Ticket,
     title: "Ambil Antrian",
     color: "bg-primary",
