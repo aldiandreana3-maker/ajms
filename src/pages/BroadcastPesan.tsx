@@ -45,19 +45,19 @@ export default function BroadcastPesan() {
   const [content, setContent] = useState("");
   const [targetType, setTargetType] = useState<TargetType>("all");
   const [selectedTowers, setSelectedTowers] = useState<string[]>([]);
-  const [unitInput, setUnitInput] = useState("");
   const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
+  const [unitSearch, setUnitSearch] = useState("");
   const [penghuniList, setPenghuniList] = useState<{ user_id: string; full_name: string; unit_number: string | null }[]>([]);
   const [selectedPenghuni, setSelectedPenghuni] = useState<string[]>([]);
   const [penghuniSearch, setPenghuniSearch] = useState("");
-  const [loadingPenghuni, setLoadingPenghuni] = useState(false);
+  const [loadingData, setLoadingData] = useState(false);
 
   const canAccess = isSuperAdmin || isAdmin;
 
-  // Load penghuni list when custom target selected
+  // Load penghuni data when unit or custom target selected
   useEffect(() => {
-    if (targetType === "custom" && penghuniList.length === 0) {
-      setLoadingPenghuni(true);
+    if ((targetType === "custom" || targetType === "unit") && penghuniList.length === 0) {
+      setLoadingData(true);
       supabase
         .from("penghuni")
         .select("user_id, full_name, unit_number")
@@ -66,10 +66,13 @@ export default function BroadcastPesan() {
         .order("full_name")
         .then(({ data }) => {
           setPenghuniList(data || []);
-          setLoadingPenghuni(false);
+          setLoadingData(false);
         });
     }
   }, [targetType]);
+
+  // Derive unique unit numbers from penghuni data
+  const uniqueUnits = [...new Set(penghuniList.map((p) => p.unit_number).filter(Boolean) as string[])].sort();
 
   if (!user || !canAccess) {
     return (
@@ -85,16 +88,10 @@ export default function BroadcastPesan() {
     );
   }
 
-  const handleAddUnit = () => {
-    const trimmed = unitInput.trim().toUpperCase();
-    if (trimmed && !selectedUnits.includes(trimmed)) {
-      setSelectedUnits([...selectedUnits, trimmed]);
-    }
-    setUnitInput("");
-  };
-
-  const handleRemoveUnit = (unit: string) => {
-    setSelectedUnits(selectedUnits.filter((u) => u !== unit));
+  const toggleUnit = (unit: string) => {
+    setSelectedUnits((prev) =>
+      prev.includes(unit) ? prev.filter((u) => u !== unit) : [...prev, unit]
+    );
   };
 
   const toggleTower = (tower: string) => {
@@ -249,34 +246,49 @@ export default function BroadcastPesan() {
               {/* Unit Selection */}
               {targetType === "unit" && (
                 <div className="p-4 rounded-lg border border-border bg-muted/30 space-y-3">
-                  <Label className="text-sm">Tambahkan No. Unit:</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Contoh: A-01-01"
-                      value={unitInput}
-                      onChange={(e) => setUnitInput(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddUnit())}
-                      className="flex-1"
-                    />
-                    <Button type="button" variant="secondary" onClick={handleAddUnit} size="sm">
-                      Tambah
-                    </Button>
-                  </div>
+                  <Label className="text-sm">Pilih No. Unit (dari Data Penghuni):</Label>
+                  <Input
+                    placeholder="Cari unit..."
+                    value={unitSearch}
+                    onChange={(e) => setUnitSearch(e.target.value)}
+                  />
                   {selectedUnits.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedUnits.map((unit) => (
-                        <Badge key={unit} variant="secondary" className="gap-1 pr-1">
-                          {unit}
-                          <button
-                            onClick={() => handleRemoveUnit(unit)}
-                            className="ml-1 rounded-full hover:bg-destructive/20 p-0.5"
-                          >
-                            ×
-                          </button>
-                        </Badge>
-                      ))}
-                    </div>
+                    <p className="text-xs text-primary font-medium">
+                      {selectedUnits.length} unit dipilih
+                    </p>
                   )}
+                  <ScrollArea className="h-48 border rounded-md">
+                    {loadingData ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">Memuat...</p>
+                    ) : uniqueUnits.filter((u) => u.toLowerCase().includes(unitSearch.toLowerCase())).length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">Tidak ditemukan</p>
+                    ) : (
+                      <div className="divide-y divide-border">
+                        {uniqueUnits
+                          .filter((u) => u.toLowerCase().includes(unitSearch.toLowerCase()))
+                          .map((unit) => {
+                            const owners = penghuniList.filter((p) => p.unit_number === unit);
+                            return (
+                              <label
+                                key={unit}
+                                className="flex items-center gap-3 px-3 py-2 hover:bg-accent/50 cursor-pointer"
+                              >
+                                <Checkbox
+                                  checked={selectedUnits.includes(unit)}
+                                  onCheckedChange={() => toggleUnit(unit)}
+                                />
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium">{unit}</p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {owners.map((o) => o.full_name).join(", ") || "—"}
+                                  </p>
+                                </div>
+                              </label>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </ScrollArea>
                 </div>
               )}
 
@@ -295,7 +307,7 @@ export default function BroadcastPesan() {
                     </p>
                   )}
                   <ScrollArea className="h-48 border rounded-md">
-                    {loadingPenghuni ? (
+                    {loadingData ? (
                       <p className="text-sm text-muted-foreground text-center py-4">Memuat...</p>
                     ) : filteredPenghuni.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-4">Tidak ditemukan</p>
