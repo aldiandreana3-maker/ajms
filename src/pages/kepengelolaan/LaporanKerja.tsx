@@ -36,45 +36,102 @@ interface DivisionData {
   exportColumns: { header: string; key: string; width?: number }[];
 }
 
+// Table-to-order-column mapping for batch export
+const TABLE_ORDER_MAP: Record<string, string> = {
+  keluhan: "created_at",
+  field_inspections: "created_at",
+  housekeeping_tasks: "task_date",
+  security_patrols: "patrol_time",
+  packages: "created_at",
+  work_permits: "created_at",
+};
+
+// Helper to fetch all rows from a table using batched pagination (bypasses 1000 row limit)
+async function fetchAllRows(table: string, orderCol: string) {
+  const PAGE_SIZE = 1000;
+  let allData: any[] = [];
+  let from = 0;
+  let hasMore = true;
+  while (hasMore) {
+    const { data, error } = await (supabase as any)
+      .from(table)
+      .select("*")
+      .order(orderCol, { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+    if (error) throw error;
+    allData = allData.concat(data || []);
+    hasMore = (data?.length || 0) === PAGE_SIZE;
+    from += PAGE_SIZE;
+  }
+  return allData;
+}
+
+// Division name -> table name mapping for export
+const DIVISION_TABLE_MAP: Record<string, string> = {
+  "Tenant Relation Office": "keluhan",
+  "Engineering": "field_inspections",
+  "House Keeping": "housekeeping_tasks",
+  "Security": "security_patrols",
+  "Pelayanan Paket": "packages",
+  "Izin Kerja": "work_permits",
+};
+
 function useAllDivisionsData() {
   const today = format(new Date(), "yyyy-MM-dd");
 
   return useQuery({
     queryKey: ["laporan-kerja-full", today],
     queryFn: async () => {
+      // First, get accurate counts using HEAD count queries (no row limit)
       const [
-        keluhanRes, inspectionRes, housekeepingRes, securityRes, packagesRes, workPermitRes,
+        keluhanTotal, keluhanSelesai, keluhanProses, keluhanPending,
+        inspTotal, inspSelesai, inspDalam, inspBelum,
+        hkTotal, hkSelesai, hkBelum, hkToday,
+        secTotal, secAman, secMencurigakan, secBahaya, secToday,
+        pkgTotal, pkgDiambil, pkgBelum,
+        wpTotal, wpApproved, wpPending, wpRejected,
       ] = await Promise.all([
-        supabase.from("keluhan").select("*").order("created_at", { ascending: false }),
-        supabase.from("field_inspections").select("*").order("created_at", { ascending: false }),
-        supabase.from("housekeeping_tasks").select("*").order("task_date", { ascending: false }),
-        supabase.from("security_patrols").select("*").order("patrol_time", { ascending: false }),
-        supabase.from("packages").select("*").order("created_at", { ascending: false }),
-        supabase.from("work_permits").select("*").order("created_at", { ascending: false }),
+        supabase.from("keluhan").select("id", { count: "exact", head: true }),
+        supabase.from("keluhan").select("id", { count: "exact", head: true }).eq("status", "selesai"),
+        supabase.from("keluhan").select("id", { count: "exact", head: true }).eq("status", "proses"),
+        supabase.from("keluhan").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("field_inspections").select("id", { count: "exact", head: true }),
+        supabase.from("field_inspections").select("id", { count: "exact", head: true }).eq("work_status", "selesai"),
+        supabase.from("field_inspections").select("id", { count: "exact", head: true }).eq("work_status", "dalam_pengerjaan"),
+        supabase.from("field_inspections").select("id", { count: "exact", head: true }).eq("work_status", "belum_dikerjakan"),
+        supabase.from("housekeeping_tasks").select("id", { count: "exact", head: true }),
+        supabase.from("housekeeping_tasks").select("id", { count: "exact", head: true }).eq("status", "selesai"),
+        supabase.from("housekeeping_tasks").select("id", { count: "exact", head: true }).eq("status", "belum"),
+        supabase.from("housekeeping_tasks").select("id", { count: "exact", head: true }).eq("task_date", today),
+        supabase.from("security_patrols").select("id", { count: "exact", head: true }),
+        supabase.from("security_patrols").select("id", { count: "exact", head: true }).eq("status", "aman"),
+        supabase.from("security_patrols").select("id", { count: "exact", head: true }).eq("status", "mencurigakan"),
+        supabase.from("security_patrols").select("id", { count: "exact", head: true }).eq("status", "bahaya"),
+        supabase.from("security_patrols").select("id", { count: "exact", head: true }).eq("patrol_date", today),
+        supabase.from("packages").select("id", { count: "exact", head: true }),
+        supabase.from("packages").select("id", { count: "exact", head: true }).eq("status", "diambil"),
+        supabase.from("packages").select("id", { count: "exact", head: true }).eq("status", "belum_diambil"),
+        supabase.from("work_permits").select("id", { count: "exact", head: true }),
+        supabase.from("work_permits").select("id", { count: "exact", head: true }).eq("status", "approved"),
+        supabase.from("work_permits").select("id", { count: "exact", head: true }).eq("status", "pending"),
+        supabase.from("work_permits").select("id", { count: "exact", head: true }).eq("status", "rejected"),
       ]);
-
-      const keluhan = keluhanRes.data || [];
-      const inspections = inspectionRes.data || [];
-      const housekeeping = housekeepingRes.data || [];
-      const security = securityRes.data || [];
-      const packages = packagesRes.data || [];
-      const workPermits = workPermitRes.data || [];
 
       const divisions: DivisionData[] = [
         {
           name: "Tenant Relation Office",
           description: "Pengelolaan keluhan penghuni dan layanan pelanggan",
-          done: keluhan.filter(k => k.status === "selesai").length,
-          inProgress: keluhan.filter(k => k.status === "proses").length,
-          pending: keluhan.filter(k => k.status === "pending").length,
-          total: keluhan.length,
+          done: keluhanSelesai.count || 0,
+          inProgress: keluhanProses.count || 0,
+          pending: keluhanPending.count || 0,
+          total: keluhanTotal.count || 0,
           details: [
-            { label: "Total Keluhan", value: keluhan.length },
-            { label: "Selesai", value: keluhan.filter(k => k.status === "selesai").length },
-            { label: "Dalam Proses", value: keluhan.filter(k => k.status === "proses").length },
-            { label: "Pending", value: keluhan.filter(k => k.status === "pending").length },
+            { label: "Total Keluhan", value: keluhanTotal.count || 0 },
+            { label: "Selesai", value: keluhanSelesai.count || 0 },
+            { label: "Dalam Proses", value: keluhanProses.count || 0 },
+            { label: "Pending", value: keluhanPending.count || 0 },
           ],
-          rawData: keluhan,
+          rawData: [],
           exportColumns: [
             { header: "Tanggal", key: "created_at", width: 20 },
             { header: "Penghuni", key: "penghuni_name", width: 20 },
@@ -86,17 +143,17 @@ function useAllDivisionsData() {
         {
           name: "Engineering",
           description: "Inspeksi lapangan dan pemeliharaan teknis gedung",
-          done: inspections.filter(i => i.work_status === "selesai").length,
-          inProgress: inspections.filter(i => i.work_status === "dalam_pengerjaan").length,
-          pending: inspections.filter(i => i.work_status === "belum_dikerjakan").length,
-          total: inspections.length,
+          done: inspSelesai.count || 0,
+          inProgress: inspDalam.count || 0,
+          pending: inspBelum.count || 0,
+          total: inspTotal.count || 0,
           details: [
-            { label: "Total Inspeksi", value: inspections.length },
-            { label: "Selesai", value: inspections.filter(i => i.work_status === "selesai").length },
-            { label: "Dalam Pengerjaan", value: inspections.filter(i => i.work_status === "dalam_pengerjaan").length },
-            { label: "Belum Dikerjakan", value: inspections.filter(i => i.work_status === "belum_dikerjakan").length },
+            { label: "Total Inspeksi", value: inspTotal.count || 0 },
+            { label: "Selesai", value: inspSelesai.count || 0 },
+            { label: "Dalam Pengerjaan", value: inspDalam.count || 0 },
+            { label: "Belum Dikerjakan", value: inspBelum.count || 0 },
           ],
-          rawData: inspections,
+          rawData: [],
           exportColumns: [
             { header: "Tanggal", key: "created_at", width: 20 },
             { header: "Unit", key: "unit_number", width: 10 },
@@ -108,17 +165,17 @@ function useAllDivisionsData() {
         {
           name: "House Keeping",
           description: "Pengelolaan kebersihan dan pemeliharaan area gedung",
-          done: housekeeping.filter(h => h.status === "selesai").length,
+          done: hkSelesai.count || 0,
           inProgress: 0,
-          pending: housekeeping.filter(h => h.status === "belum").length,
-          total: housekeeping.length,
+          pending: hkBelum.count || 0,
+          total: hkTotal.count || 0,
           details: [
-            { label: "Total Tugas", value: housekeeping.length },
-            { label: "Selesai", value: housekeeping.filter(h => h.status === "selesai").length },
-            { label: "Belum", value: housekeeping.filter(h => h.status === "belum").length },
-            { label: "Hari Ini", value: housekeeping.filter(h => h.task_date === today).length },
+            { label: "Total Tugas", value: hkTotal.count || 0 },
+            { label: "Selesai", value: hkSelesai.count || 0 },
+            { label: "Belum", value: hkBelum.count || 0 },
+            { label: "Hari Ini", value: hkToday.count || 0 },
           ],
-          rawData: housekeeping,
+          rawData: [],
           exportColumns: [
             { header: "Tanggal", key: "task_date", width: 15 },
             { header: "Area", key: "area_name", width: 20 },
@@ -130,18 +187,18 @@ function useAllDivisionsData() {
         {
           name: "Security",
           description: "Sistem patroli keamanan dan penjagaan gedung",
-          done: security.filter(s => s.status === "aman").length,
-          inProgress: security.filter(s => s.status === "mencurigakan").length,
-          pending: security.filter(s => s.status === "bahaya").length,
-          total: security.length,
+          done: secAman.count || 0,
+          inProgress: secMencurigakan.count || 0,
+          pending: secBahaya.count || 0,
+          total: secTotal.count || 0,
           details: [
-            { label: "Total Patroli", value: security.length },
-            { label: "Aman", value: security.filter(s => s.status === "aman").length },
-            { label: "Mencurigakan", value: security.filter(s => s.status === "mencurigakan").length },
-            { label: "Bahaya", value: security.filter(s => s.status === "bahaya").length },
-            { label: "Hari Ini", value: security.filter(s => s.patrol_date === today).length },
+            { label: "Total Patroli", value: secTotal.count || 0 },
+            { label: "Aman", value: secAman.count || 0 },
+            { label: "Mencurigakan", value: secMencurigakan.count || 0 },
+            { label: "Bahaya", value: secBahaya.count || 0 },
+            { label: "Hari Ini", value: secToday.count || 0 },
           ],
-          rawData: security,
+          rawData: [],
           exportColumns: [
             { header: "Waktu", key: "patrol_time", width: 20 },
             { header: "Lokasi", key: "location", width: 25 },
@@ -153,16 +210,16 @@ function useAllDivisionsData() {
         {
           name: "Pelayanan Paket",
           description: "Pengelolaan penerimaan dan distribusi paket penghuni",
-          done: packages.filter(p => p.status === "sudah_diambil").length,
+          done: pkgDiambil.count || 0,
           inProgress: 0,
-          pending: packages.filter(p => p.status === "belum_diambil").length,
-          total: packages.length,
+          pending: pkgBelum.count || 0,
+          total: pkgTotal.count || 0,
           details: [
-            { label: "Total Paket", value: packages.length },
-            { label: "Sudah Diambil", value: packages.filter(p => p.status === "sudah_diambil").length },
-            { label: "Belum Diambil", value: packages.filter(p => p.status === "belum_diambil").length },
+            { label: "Total Paket", value: pkgTotal.count || 0 },
+            { label: "Sudah Diambil", value: pkgDiambil.count || 0 },
+            { label: "Belum Diambil", value: pkgBelum.count || 0 },
           ],
-          rawData: packages,
+          rawData: [],
           exportColumns: [
             { header: "Tanggal", key: "created_at", width: 20 },
             { header: "Pemilik", key: "owner_name", width: 20 },
@@ -175,17 +232,17 @@ function useAllDivisionsData() {
         {
           name: "Izin Kerja",
           description: "Pengelolaan perizinan kerja vendor dan kontraktor",
-          done: workPermits.filter(w => w.status === "approved").length,
-          inProgress: workPermits.filter(w => w.status === "pending").length,
-          pending: workPermits.filter(w => w.status === "rejected").length,
-          total: workPermits.length,
+          done: wpApproved.count || 0,
+          inProgress: wpPending.count || 0,
+          pending: wpRejected.count || 0,
+          total: wpTotal.count || 0,
           details: [
-            { label: "Total Pengajuan", value: workPermits.length },
-            { label: "Disetujui", value: workPermits.filter(w => w.status === "approved").length },
-            { label: "Pending", value: workPermits.filter(w => w.status === "pending").length },
-            { label: "Ditolak", value: workPermits.filter(w => w.status === "rejected").length },
+            { label: "Total Pengajuan", value: wpTotal.count || 0 },
+            { label: "Disetujui", value: wpApproved.count || 0 },
+            { label: "Pending", value: wpPending.count || 0 },
+            { label: "Ditolak", value: wpRejected.count || 0 },
           ],
-          rawData: workPermits,
+          rawData: [],
           exportColumns: [
             { header: "Tanggal", key: "created_at", width: 20 },
             { header: "Vendor", key: "vendor_name", width: 20 },
@@ -292,8 +349,13 @@ function DivisionSlide({ division, index, total }: { division: DivisionData; ind
   );
 }
 
-function exportDivisionExcel(division: DivisionData) {
-  const transformed = division.rawData.map(row => {
+async function exportDivisionExcel(division: DivisionData) {
+  const table = DIVISION_TABLE_MAP[division.name];
+  if (!table) return;
+  const orderCol = TABLE_ORDER_MAP[table] || "created_at";
+  const rawData = await fetchAllRows(table, orderCol);
+  
+  const transformed = rawData.map(row => {
     const newRow: Record<string, any> = {};
     division.exportColumns.forEach(col => {
       let val = row[col.key] ?? "-";
@@ -311,7 +373,7 @@ function exportDivisionExcel(division: DivisionData) {
   XLSX.writeFile(wb, `Laporan_${division.name.replace(/\s+/g, "_")}.xlsx`);
 }
 
-function exportAllExcel(divisions: DivisionData[]) {
+async function exportAllExcel(divisions: DivisionData[]) {
   const wb = XLSX.utils.book_new();
 
   // Summary sheet
@@ -327,9 +389,17 @@ function exportAllExcel(divisions: DivisionData[]) {
   summaryWs["!cols"] = [{ wch: 25 }, { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 10 }, { wch: 15 }];
   XLSX.utils.book_append_sheet(wb, summaryWs, "Ringkasan");
 
-  // Per-division sheets
-  divisions.forEach(div => {
-    const data = div.rawData.map(row => {
+  // Per-division sheets - fetch all data in parallel
+  const allRawData = await Promise.all(
+    divisions.map(div => {
+      const table = DIVISION_TABLE_MAP[div.name];
+      if (!table) return Promise.resolve([]);
+      return fetchAllRows(table, TABLE_ORDER_MAP[table] || "created_at");
+    })
+  );
+
+  divisions.forEach((div, idx) => {
+    const data = allRawData[idx].map(row => {
       const newRow: Record<string, any> = {};
       div.exportColumns.forEach(col => {
         let val = row[col.key] ?? "-";
@@ -349,10 +419,8 @@ function exportAllExcel(divisions: DivisionData[]) {
 }
 
 function exportPowerPoint(divisions: DivisionData[]) {
-  // Export as a multi-sheet Excel styled as presentation data
   const wb = XLSX.utils.book_new();
 
-  // Title slide data
   const titleData = [
     { "": "LAPORAN KERJA KEPENGELOLAAN" },
     { "": `AJMS - ${format(new Date(), "dd MMMM yyyy", { locale: localeId })}` },
@@ -362,7 +430,6 @@ function exportPowerPoint(divisions: DivisionData[]) {
   titleWs["!cols"] = [{ wch: 50 }];
   XLSX.utils.book_append_sheet(wb, titleWs, "Cover");
 
-  // Summary slide
   const summaryRows = divisions.map(d => ({
     Divisi: d.name,
     "Penyelesaian (%)": d.total > 0 ? `${Math.round((d.done / d.total) * 100)}%` : "0%",
@@ -374,7 +441,6 @@ function exportPowerPoint(divisions: DivisionData[]) {
   sumWs["!cols"] = [{ wch: 25 }, { wch: 18 }, { wch: 10 }, { wch: 10 }, { wch: 45 }];
   XLSX.utils.book_append_sheet(wb, sumWs, "Ringkasan Divisi");
 
-  // Detail per division
   divisions.forEach(div => {
     const detailRows = div.details.map(d => ({ Kategori: d.label, Jumlah: d.value }));
     const ws = XLSX.utils.json_to_sheet(detailRows);
