@@ -307,7 +307,7 @@ export default function BroadcastPesan() {
                     </p>
                   )}
                   <ScrollArea className="h-48 border rounded-md">
-                    {loadingPenghuni ? (
+                    {loadingData ? (
                       <p className="text-sm text-muted-foreground text-center py-4">Memuat...</p>
                     ) : filteredPenghuni.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-4">Tidak ditemukan</p>
