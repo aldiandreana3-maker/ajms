@@ -36,16 +36,26 @@ interface DivisionData {
   exportColumns: { header: string; key: string; width?: number }[];
 }
 
+// Table-to-order-column mapping for batch export
+const TABLE_ORDER_MAP: Record<string, string> = {
+  keluhan: "created_at",
+  field_inspections: "created_at",
+  housekeeping_tasks: "task_date",
+  security_patrols: "patrol_time",
+  packages: "created_at",
+  work_permits: "created_at",
+};
+
 // Helper to fetch all rows from a table using batched pagination (bypasses 1000 row limit)
-async function fetchAllRows(table: string, orderCol: string, selectCols = "*") {
+async function fetchAllRows(table: string, orderCol: string) {
   const PAGE_SIZE = 1000;
   let allData: any[] = [];
   let from = 0;
   let hasMore = true;
   while (hasMore) {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from(table)
-      .select(selectCols)
+      .select("*")
       .order(orderCol, { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
     if (error) throw error;
@@ -55,6 +65,16 @@ async function fetchAllRows(table: string, orderCol: string, selectCols = "*") {
   }
   return allData;
 }
+
+// Division name -> table name mapping for export
+const DIVISION_TABLE_MAP: Record<string, string> = {
+  "Tenant Relation Office": "keluhan",
+  "Engineering": "field_inspections",
+  "House Keeping": "housekeeping_tasks",
+  "Security": "security_patrols",
+  "Pelayanan Paket": "packages",
+  "Izin Kerja": "work_permits",
+};
 
 function useAllDivisionsData() {
   const today = format(new Date(), "yyyy-MM-dd");
