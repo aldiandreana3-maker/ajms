@@ -33,6 +33,7 @@ import KasirListrik from "./pages/kepengelolaan/KasirListrik";
 import RiwayatTransaksiListrik from "./pages/kepengelolaan/RiwayatTransaksiListrik";
 import DataMeterListrik from "./pages/kepengelolaan/DataMeterListrik";
 import LaporanPenjualanListrik from "./pages/kepengelolaan/LaporanPenjualanListrik";
+import Kelistrikan from "./pages/kepengelolaan/Kelistrikan";
 import HrdGa from "./pages/kepengelolaan/HrdGa";
 import RekapKaryawan from "./pages/kepengelolaan/RekapKaryawan";
 import SlipGaji from "./pages/kepengelolaan/SlipGaji";
