@@ -418,7 +418,29 @@ async function exportAllExcel(divisions: DivisionData[]) {
   XLSX.writeFile(wb, `Laporan_Kerja_Semua_Divisi_${format(new Date(), "yyyyMMdd")}.xlsx`);
 }
 
-  // Detail per division
+function exportPowerPoint(divisions: DivisionData[]) {
+  const wb = XLSX.utils.book_new();
+
+  const titleData = [
+    { "": "LAPORAN KERJA KEPENGELOLAAN" },
+    { "": `AJMS - ${format(new Date(), "dd MMMM yyyy", { locale: localeId })}` },
+    { "": "" },
+  ];
+  const titleWs = XLSX.utils.json_to_sheet(titleData);
+  titleWs["!cols"] = [{ wch: 50 }];
+  XLSX.utils.book_append_sheet(wb, titleWs, "Cover");
+
+  const summaryRows = divisions.map(d => ({
+    Divisi: d.name,
+    "Penyelesaian (%)": d.total > 0 ? `${Math.round((d.done / d.total) * 100)}%` : "0%",
+    Selesai: d.done,
+    Total: d.total,
+    Keterangan: d.description,
+  }));
+  const sumWs = XLSX.utils.json_to_sheet(summaryRows);
+  sumWs["!cols"] = [{ wch: 25 }, { wch: 18 }, { wch: 10 }, { wch: 10 }, { wch: 45 }];
+  XLSX.utils.book_append_sheet(wb, sumWs, "Ringkasan Divisi");
+
   divisions.forEach(div => {
     const detailRows = div.details.map(d => ({ Kategori: d.label, Jumlah: d.value }));
     const ws = XLSX.utils.json_to_sheet(detailRows);
