@@ -3,12 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
+export type TargetType = "all" | "tower" | "unit" | "custom";
+
 export interface BroadcastMessage {
   id: string;
   title: string;
   content: string;
   sender_id: string;
   sender_name: string | null;
+  target_type: TargetType;
+  target_value: string[];
   created_at: string;
 }
 
@@ -21,11 +25,17 @@ export interface BroadcastMessageRead {
   created_at: string;
 }
 
+interface SendMessageParams {
+  title: string;
+  content: string;
+  targetType: TargetType;
+  targetValue: string[];
+}
+
 export function useBroadcastMessages() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Fetch all broadcast messages (admin view)
   const messagesQuery = useQuery({
     queryKey: ["broadcast-messages"],
     queryFn: async () => {
@@ -39,18 +49,15 @@ export function useBroadcastMessages() {
     enabled: !!user,
   });
 
-  // Fetch messages with read status for current user (inbox view)
   const inboxQuery = useQuery({
     queryKey: ["broadcast-inbox", user?.id],
     queryFn: async () => {
-      // Get all messages
       const { data: messages, error: msgError } = await supabase
         .from("broadcast_messages")
         .select("*")
         .order("created_at", { ascending: false });
       if (msgError) throw msgError;
 
-      // Get read statuses for current user
       const { data: reads, error: readError } = await supabase
         .from("broadcast_message_reads")
         .select("*")
@@ -68,20 +75,33 @@ export function useBroadcastMessages() {
     enabled: !!user,
   });
 
-  // Unread count
   const unreadCount = inboxQuery.data?.filter((m) => !m.is_read).length ?? 0;
 
-  // Send broadcast message
+  // Helper: fetch all rows with pagination
+  async function fetchAllUserIds(query: any): Promise<string[]> {
+    let allIds: string[] = [];
+    let from = 0;
+    const batchSize = 1000;
+    let hasMore = true;
+    while (hasMore) {
+      const { data, error } = await query.range(from, from + batchSize - 1);
+      if (error) throw error;
+      const ids = (data || []).map((r: any) => r.user_id).filter(Boolean);
+      allIds = allIds.concat(ids);
+      hasMore = (data?.length || 0) === batchSize;
+      from += batchSize;
+    }
+    return [...new Set(allIds)];
+  }
+
   const sendMessage = useMutation({
-    mutationFn: async ({ title, content }: { title: string; content: string }) => {
-      // Get sender profile
+    mutationFn: async ({ title, content, targetType, targetValue }: SendMessageParams) => {
       const { data: profile } = await supabase
         .from("profiles")
         .select("full_name")
         .eq("id", user!.id)
         .single();
 
-      // Insert broadcast message
       const { data: message, error: msgError } = await supabase
         .from("broadcast_messages")
         .insert({
@@ -89,36 +109,81 @@ export function useBroadcastMessages() {
           content,
           sender_id: user!.id,
           sender_name: profile?.full_name || "Admin",
+          target_type: targetType,
+          target_value: targetValue,
         })
         .select()
         .single();
       if (msgError) throw msgError;
 
-      // Get all penghuni and agent user_ids
-      const { data: penghuniUsers, error: penghuniError } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .in("role", ["penghuni", "agent"]);
-      if (penghuniError) throw penghuniError;
+      // Resolve target user_ids based on targetType
+      let targetUserIds: string[] = [];
 
-      if (penghuniUsers && penghuniUsers.length > 0) {
-        // Batch insert read records
-        const readRecords = penghuniUsers.map((u: { user_id: string }) => ({
-          message_id: (message as BroadcastMessage).id,
-          user_id: u.user_id,
-          is_read: false,
-        }));
-
-        const { error: readError } = await supabase
-          .from("broadcast_message_reads")
-          .insert(readRecords);
-        if (readError) throw readError;
+      if (targetType === "all") {
+        const { data: allUsers, error } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .in("role", ["penghuni", "agent"]);
+        if (error) throw error;
+        targetUserIds = (allUsers || []).map((u) => u.user_id);
+      } else if (targetType === "tower") {
+        // Get penghuni with units in selected towers
+        // Units have building column matching tower name
+        let allPenghuni: any[] = [];
+        for (const tower of targetValue) {
+          const { data: units } = await supabase
+            .from("units")
+            .select("id")
+            .eq("building", tower);
+          if (units && units.length > 0) {
+            const unitIds = units.map((u) => u.id);
+            const { data: penghuni } = await supabase
+              .from("penghuni")
+              .select("user_id")
+              .in("unit_id", unitIds)
+              .eq("is_active", true)
+              .not("user_id", "is", null);
+            if (penghuni) allPenghuni = allPenghuni.concat(penghuni);
+          }
+        }
+        targetUserIds = [...new Set(allPenghuni.map((p) => p.user_id).filter(Boolean))];
+      } else if (targetType === "unit") {
+        // Get penghuni linked to specific unit numbers
+        const { data: penghuni } = await supabase
+          .from("penghuni")
+          .select("user_id")
+          .in("unit_number", targetValue)
+          .eq("is_active", true)
+          .not("user_id", "is", null);
+        targetUserIds = [...new Set((penghuni || []).map((p) => p.user_id).filter(Boolean))];
+      } else if (targetType === "custom") {
+        // targetValue contains user_ids directly
+        targetUserIds = targetValue;
       }
 
-      return message;
+      if (targetUserIds.length > 0) {
+        // Batch insert in chunks of 500
+        const msgId = (message as BroadcastMessage).id;
+        for (let i = 0; i < targetUserIds.length; i += 500) {
+          const batch = targetUserIds.slice(i, i + 500).map((uid) => ({
+            message_id: msgId,
+            user_id: uid,
+            is_read: false,
+          }));
+          const { error: readError } = await supabase
+            .from("broadcast_message_reads")
+            .insert(batch);
+          if (readError) throw readError;
+        }
+      }
+
+      return { message, recipientCount: targetUserIds.length };
     },
-    onSuccess: () => {
-      toast({ title: "Berhasil", description: "Pesan berhasil dikirim ke semua penghuni" });
+    onSuccess: (data) => {
+      toast({
+        title: "Berhasil",
+        description: `Pesan dikirim ke ${data.recipientCount} penerima`,
+      });
       queryClient.invalidateQueries({ queryKey: ["broadcast-messages"] });
       queryClient.invalidateQueries({ queryKey: ["broadcast-inbox"] });
     },
@@ -127,7 +192,6 @@ export function useBroadcastMessages() {
     },
   });
 
-  // Mark message as read
   const markAsRead = useMutation({
     mutationFn: async (messageId: string) => {
       const { error } = await supabase
@@ -142,7 +206,6 @@ export function useBroadcastMessages() {
     },
   });
 
-  // Delete message (admin only)
   const deleteMessage = useMutation({
     mutationFn: async (messageId: string) => {
       const { error } = await supabase
