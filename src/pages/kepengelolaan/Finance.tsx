@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShieldAlert, Wallet, ArrowLeft, Receipt, Eye, ShoppingCart, Zap, History, Gauge, BarChart3 } from "lucide-react";
+import { ShieldAlert, Wallet, ArrowLeft, Receipt, Eye, ShoppingCart, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Finance() {
@@ -92,11 +92,11 @@ export default function Finance() {
             </Card>
           )}
 
-          {/* Kasir Listrik - Admin */}
+          {/* Kelistrikan - Admin */}
           {canManage && (
             <Card
               className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all duration-200 group"
-              onClick={() => navigate("/kepengelolaan/finance/kasir-listrik")}
+              onClick={() => navigate("/kepengelolaan/finance/kelistrikan")}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3">
@@ -104,89 +104,14 @@ export default function Finance() {
                     <Zap className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg">Kasir Listrik</CardTitle>
-                    <CardDescription>Pembelian listrik prabayar</CardDescription>
+                    <CardTitle className="text-lg">Kelistrikan</CardTitle>
+                    <CardDescription>Kasir, riwayat, meter & laporan listrik</CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">
-                  Proses pembelian token listrik prabayar untuk penghuni apartemen.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Riwayat Transaksi Listrik - Admin */}
-          {canManage && (
-            <Card
-              className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all duration-200 group"
-              onClick={() => navigate("/kepengelolaan/finance/riwayat-listrik")}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
-                    <History className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">Riwayat Transaksi Listrik</CardTitle>
-                    <CardDescription>Semua transaksi listrik</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Lihat riwayat seluruh transaksi pembelian listrik penghuni.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Data Meter Listrik - Admin */}
-          {canManage && (
-            <Card
-              className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all duration-200 group"
-              onClick={() => navigate("/kepengelolaan/finance/data-meter-listrik")}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
-                    <Gauge className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">Data Meter Listrik</CardTitle>
-                    <CardDescription>Kelola meter per unit</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Kelola data meter listrik, saldo kWh, dan harga per kWh setiap unit.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Laporan Penjualan Listrik - Admin */}
-          {canManage && (
-            <Card
-              className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all duration-200 group"
-              onClick={() => navigate("/kepengelolaan/finance/laporan-listrik")}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
-                    <BarChart3 className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">Laporan Penjualan Listrik</CardTitle>
-                    <CardDescription>Laporan harian, bulanan, tahunan</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Lihat ringkasan penjualan listrik dengan export PDF dan Excel.
+                  Kelola pembelian token listrik, riwayat transaksi, data meter, dan laporan penjualan listrik.
                 </p>
               </CardContent>
             </Card>

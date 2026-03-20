@@ -33,6 +33,7 @@ import KasirListrik from "./pages/kepengelolaan/KasirListrik";
 import RiwayatTransaksiListrik from "./pages/kepengelolaan/RiwayatTransaksiListrik";
 import DataMeterListrik from "./pages/kepengelolaan/DataMeterListrik";
 import LaporanPenjualanListrik from "./pages/kepengelolaan/LaporanPenjualanListrik";
+import Kelistrikan from "./pages/kepengelolaan/Kelistrikan";
 import HrdGa from "./pages/kepengelolaan/HrdGa";
 import RekapKaryawan from "./pages/kepengelolaan/RekapKaryawan";
 import SlipGaji from "./pages/kepengelolaan/SlipGaji";
@@ -96,6 +97,7 @@ const App = () => (
               <Route path="/kepengelolaan/tro" element={guarded(<TenantRelationOffice />)} />
               <Route path="/kepengelolaan/finance" element={guarded(<Finance />)} />
               <Route path="/kepengelolaan/finance/kasir" element={guarded(<SistemKasir />)} />
+              <Route path="/kepengelolaan/finance/kelistrikan" element={guarded(<Kelistrikan />)} />
               <Route path="/kepengelolaan/finance/kasir-listrik" element={guarded(<KasirListrik />)} />
               <Route path="/kepengelolaan/finance/riwayat-listrik" element={guarded(<RiwayatTransaksiListrik />)} />
               <Route path="/kepengelolaan/finance/data-meter-listrik" element={guarded(<DataMeterListrik />)} />
