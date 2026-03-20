@@ -194,11 +194,18 @@ export function useBroadcastMessages() {
 
   const markAsRead = useMutation({
     mutationFn: async (messageId: string) => {
+      // Use upsert: if no read record exists, create one; if it exists, update it
       const { error } = await supabase
         .from("broadcast_message_reads")
-        .update({ is_read: true, read_at: new Date().toISOString() })
-        .eq("message_id", messageId)
-        .eq("user_id", user!.id);
+        .upsert(
+          {
+            message_id: messageId,
+            user_id: user!.id,
+            is_read: true,
+            read_at: new Date().toISOString(),
+          },
+          { onConflict: "message_id,user_id" }
+        );
       if (error) throw error;
     },
     onSuccess: () => {
