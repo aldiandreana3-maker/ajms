@@ -2,11 +2,10 @@ import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBroadcastMessages } from "@/hooks/useBroadcastMessages";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Bell, Mail, MailOpen, Clock, ArrowLeft } from "lucide-react";
+import { Bell, Mail, MailOpen, Clock, CheckCheck } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -92,11 +91,15 @@ export default function PesanPenghuni() {
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5 truncate">{msg.content}</p>
-                      <div className="flex items-center gap-1 mt-1">
+                      <div className="flex items-center gap-2 mt-1">
                         <Clock className="w-3 h-3 text-muted-foreground" />
                         <span className="text-[11px] text-muted-foreground">
                           {format(new Date(msg.created_at), "dd MMM yyyy, HH:mm", { locale: localeId })}
                         </span>
+                        <CheckCheck className={cn(
+                          "w-4 h-4 ml-auto shrink-0",
+                          msg.is_read ? "text-blue-500" : "text-muted-foreground/50"
+                        )} />
                       </div>
                     </div>
                   </button>
@@ -118,6 +121,7 @@ export default function PesanPenghuni() {
                 {selectedMessage && format(new Date(selectedMessage.created_at), "dd MMMM yyyy, HH:mm", { locale: localeId })}
                 <span>•</span>
                 <span>Dari: {selectedMessage?.sender_name || "Admin"}</span>
+                <CheckCheck className="w-4 h-4 text-blue-500 ml-auto" />
               </div>
               <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
                 {selectedMessage?.content}
