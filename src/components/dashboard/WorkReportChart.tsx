@@ -25,57 +25,40 @@ function useWorkReportData() {
   return useQuery({
     queryKey: ["work-report-chart", today],
     queryFn: async () => {
+      // Use HEAD/count queries to avoid fetching all rows (packages has 12k+ rows)
       const [
-        keluhanRes,
-        workOrderRes,
-        inspectionRes,
-        housekeepingRes,
-        securityRes,
-        packagesRes,
+        keluhanTotal,
+        keluhanDone,
+        inspectionTotal,
+        inspectionDone,
+        hkTotal,
+        hkDone,
+        securityTotal,
+        packageTotal,
+        packageDone,
+        workOrderTotal,
+        workOrderDone,
       ] = await Promise.all([
-        // TRO - Keluhan
-        supabase.from("keluhan").select("status", { count: "exact" }),
-        // Engineering - Work Orders
-        supabase.from("work_permits").select("status", { count: "exact" }),
-        // Engineering - Field Inspections
-        supabase.from("field_inspections").select("work_status", { count: "exact" }),
-        // Housekeeping
-        supabase.from("housekeeping_tasks").select("status", { count: "exact" }).eq("task_date", today),
-        // Security
-        supabase.from("security_patrols").select("id", { count: "exact" }).eq("patrol_date", today),
-        // TRO - Packages
-        supabase.from("packages").select("status", { count: "exact" }),
+        supabase.from("keluhan").select("id", { count: "exact", head: true }),
+        supabase.from("keluhan").select("id", { count: "exact", head: true }).eq("status", "selesai"),
+        supabase.from("field_inspections").select("id", { count: "exact", head: true }),
+        supabase.from("field_inspections").select("id", { count: "exact", head: true }).eq("work_status", "selesai"),
+        supabase.from("housekeeping_tasks").select("id", { count: "exact", head: true }).eq("task_date", today),
+        supabase.from("housekeeping_tasks").select("id", { count: "exact", head: true }).eq("task_date", today).eq("status", "selesai"),
+        supabase.from("security_patrols").select("id", { count: "exact", head: true }).eq("patrol_date", today),
+        supabase.from("packages").select("id", { count: "exact", head: true }),
+        supabase.from("packages").select("id", { count: "exact", head: true }).eq("status", "diambil"),
+        supabase.from("work_permits").select("id", { count: "exact", head: true }),
+        supabase.from("work_permits").select("id", { count: "exact", head: true }).eq("status", "approved"),
       ]);
 
-      const keluhanData = keluhanRes.data || [];
-      const keluhanDone = keluhanData.filter(k => k.status === "selesai").length;
-      const keluhanTotal = keluhanData.length;
-
-      const inspectionData = inspectionRes.data || [];
-      const inspectionDone = inspectionData.filter(i => i.work_status === "selesai").length;
-      const inspectionTotal = inspectionData.length;
-
-      const hkData = housekeepingRes.data || [];
-      const hkDone = hkData.filter(h => h.status === "selesai").length;
-      const hkTotal = hkData.length;
-
-      const securityTotal = securityRes.data?.length || 0;
-
-      const packageData = packagesRes.data || [];
-      const packageDone = packageData.filter(p => p.status === "sudah_diambil").length;
-      const packageTotal = packageData.length;
-
-      const workOrderData = workOrderRes.data || [];
-      const workOrderDone = workOrderData.filter(w => w.status === "approved").length;
-      const workOrderTotal = workOrderData.length;
-
       return [
-        { name: "Tenant Relation", done: keluhanDone, total: keluhanTotal },
-        { name: "Engineering", done: inspectionDone, total: inspectionTotal },
-        { name: "House Keeping", done: hkDone, total: hkTotal },
-        { name: "Security", done: securityTotal, total: securityTotal > 0 ? securityTotal : 0 },
-        { name: "Pelayanan Paket", done: packageDone, total: packageTotal },
-        { name: "Izin Kerja", done: workOrderDone, total: workOrderTotal },
+        { name: "Tenant Relation", done: keluhanDone.count || 0, total: keluhanTotal.count || 0 },
+        { name: "Engineering", done: inspectionDone.count || 0, total: inspectionTotal.count || 0 },
+        { name: "House Keeping", done: hkDone.count || 0, total: hkTotal.count || 0 },
+        { name: "Security", done: securityTotal.count || 0, total: securityTotal.count || 0 },
+        { name: "Pelayanan Paket", done: packageDone.count || 0, total: packageTotal.count || 0 },
+        { name: "Izin Kerja", done: workOrderDone.count || 0, total: workOrderTotal.count || 0 },
       ];
     },
   });
