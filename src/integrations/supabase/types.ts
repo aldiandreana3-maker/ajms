@@ -504,6 +504,8 @@ export type Database = {
           id: string
           sender_id: string
           sender_name: string | null
+          target_type: string
+          target_value: string[] | null
           title: string
         }
         Insert: {
@@ -512,6 +514,8 @@ export type Database = {
           id?: string
           sender_id: string
           sender_name?: string | null
+          target_type?: string
+          target_value?: string[] | null
           title: string
         }
         Update: {
@@ -520,6 +524,8 @@ export type Database = {
           id?: string
           sender_id?: string
           sender_name?: string | null
+          target_type?: string
+          target_value?: string[] | null
           title?: string
         }
         Relationships: []
