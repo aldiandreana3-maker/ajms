@@ -44,6 +44,7 @@ export function TopMenu({ sidebarCollapsed, isMobile, onMobileMenuToggle }: TopM
   const [activeItem, setActiveItem] = useState("Home");
   const navigate = useNavigate();
   const { user, signOut, role } = useAuth();
+  const { unreadCount } = useBroadcastMessages();
 
   const handleLogout = async () => {
     await signOut();
