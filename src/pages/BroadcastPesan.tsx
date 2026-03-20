@@ -88,16 +88,10 @@ export default function BroadcastPesan() {
     );
   }
 
-  const handleAddUnit = () => {
-    const trimmed = unitInput.trim().toUpperCase();
-    if (trimmed && !selectedUnits.includes(trimmed)) {
-      setSelectedUnits([...selectedUnits, trimmed]);
-    }
-    setUnitInput("");
-  };
-
-  const handleRemoveUnit = (unit: string) => {
-    setSelectedUnits(selectedUnits.filter((u) => u !== unit));
+  const toggleUnit = (unit: string) => {
+    setSelectedUnits((prev) =>
+      prev.includes(unit) ? prev.filter((u) => u !== unit) : [...prev, unit]
+    );
   };
 
   const toggleTower = (tower: string) => {
