@@ -25,6 +25,8 @@ import KartuAkses from "./pages/kepenghunian/KartuAkses";
 import TamuAsing from "./pages/kepenghunian/TamuAsing";
 import WorkOrder from "./pages/kepenghunian/WorkOrder";
 import PelayananPaket from "./pages/kepenghunian/PelayananPaket";
+import BroadcastPesan from "./pages/BroadcastPesan";
+import PesanPenghuni from "./pages/kepenghunian/PesanPenghuni";
 import DataPenghuni from "./pages/kepengelolaan/DataPenghuni";
 import TenantRelationOffice from "./pages/kepengelolaan/TenantRelationOffice";
 import Finance from "./pages/kepengelolaan/Finance";
@@ -76,6 +78,8 @@ const App = () => (
               <Route path="/aktivasi-sistem" element={<AktivasiSistem />} />
               <Route path="/kepenghunian/pelayanan-paket" element={<PelayananPaket />} />
               <Route path="/ambil-antrian" element={<AmbilAntrian />} />
+              <Route path="/kepenghunian/broadcast-pesan" element={guarded(<BroadcastPesan />)} />
+              <Route path="/kepenghunian/pesan" element={guarded(<PesanPenghuni />)} />
 
               {/* Guarded - juga diblock oleh GlobalSystemGuard untuk non-super-admin */}
               <Route path="/tentang-kami" element={guarded(<TentangKami />)} />

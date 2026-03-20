@@ -9,6 +9,8 @@ import {
   Wrench,
   Package,
   Ticket,
+  Megaphone,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -62,6 +64,19 @@ const services = [
     color: "bg-success",
     path: "/kepenghunian/pelayanan-paket",
     restrictedRoles: ["staff_tro", "admin", "super_admin"],
+  },
+  {
+    icon: Megaphone,
+    title: "Broadcast Pesan",
+    color: "bg-primary",
+    path: "/kepenghunian/broadcast-pesan",
+    restrictedRoles: ["admin", "super_admin"],
+  },
+  {
+    icon: Bell,
+    title: "Pesan",
+    color: "bg-warning",
+    path: "/kepenghunian/pesan",
   },
   {
     icon: Ticket,

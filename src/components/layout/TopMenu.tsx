@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useBroadcastMessages } from "@/hooks/useBroadcastMessages";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +44,7 @@ export function TopMenu({ sidebarCollapsed, isMobile, onMobileMenuToggle }: TopM
   const [activeItem, setActiveItem] = useState("Home");
   const navigate = useNavigate();
   const { user, signOut, role } = useAuth();
+  const { unreadCount } = useBroadcastMessages();
 
   const handleLogout = async () => {
     await signOut();
@@ -114,9 +116,16 @@ export function TopMenu({ sidebarCollapsed, isMobile, onMobileMenuToggle }: TopM
           </div>
 
           {/* Notification */}
-          <button className="relative p-2 rounded-lg hover:bg-muted transition-colors">
+          <button
+            onClick={() => navigate("/kepenghunian/pesan")}
+            className="relative p-2 rounded-lg hover:bg-muted transition-colors"
+          >
             <Bell className="w-5 h-5 text-muted-foreground" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full"></span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full px-1">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
           </button>
 
           {/* Profile Dropdown - Only show when logged in */}
