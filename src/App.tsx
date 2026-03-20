@@ -25,6 +25,8 @@ import KartuAkses from "./pages/kepenghunian/KartuAkses";
 import TamuAsing from "./pages/kepenghunian/TamuAsing";
 import WorkOrder from "./pages/kepenghunian/WorkOrder";
 import PelayananPaket from "./pages/kepenghunian/PelayananPaket";
+import BroadcastPesan from "./pages/BroadcastPesan";
+import PesanPenghuni from "./pages/kepenghunian/PesanPenghuni";
 import DataPenghuni from "./pages/kepengelolaan/DataPenghuni";
 import TenantRelationOffice from "./pages/kepengelolaan/TenantRelationOffice";
 import Finance from "./pages/kepengelolaan/Finance";
