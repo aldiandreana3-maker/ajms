@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Camera, X } from "lucide-react";
+import { Camera, X, SwitchCamera } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CameraCaptureProps {
@@ -24,6 +24,7 @@ export function CameraCapture({
   const [showCamera, setShowCamera] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -38,13 +39,18 @@ export function CameraCapture({
     }
   }, [value]);
 
-  const startCamera = async () => {
+  const startCamera = async (mode: "user" | "environment" = facingMode) => {
+    // Stop existing stream first
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+    }
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user" },
+        video: { facingMode: mode },
         audio: false,
       });
       setStream(mediaStream);
+      setFacingMode(mode);
       setShowCamera(true);
       setTimeout(() => {
         if (videoRef.current) {
@@ -53,8 +59,31 @@ export function CameraCapture({
       }, 100);
     } catch (error) {
       console.error("Camera error:", error);
+      // If requested mode fails, try the other one
+      if (mode === "user") {
+        try {
+          const fallback = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" },
+            audio: false,
+          });
+          setStream(fallback);
+          setFacingMode("environment");
+          setShowCamera(true);
+          setTimeout(() => {
+            if (videoRef.current) {
+              videoRef.current.srcObject = fallback;
+            }
+          }, 100);
+          return;
+        } catch {}
+      }
       alert("Tidak dapat mengakses kamera. Pastikan perangkat memiliki kamera dan izin sudah diberikan.");
     }
+  };
+
+  const switchCamera = () => {
+    const newMode = facingMode === "user" ? "environment" : "user";
+    startCamera(newMode);
   };
 
   const stopCamera = useCallback(() => {
@@ -125,7 +154,7 @@ export function CameraCapture({
               type="button"
               variant="outline"
               size="sm"
-              onClick={startCamera}
+              onClick={() => startCamera()}
             >
               <Camera className="w-4 h-4 mr-2" />
               Ambil Foto
@@ -157,6 +186,10 @@ export function CameraCapture({
             <div className="flex justify-center gap-4">
               <Button variant="outline" onClick={stopCamera}>
                 Batal
+              </Button>
+              <Button variant="outline" onClick={switchCamera}>
+                <SwitchCamera className="w-4 h-4 mr-2" />
+                Ganti Kamera
               </Button>
               <Button onClick={capturePhoto}>
                 <Camera className="w-4 h-4 mr-2" />
