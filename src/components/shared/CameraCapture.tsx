@@ -154,7 +154,7 @@ export function CameraCapture({
               type="button"
               variant="outline"
               size="sm"
-              onClick={startCamera}
+              onClick={() => startCamera()}
             >
               <Camera className="w-4 h-4 mr-2" />
               Ambil Foto
