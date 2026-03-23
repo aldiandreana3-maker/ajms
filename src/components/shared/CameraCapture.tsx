@@ -187,6 +187,10 @@ export function CameraCapture({
               <Button variant="outline" onClick={stopCamera}>
                 Batal
               </Button>
+              <Button variant="outline" onClick={switchCamera}>
+                <SwitchCamera className="w-4 h-4 mr-2" />
+                Ganti Kamera
+              </Button>
               <Button onClick={capturePhoto}>
                 <Camera className="w-4 h-4 mr-2" />
                 Ambil Foto
