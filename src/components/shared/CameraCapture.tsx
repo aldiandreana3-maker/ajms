@@ -39,13 +39,18 @@ export function CameraCapture({
     }
   }, [value]);
 
-  const startCamera = async () => {
+  const startCamera = async (mode: "user" | "environment" = facingMode) => {
+    // Stop existing stream first
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+    }
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user" },
+        video: { facingMode: mode },
         audio: false,
       });
       setStream(mediaStream);
+      setFacingMode(mode);
       setShowCamera(true);
       setTimeout(() => {
         if (videoRef.current) {
@@ -54,8 +59,31 @@ export function CameraCapture({
       }, 100);
     } catch (error) {
       console.error("Camera error:", error);
+      // If requested mode fails, try the other one
+      if (mode === "user") {
+        try {
+          const fallback = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" },
+            audio: false,
+          });
+          setStream(fallback);
+          setFacingMode("environment");
+          setShowCamera(true);
+          setTimeout(() => {
+            if (videoRef.current) {
+              videoRef.current.srcObject = fallback;
+            }
+          }, 100);
+          return;
+        } catch {}
+      }
       alert("Tidak dapat mengakses kamera. Pastikan perangkat memiliki kamera dan izin sudah diberikan.");
     }
+  };
+
+  const switchCamera = () => {
+    const newMode = facingMode === "user" ? "environment" : "user";
+    startCamera(newMode);
   };
 
   const stopCamera = useCallback(() => {
