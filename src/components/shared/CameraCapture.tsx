@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Camera, X } from "lucide-react";
+import { Camera, X, SwitchCamera } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CameraCaptureProps {
