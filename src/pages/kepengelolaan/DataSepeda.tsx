@@ -92,24 +92,15 @@ export default function DataSepeda() {
     setDialogOpen(false);
   };
 
-  const handleExport = () => {
-    const columns = [
-      { header: "No", key: "no", width: 5 },
-      { header: "Kode", key: "kode", width: 10 },
-      { header: "Merek Sepeda", key: "brand", width: 20 },
-      { header: "Nama Pemilik", key: "owner", width: 20 },
-      { header: "Unit Pemilik", key: "unit", width: 15 },
-      { header: "Keterangan", key: "notes", width: 25 },
-    ];
-    const data = bicycles.map((b, i) => ({
-      no: i + 1,
-      kode: b.code,
-      brand: b.brand,
-      owner: b.owner_name || "-",
-      unit: b.unit_number || "-",
-      notes: b.notes || "-",
-    }));
-    exportToExcel({ filename: "Data_Sepeda", sheetName: "Sepeda", data, columns });
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportBicyclesToExcel(bicycles);
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (

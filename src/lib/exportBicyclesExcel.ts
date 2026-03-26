@@ -16,7 +16,7 @@ async function fetchImageAsBuffer(url: string): Promise<{ buffer: ArrayBuffer; e
     if (!res.ok) return null;
     const contentType = res.headers.get("content-type") || "";
     const buffer = await res.arrayBuffer();
-    let ext: "png" | "jpeg" = "jpeg";
+    let ext: "png" | "jpeg" = "jpeg" as const;
     if (contentType.includes("png")) ext = "png";
     return { buffer, ext };
   } catch {
