@@ -33,6 +33,7 @@ export async function exportBicyclesToExcel(bicycles: BicycleRow[]) {
     { header: "Kode", key: "kode", width: 10 },
     { header: "Merek Sepeda", key: "brand", width: 20 },
     { header: "Foto", key: "foto", width: 18 },
+    { header: "Link Foto", key: "link_foto", width: 30 },
     { header: "Nama Pemilik", key: "owner", width: 22 },
     { header: "Unit Pemilik", key: "unit", width: 15 },
     { header: "Keterangan", key: "notes", width: 28 },
