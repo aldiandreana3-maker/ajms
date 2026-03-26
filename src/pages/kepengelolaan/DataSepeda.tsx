@@ -250,9 +250,9 @@ export default function DataSepeda() {
               <div>
                 <Label>Foto Sepeda (Live Kamera)</Label>
                 <CameraCapture
-                  label="Foto sepeda"
+                  label="Ambil foto sepeda dengan kamera"
                   value={photoFile}
-                  onChange={(file) => setPhotoFile(file)}
+                  onChange={setPhotoFile}
                 />
                 {!photoFile && form.photo_url && (
                   <img src={form.photo_url} alt="preview" className="mt-2 w-full h-40 object-cover rounded-lg border" />
