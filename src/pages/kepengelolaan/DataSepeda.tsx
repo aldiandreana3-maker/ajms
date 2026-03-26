@@ -77,8 +77,10 @@ export default function DataSepeda() {
     
     let photoUrl = form.photo_url;
     if (photoFile) {
-      const url = await uploadFile(photoFile);
-      if (url) photoUrl = url;
+      const filePath = await uploadFile(photoFile);
+      if (filePath) {
+        photoUrl = getPublicUrl(filePath) || "";
+      }
     }
     
     const payload = { ...form, photo_url: photoUrl };
