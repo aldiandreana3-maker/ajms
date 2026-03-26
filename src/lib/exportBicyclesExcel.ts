@@ -69,7 +69,7 @@ export async function exportBicyclesToExcel(bicycles: BicycleRow[]) {
       if (imgData) {
         const imageId = workbook.addImage({
           buffer: imgData.buffer,
-          extension: imgData.ext,
+          extension: imgData.ext as "png" | "jpeg",
         });
 
         sheet.addImage(imageId, {
