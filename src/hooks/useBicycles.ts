@@ -7,6 +7,7 @@ export interface Bicycle {
   code: string;
   brand: string;
   photo_url: string | null;
+  photo_display_url?: string | null;
   owner_name: string | null;
   unit_number: string | null;
   unit_id: string | null;
@@ -15,6 +16,17 @@ export interface Bicycle {
   created_at: string;
   updated_at: string;
 }
+
+const resolveStoragePath = (photoUrl: string | null) => {
+  if (!photoUrl) return null;
+  const marker = "/kepenghunian-files/";
+
+  if (photoUrl.startsWith("http") && photoUrl.includes(marker)) {
+    return photoUrl.split(marker)[1] ?? null;
+  }
+
+  return photoUrl;
+};
 
 export function useBicycles() {
   const { toast } = useToast();
@@ -27,13 +39,41 @@ export function useBicycles() {
         .from("bicycles" as any)
         .select("*")
         .order("code", { ascending: true });
+
       if (error) throw error;
-      return (data || []) as unknown as Bicycle[];
+
+      const rows = (data || []) as unknown as Bicycle[];
+
+      const bicyclesWithPhotos = await Promise.all(
+        rows.map(async (bicycle) => {
+          const storagePath = resolveStoragePath(bicycle.photo_url);
+
+          if (!storagePath) {
+            return { ...bicycle, photo_display_url: null };
+          }
+
+          const { data: signedData, error: signedError } = await supabase.storage
+            .from("kepenghunian-files")
+            .createSignedUrl(storagePath, 60 * 60);
+
+          if (signedError) {
+            console.error("Signed URL error:", signedError);
+            return { ...bicycle, photo_display_url: null };
+          }
+
+          return {
+            ...bicycle,
+            photo_display_url: signedData.signedUrl,
+          };
+        })
+      );
+
+      return bicyclesWithPhotos;
     },
   });
 
   const addBicycle = useMutation({
-    mutationFn: async (bicycle: Omit<Bicycle, "id" | "created_at" | "updated_at">) => {
+    mutationFn: async (bicycle: Omit<Bicycle, "id" | "created_at" | "updated_at" | "photo_display_url">) => {
       const { data, error } = await supabase
         .from("bicycles" as any)
         .insert(bicycle as any)
@@ -52,7 +92,7 @@ export function useBicycles() {
   });
 
   const updateBicycle = useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Bicycle> & { id: string }) => {
+    mutationFn: async ({ id, photo_display_url, ...updates }: Partial<Bicycle> & { id: string }) => {
       const { data, error } = await supabase
         .from("bicycles" as any)
         .update(updates as any)
@@ -73,10 +113,7 @@ export function useBicycles() {
 
   const deleteBicycle = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("bicycles" as any)
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("bicycles" as any).delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
