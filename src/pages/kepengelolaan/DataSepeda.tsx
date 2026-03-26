@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBicycles } from "@/hooks/useBicycles";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { TablePagination } from "@/components/shared/TablePagination";
-import { exportToExcel } from "@/lib/exportExcel";
+import { exportBicyclesToExcel } from "@/lib/exportBicyclesExcel";
 import { CameraCapture } from "@/components/shared/CameraCapture";
 
 export default function DataSepeda() {
@@ -92,24 +92,15 @@ export default function DataSepeda() {
     setDialogOpen(false);
   };
 
-  const handleExport = () => {
-    const columns = [
-      { header: "No", key: "no", width: 5 },
-      { header: "Kode", key: "kode", width: 10 },
-      { header: "Merek Sepeda", key: "brand", width: 20 },
-      { header: "Nama Pemilik", key: "owner", width: 20 },
-      { header: "Unit Pemilik", key: "unit", width: 15 },
-      { header: "Keterangan", key: "notes", width: 25 },
-    ];
-    const data = bicycles.map((b, i) => ({
-      no: i + 1,
-      kode: b.code,
-      brand: b.brand,
-      owner: b.owner_name || "-",
-      unit: b.unit_number || "-",
-      notes: b.notes || "-",
-    }));
-    exportToExcel({ filename: "Data_Sepeda", sheetName: "Sepeda", data, columns });
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      await exportBicyclesToExcel(bicycles);
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -145,7 +136,9 @@ export default function DataSepeda() {
                     className="pl-9 sm:w-48"
                   />
                 </div>
-                <Button variant="outline" size="sm" onClick={handleExport} className="text-xs">Export</Button>
+                <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting} className="text-xs">
+                  {exporting ? "Exporting..." : "Export"}
+                </Button>
                 {canManage && (
                   <Button size="sm" onClick={openAdd} className="text-xs">
                     <Plus className="w-4 h-4 mr-1" /> Tambah
