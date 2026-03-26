@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Plus, Trash2, Edit, Search, Bike, Image as ImageIcon } from "lucide-react";
@@ -14,16 +14,16 @@ import { useBicycles } from "@/hooks/useBicycles";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { exportToExcel } from "@/lib/exportExcel";
-import { cn } from "@/lib/utils";
 
 export default function DataSepeda() {
   const navigate = useNavigate();
   const { isSuperAdmin, isAdmin, user } = useAuth();
   const { bicycles, isLoading, addBicycle, updateBicycle, deleteBicycle, getNextCode } = useBicycles();
-  const { uploadFile, uploading } = useFileUpload();
+  const { uploadFile, uploading } = useFileUpload({ bucket: "kepenghunian-files", folder: "bicycles" });
 
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -38,7 +38,6 @@ export default function DataSepeda() {
   });
 
   const canManage = isSuperAdmin || isAdmin;
-  const pageSize = 10;
 
   const filtered = bicycles.filter(
     (b) =>
@@ -48,8 +47,7 @@ export default function DataSepeda() {
       (b.unit_number || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filtered.length / pageSize);
-  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const paginated = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const openAdd = () => {
     setEditId(null);
@@ -73,7 +71,7 @@ export default function DataSepeda() {
   const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = await uploadFile(file, "kepenghunian-files", "bicycles");
+    const url = await uploadFile(file);
     if (url) setForm((f) => ({ ...f, photo_url: url }));
   };
 
@@ -88,17 +86,23 @@ export default function DataSepeda() {
   };
 
   const handleExport = () => {
-    exportToExcel(
-      bicycles.map((b, i) => ({
-        No: i + 1,
-        Kode: b.code,
-        "Merek Sepeda": b.brand,
-        "Nama Pemilik": b.owner_name || "-",
-        "Unit Pemilik": b.unit_number || "-",
-        Keterangan: b.notes || "-",
-      })),
-      "Data Kepemilikan Sepeda"
-    );
+    const columns = [
+      { header: "No", key: "no", width: 5 },
+      { header: "Kode", key: "kode", width: 10 },
+      { header: "Merek Sepeda", key: "brand", width: 20 },
+      { header: "Nama Pemilik", key: "owner", width: 20 },
+      { header: "Unit Pemilik", key: "unit", width: 15 },
+      { header: "Keterangan", key: "notes", width: 25 },
+    ];
+    const data = bicycles.map((b, i) => ({
+      no: i + 1,
+      kode: b.code,
+      brand: b.brand,
+      owner: b.owner_name || "-",
+      unit: b.unit_number || "-",
+      notes: b.notes || "-",
+    }));
+    exportToExcel({ filename: "Data_Sepeda", sheetName: "Sepeda", data, columns });
   };
 
   return (
@@ -169,7 +173,7 @@ export default function DataSepeda() {
                   ) : (
                     paginated.map((b, i) => (
                       <TableRow key={b.id}>
-                        <TableCell>{(currentPage - 1) * pageSize + i + 1}</TableCell>
+                        <TableCell>{(currentPage - 1) * itemsPerPage + i + 1}</TableCell>
                         <TableCell className="font-mono font-bold">{b.code}</TableCell>
                         <TableCell>{b.brand}</TableCell>
                         <TableCell>
@@ -213,9 +217,13 @@ export default function DataSepeda() {
                 </TableBody>
               </Table>
             </div>
-            {totalPages > 1 && (
-              <TablePagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-            )}
+            <TablePagination
+              currentPage={currentPage}
+              totalItems={filtered.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={(val) => { setItemsPerPage(val); setCurrentPage(1); }}
+            />
           </CardContent>
         </Card>
 
