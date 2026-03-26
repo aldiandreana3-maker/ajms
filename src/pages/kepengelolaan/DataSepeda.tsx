@@ -15,6 +15,16 @@ import { useFileUpload } from "@/hooks/useFileUpload";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { exportToExcel } from "@/lib/exportExcel";
 import { CameraCapture } from "@/components/shared/CameraCapture";
+import { supabase } from "@/integrations/supabase/client";
+
+// Helper to resolve photo URL - handles both full URLs and relative storage paths
+function resolvePhotoUrl(photoUrl: string | null): string | null {
+  if (!photoUrl) return null;
+  if (photoUrl.startsWith("http")) return photoUrl;
+  // It's a relative path, convert to public URL
+  const { data } = supabase.storage.from("kepenghunian-files").getPublicUrl(photoUrl);
+  return data.publicUrl;
+}
 
 export default function DataSepeda() {
   const navigate = useNavigate();
@@ -114,53 +124,55 @@ export default function DataSepeda() {
 
   return (
     <MainLayout>
-      <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/kepengelolaan/tro")} className="rounded-lg">
+      <div className="space-y-4 sm:space-y-6 animate-fade-in">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/kepengelolaan/tro")} className="rounded-lg shrink-0">
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Data Kepemilikan Sepeda</h1>
-            <p className="text-muted-foreground">Kelola data sepeda penghuni apartemen</p>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl font-bold text-foreground truncate">Data Kepemilikan Sepeda</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Kelola data sepeda penghuni apartemen</p>
           </div>
         </div>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle className="flex items-center gap-2">
-              <Bike className="w-5 h-5" />
-              Daftar Sepeda ({filtered.length})
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Cari..."
-                  value={search}
-                  onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-                  className="pl-9 w-60"
-                />
+          <CardHeader className="pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Bike className="w-5 h-5 shrink-0" />
+                Daftar Sepeda ({filtered.length})
+              </CardTitle>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative flex-1 min-w-[140px] sm:flex-none">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Cari..."
+                    value={search}
+                    onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+                    className="pl-9 sm:w-48"
+                  />
+                </div>
+                <Button variant="outline" size="sm" onClick={handleExport} className="text-xs">Export</Button>
+                {canManage && (
+                  <Button size="sm" onClick={openAdd} className="text-xs">
+                    <Plus className="w-4 h-4 mr-1" /> Tambah
+                  </Button>
+                )}
               </div>
-              <Button variant="outline" size="sm" onClick={handleExport}>Export Excel</Button>
-              {canManage && (
-                <Button size="sm" onClick={openAdd}>
-                  <Plus className="w-4 h-4 mr-1" /> Tambah
-                </Button>
-              )}
             </div>
           </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
+          <CardContent className="px-2 sm:px-6">
+            <div className="overflow-x-auto -mx-2 sm:mx-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-12">No</TableHead>
-                    <TableHead>Kode</TableHead>
+                    <TableHead className="w-10">No</TableHead>
+                    <TableHead className="w-16">Kode</TableHead>
                     <TableHead>Merek</TableHead>
-                    <TableHead>Foto</TableHead>
+                    <TableHead className="w-14">Foto</TableHead>
                     <TableHead>Pemilik</TableHead>
-                    <TableHead>Unit</TableHead>
-                    <TableHead>Keterangan</TableHead>
+                    <TableHead className="hidden sm:table-cell">Unit</TableHead>
+                    <TableHead className="hidden md:table-cell">Keterangan</TableHead>
                     {canManage && <TableHead className="w-20">Aksi</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -178,48 +190,55 @@ export default function DataSepeda() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginated.map((b, i) => (
-                      <TableRow key={b.id}>
-                        <TableCell>{(currentPage - 1) * itemsPerPage + i + 1}</TableCell>
-                        <TableCell className="font-mono font-bold">{b.code}</TableCell>
-                        <TableCell>{b.brand}</TableCell>
-                        <TableCell>
-                          {b.photo_url ? (
-                            <img
-                              src={b.photo_url}
-                              alt={b.brand}
-                              className="w-12 h-12 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity border"
-                              onClick={() => setPhotoPreview(b.photo_url)}
-                            />
-                          ) : (
-                            <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-                              <ImageIcon className="w-5 h-5 text-muted-foreground" />
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>{b.owner_name || "-"}</TableCell>
-                        <TableCell>{b.unit_number || "-"}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">{b.notes || "-"}</TableCell>
-                        {canManage && (
+                    paginated.map((b, i) => {
+                      const fullPhotoUrl = resolvePhotoUrl(b.photo_url);
+                      return (
+                        <TableRow key={b.id}>
+                          <TableCell className="text-xs">{(currentPage - 1) * itemsPerPage + i + 1}</TableCell>
+                          <TableCell className="font-mono font-bold text-xs">{b.code}</TableCell>
+                          <TableCell className="text-xs">{b.brand}</TableCell>
                           <TableCell>
-                            <div className="flex gap-1">
-                              <Button variant="ghost" size="icon" onClick={() => openEdit(b)}>
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  if (confirm("Hapus data sepeda ini?")) deleteBicycle.mutate(b.id);
-                                }}
-                              >
-                                <Trash2 className="w-4 h-4 text-destructive" />
-                              </Button>
-                            </div>
+                            {fullPhotoUrl ? (
+                              <img
+                                src={fullPhotoUrl}
+                                alt={b.brand}
+                                className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity border"
+                                onClick={() => setPhotoPreview(fullPhotoUrl)}
+                              />
+                            ) : (
+                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-muted flex items-center justify-center">
+                                <ImageIcon className="w-4 h-4 text-muted-foreground" />
+                              </div>
+                            )}
                           </TableCell>
-                        )}
-                      </TableRow>
-                    ))
+                          <TableCell className="text-xs">
+                            <div>{b.owner_name || "-"}</div>
+                            <div className="text-muted-foreground sm:hidden">{b.unit_number || ""}</div>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell text-xs">{b.unit_number || "-"}</TableCell>
+                          <TableCell className="hidden md:table-cell max-w-[200px] truncate text-xs">{b.notes || "-"}</TableCell>
+                          {canManage && (
+                            <TableCell>
+                              <div className="flex gap-0.5">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(b)}>
+                                  <Edit className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => {
+                                    if (confirm("Hapus data sepeda ini?")) deleteBicycle.mutate(b.id);
+                                  }}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      );
+                    })
                   )}
                 </TableBody>
               </Table>
@@ -236,7 +255,7 @@ export default function DataSepeda() {
 
         {/* Add/Edit Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editId ? "Edit Data Sepeda" : "Tambah Data Sepeda"}</DialogTitle>
             </DialogHeader>
@@ -257,7 +276,7 @@ export default function DataSepeda() {
                   onChange={setPhotoFile}
                 />
                 {!photoFile && form.photo_url && (
-                  <img src={form.photo_url} alt="preview" className="mt-2 w-full h-40 object-cover rounded-lg border" />
+                  <img src={resolvePhotoUrl(form.photo_url) || form.photo_url} alt="preview" className="mt-2 w-full h-40 object-cover rounded-lg border" />
                 )}
               </div>
               <div>
@@ -272,8 +291,8 @@ export default function DataSepeda() {
                 <Label>Keterangan</Label>
                 <Textarea value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Catatan tambahan" />
               </div>
-              <Button className="w-full" onClick={handleSubmit} disabled={!form.brand || addBicycle.isPending || updateBicycle.isPending}>
-                {editId ? "Simpan Perubahan" : "Tambah Sepeda"}
+              <Button className="w-full" onClick={handleSubmit} disabled={!form.brand || addBicycle.isPending || updateBicycle.isPending || uploading}>
+                {uploading ? "Mengupload..." : editId ? "Simpan Perubahan" : "Tambah Sepeda"}
               </Button>
             </div>
           </DialogContent>
@@ -281,7 +300,7 @@ export default function DataSepeda() {
 
         {/* Photo Preview Dialog */}
         <Dialog open={!!photoPreview} onOpenChange={() => setPhotoPreview(null)}>
-          <DialogContent className="max-w-2xl p-2">
+          <DialogContent className="max-w-[95vw] sm:max-w-2xl p-2">
             {photoPreview && (
               <img src={photoPreview} alt="Foto Sepeda" className="w-full h-auto rounded-lg" />
             )}
