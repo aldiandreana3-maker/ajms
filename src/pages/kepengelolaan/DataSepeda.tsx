@@ -136,7 +136,9 @@ export default function DataSepeda() {
                     className="pl-9 sm:w-48"
                   />
                 </div>
-                <Button variant="outline" size="sm" onClick={handleExport} className="text-xs">Export</Button>
+                <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting} className="text-xs">
+                  {exporting ? "Exporting..." : "Export"}
+                </Button>
                 {canManage && (
                   <Button size="sm" onClick={openAdd} className="text-xs">
                     <Plus className="w-4 h-4 mr-1" /> Tambah
