@@ -274,6 +274,48 @@ export type Database = {
         }
         Relationships: []
       }
+      bicycles: {
+        Row: {
+          brand: string
+          code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          owner_name: string | null
+          photo_url: string | null
+          unit_id: string | null
+          unit_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          brand: string
+          code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          owner_name?: string | null
+          photo_url?: string | null
+          unit_id?: string | null
+          unit_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          brand?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          owner_name?: string | null
+          photo_url?: string | null
+          unit_id?: string | null
+          unit_number?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bill_payments: {
         Row: {
           bill_id: string
