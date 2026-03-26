@@ -14,6 +14,7 @@ import { useBicycles } from "@/hooks/useBicycles";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { exportToExcel } from "@/lib/exportExcel";
+import { CameraCapture } from "@/components/shared/CameraCapture";
 
 export default function DataSepeda() {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ export default function DataSepeda() {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -52,6 +54,7 @@ export default function DataSepeda() {
   const openAdd = () => {
     setEditId(null);
     setForm({ code: getNextCode(), brand: "", photo_url: "", owner_name: "", unit_number: "", notes: "" });
+    setPhotoFile(null);
     setDialogOpen(true);
   };
 
@@ -65,22 +68,24 @@ export default function DataSepeda() {
       unit_number: b.unit_number || "",
       notes: b.notes || "",
     });
+    setPhotoFile(null);
     setDialogOpen(true);
-  };
-
-  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = await uploadFile(file);
-    if (url) setForm((f) => ({ ...f, photo_url: url }));
   };
 
   const handleSubmit = async () => {
     if (!form.brand) return;
+    
+    let photoUrl = form.photo_url;
+    if (photoFile) {
+      const url = await uploadFile(photoFile);
+      if (url) photoUrl = url;
+    }
+    
+    const payload = { ...form, photo_url: photoUrl };
     if (editId) {
-      await updateBicycle.mutateAsync({ id: editId, ...form });
+      await updateBicycle.mutateAsync({ id: editId, ...payload });
     } else {
-      await addBicycle.mutateAsync({ ...form, created_by: user?.id || null, unit_id: null });
+      await addBicycle.mutateAsync({ ...payload, created_by: user?.id || null, unit_id: null });
     }
     setDialogOpen(false);
   };
@@ -243,9 +248,13 @@ export default function DataSepeda() {
                 <Input value={form.brand} onChange={(e) => setForm((f) => ({ ...f, brand: e.target.value }))} placeholder="Contoh: Polygon, United" />
               </div>
               <div>
-                <Label>Foto Sepeda</Label>
-                <Input type="file" accept="image/*" onChange={handlePhoto} disabled={uploading} />
-                {form.photo_url && (
+                <Label>Foto Sepeda (Live Kamera)</Label>
+                <CameraCapture
+                  label="Foto sepeda"
+                  value={photoFile}
+                  onChange={(file) => setPhotoFile(file)}
+                />
+                {!photoFile && form.photo_url && (
                   <img src={form.photo_url} alt="preview" className="mt-2 w-full h-40 object-cover rounded-lg border" />
                 )}
               </div>
