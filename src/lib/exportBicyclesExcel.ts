@@ -57,10 +57,21 @@ export async function exportBicyclesToExcel(bicycles: BicycleRow[]) {
       kode: b.code,
       brand: b.brand,
       foto: "",
+      link_foto: "",
       owner: b.owner_name || "-",
       unit: b.unit_number || "-",
       notes: b.notes || "-",
     });
+
+    // Add clickable hyperlink for Google Sheets compatibility
+    if (b.photo_display_url) {
+      const linkCell = row.getCell("link_foto");
+      linkCell.value = {
+        text: "Lihat Foto",
+        hyperlink: b.photo_display_url,
+      } as any;
+      linkCell.font = { color: { argb: "FF0066CC" }, underline: true };
+    }
 
     row.height = ROW_HEIGHT;
     row.alignment = { vertical: "middle" };
