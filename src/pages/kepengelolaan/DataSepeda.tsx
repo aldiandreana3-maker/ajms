@@ -15,22 +15,12 @@ import { useFileUpload } from "@/hooks/useFileUpload";
 import { TablePagination } from "@/components/shared/TablePagination";
 import { exportToExcel } from "@/lib/exportExcel";
 import { CameraCapture } from "@/components/shared/CameraCapture";
-import { supabase } from "@/integrations/supabase/client";
-
-// Helper to resolve photo URL - handles both full URLs and relative storage paths
-function resolvePhotoUrl(photoUrl: string | null): string | null {
-  if (!photoUrl) return null;
-  if (photoUrl.startsWith("http")) return photoUrl;
-  // It's a relative path, convert to public URL
-  const { data } = supabase.storage.from("kepenghunian-files").getPublicUrl(photoUrl);
-  return data.publicUrl;
-}
 
 export default function DataSepeda() {
   const navigate = useNavigate();
   const { isSuperAdmin, isAdmin, user } = useAuth();
   const { bicycles, isLoading, addBicycle, updateBicycle, deleteBicycle, getNextCode } = useBicycles();
-  const { uploadFile, getPublicUrl, uploading } = useFileUpload({ bucket: "kepenghunian-files", folder: "bicycles" });
+  const { uploadFile, uploading } = useFileUpload({ bucket: "kepenghunian-files", folder: "bicycles" });
 
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -84,15 +74,15 @@ export default function DataSepeda() {
 
   const handleSubmit = async () => {
     if (!form.brand) return;
-    
+
     let photoUrl = form.photo_url;
     if (photoFile) {
       const filePath = await uploadFile(photoFile);
       if (filePath) {
-        photoUrl = getPublicUrl(filePath) || "";
+        photoUrl = filePath;
       }
     }
-    
+
     const payload = { ...form, photo_url: photoUrl };
     if (editId) {
       await updateBicycle.mutateAsync({ id: editId, ...payload });
@@ -148,7 +138,10 @@ export default function DataSepeda() {
                   <Input
                     placeholder="Cari..."
                     value={search}
-                    onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setCurrentPage(1);
+                    }}
                     className="pl-9 sm:w-48"
                   />
                 </div>
@@ -190,55 +183,52 @@ export default function DataSepeda() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    paginated.map((b, i) => {
-                      const fullPhotoUrl = resolvePhotoUrl(b.photo_url);
-                      return (
-                        <TableRow key={b.id}>
-                          <TableCell className="text-xs">{(currentPage - 1) * itemsPerPage + i + 1}</TableCell>
-                          <TableCell className="font-mono font-bold text-xs">{b.code}</TableCell>
-                          <TableCell className="text-xs">{b.brand}</TableCell>
-                          <TableCell>
-                            {fullPhotoUrl ? (
-                              <img
-                                src={fullPhotoUrl}
-                                alt={b.brand}
-                                className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity border"
-                                onClick={() => setPhotoPreview(fullPhotoUrl)}
-                              />
-                            ) : (
-                              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-muted flex items-center justify-center">
-                                <ImageIcon className="w-4 h-4 text-muted-foreground" />
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-xs">
-                            <div>{b.owner_name || "-"}</div>
-                            <div className="text-muted-foreground sm:hidden">{b.unit_number || ""}</div>
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell text-xs">{b.unit_number || "-"}</TableCell>
-                          <TableCell className="hidden md:table-cell max-w-[200px] truncate text-xs">{b.notes || "-"}</TableCell>
-                          {canManage && (
-                            <TableCell>
-                              <div className="flex gap-0.5">
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(b)}>
-                                  <Edit className="w-3.5 h-3.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                  onClick={() => {
-                                    if (confirm("Hapus data sepeda ini?")) deleteBicycle.mutate(b.id);
-                                  }}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                                </Button>
-                              </div>
-                            </TableCell>
+                    paginated.map((b, i) => (
+                      <TableRow key={b.id}>
+                        <TableCell className="text-xs">{(currentPage - 1) * itemsPerPage + i + 1}</TableCell>
+                        <TableCell className="font-mono font-bold text-xs">{b.code}</TableCell>
+                        <TableCell className="text-xs">{b.brand}</TableCell>
+                        <TableCell>
+                          {b.photo_display_url ? (
+                            <img
+                              src={b.photo_display_url}
+                              alt={b.brand}
+                              className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover cursor-pointer hover:opacity-80 transition-opacity border"
+                              onClick={() => setPhotoPreview(b.photo_display_url || null)}
+                            />
+                          ) : (
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-muted flex items-center justify-center">
+                              <ImageIcon className="w-4 h-4 text-muted-foreground" />
+                            </div>
                           )}
-                        </TableRow>
-                      );
-                    })
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          <div>{b.owner_name || "-"}</div>
+                          <div className="text-muted-foreground sm:hidden">{b.unit_number || ""}</div>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell text-xs">{b.unit_number || "-"}</TableCell>
+                        <TableCell className="hidden md:table-cell max-w-[200px] truncate text-xs">{b.notes || "-"}</TableCell>
+                        {canManage && (
+                          <TableCell>
+                            <div className="flex gap-0.5">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(b)}>
+                                <Edit className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                                onClick={() => {
+                                  if (confirm("Hapus data sepeda ini?")) deleteBicycle.mutate(b.id);
+                                }}
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))
                   )}
                 </TableBody>
               </Table>
@@ -248,12 +238,14 @@ export default function DataSepeda() {
               totalItems={filtered.length}
               itemsPerPage={itemsPerPage}
               onPageChange={setCurrentPage}
-              onItemsPerPageChange={(val) => { setItemsPerPage(val); setCurrentPage(1); }}
+              onItemsPerPageChange={(val) => {
+                setItemsPerPage(val);
+                setCurrentPage(1);
+              }}
             />
           </CardContent>
         </Card>
 
-        {/* Add/Edit Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -270,13 +262,13 @@ export default function DataSepeda() {
               </div>
               <div>
                 <Label>Foto Sepeda (Live Kamera)</Label>
-                <CameraCapture
-                  label="Ambil foto sepeda dengan kamera"
-                  value={photoFile}
-                  onChange={setPhotoFile}
-                />
-                {!photoFile && form.photo_url && (
-                  <img src={resolvePhotoUrl(form.photo_url) || form.photo_url} alt="preview" className="mt-2 w-full h-40 object-cover rounded-lg border" />
+                <CameraCapture label="Ambil foto sepeda dengan kamera" value={photoFile} onChange={setPhotoFile} />
+                {!photoFile && editId && bicycles.find((item) => item.id === editId)?.photo_display_url && (
+                  <img
+                    src={bicycles.find((item) => item.id === editId)?.photo_display_url || ""}
+                    alt="preview"
+                    className="mt-2 w-full h-40 object-cover rounded-lg border"
+                  />
                 )}
               </div>
               <div>
@@ -298,12 +290,9 @@ export default function DataSepeda() {
           </DialogContent>
         </Dialog>
 
-        {/* Photo Preview Dialog */}
         <Dialog open={!!photoPreview} onOpenChange={() => setPhotoPreview(null)}>
           <DialogContent className="max-w-[95vw] sm:max-w-2xl p-2">
-            {photoPreview && (
-              <img src={photoPreview} alt="Foto Sepeda" className="w-full h-auto rounded-lg" />
-            )}
+            {photoPreview && <img src={photoPreview} alt="Foto Sepeda" className="w-full h-auto rounded-lg" />}
           </DialogContent>
         </Dialog>
       </div>
