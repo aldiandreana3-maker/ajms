@@ -20,7 +20,7 @@ export default function DataSepeda() {
   const navigate = useNavigate();
   const { isSuperAdmin, isAdmin, user } = useAuth();
   const { bicycles, isLoading, addBicycle, updateBicycle, deleteBicycle, getNextCode } = useBicycles();
-  const { uploadFile, uploading } = useFileUpload({ bucket: "kepenghunian-files", folder: "bicycles" });
+  const { uploadFile, getPublicUrl, uploading } = useFileUpload({ bucket: "kepenghunian-files", folder: "bicycles" });
 
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -77,8 +77,10 @@ export default function DataSepeda() {
     
     let photoUrl = form.photo_url;
     if (photoFile) {
-      const url = await uploadFile(photoFile);
-      if (url) photoUrl = url;
+      const filePath = await uploadFile(photoFile);
+      if (filePath) {
+        photoUrl = getPublicUrl(filePath) || "";
+      }
     }
     
     const payload = { ...form, photo_url: photoUrl };
