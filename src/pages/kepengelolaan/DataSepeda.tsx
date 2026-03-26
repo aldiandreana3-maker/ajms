@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useBicycles } from "@/hooks/useBicycles";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { TablePagination } from "@/components/shared/TablePagination";
-import { exportToExcel } from "@/lib/exportExcel";
+import { exportBicyclesToExcel } from "@/lib/exportBicyclesExcel";
 import { CameraCapture } from "@/components/shared/CameraCapture";
 
 export default function DataSepeda() {
