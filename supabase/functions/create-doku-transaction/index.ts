@@ -38,7 +38,7 @@ serve(async (req) => {
     if (!roleData) throw new Error("No role assigned");
 
     const allowedRoles = [
-      "super_admin", "admin", "staff", "staff_tro", "staff_finance",
+      "master_dev", "super_admin", "admin", "staff", "staff_tro", "staff_finance",
       "staff_hrd_ga", "staff_engineering", "staff_outsourcing_cleaning",
       "staff_outsourcing_security", "staff_outsourcing_parkir",
     ];
