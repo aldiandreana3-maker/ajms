@@ -53,7 +53,7 @@ export function useUpdateUserRole() {
       // Then insert new role
       const { error } = await supabase
         .from("user_roles")
-        .insert({ user_id: userId, role });
+        .insert({ user_id: userId, role: role as any });
 
       if (error) throw error;
     },
