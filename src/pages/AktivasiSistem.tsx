@@ -250,8 +250,8 @@ export default function AktivasiSistem() {
           <p className="text-muted-foreground">Kelola status aktivasi dan pembayaran sistem</p>
         </div>
 
-        {/* System Status Card - Master Dev Only */}
-        {isMasterDev && (
+        {/* System Status Card - Master Dev, Super Admin, Admin */}
+        {(isMasterDev || isSuperAdmin || isAdmin) && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
