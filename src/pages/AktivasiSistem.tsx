@@ -250,8 +250,8 @@ export default function AktivasiSistem() {
           <p className="text-muted-foreground">Kelola status aktivasi dan pembayaran sistem</p>
         </div>
 
-        {/* System Status Card - Master Dev Only */}
-        {isMasterDev && (
+        {/* System Status Card - Master Dev, Super Admin, Admin */}
+        {(isMasterDev || isSuperAdmin || isAdmin) && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -269,53 +269,56 @@ export default function AktivasiSistem() {
                   </span>
                 </div>
 
-                <div className="flex gap-2 ml-auto">
-                  {!isAktif ? (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="default">
-                          <Power className="w-4 h-4 mr-2" />Aktifkan Sistem
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Aktifkan Sistem AJMS?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Semua fitur sistem akan berjalan normal setelah diaktifkan. Pastikan pembayaran aktivasi telah berhasil.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Batal</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => toggleStatus.mutate("aktif")}>
-                            Ya, Aktifkan
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  ) : (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive">
-                          <PowerOff className="w-4 h-4 mr-2" />Nonaktifkan Sistem
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Nonaktifkan Sistem AJMS?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Fitur tagihan dan akses penghuni akan dibatasi (read only). Apakah Anda yakin?
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Batal</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => toggleStatus.mutate("tidak_aktif")} className="bg-destructive hover:bg-destructive/90">
-                            Ya, Nonaktifkan
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </div>
+                {/* Tombol ON/OFF hanya untuk Master Dev */}
+                {isMasterDev && (
+                  <div className="flex gap-2 ml-auto">
+                    {!isAktif ? (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="default">
+                            <Power className="w-4 h-4 mr-2" />Aktifkan Sistem
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Aktifkan Sistem AJMS?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Semua fitur sistem akan berjalan normal setelah diaktifkan. Pastikan pembayaran aktivasi telah berhasil.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => toggleStatus.mutate("aktif")}>
+                              Ya, Aktifkan
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    ) : (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="destructive">
+                            <PowerOff className="w-4 h-4 mr-2" />Nonaktifkan Sistem
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Nonaktifkan Sistem AJMS?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Fitur tagihan dan akses penghuni akan dibatasi (read only). Apakah Anda yakin?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => toggleStatus.mutate("tidak_aktif")} className="bg-destructive hover:bg-destructive/90">
+                              Ya, Nonaktifkan
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
+                )}
               </div>
 
               {systemStatus && (
