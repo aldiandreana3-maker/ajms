@@ -35,8 +35,8 @@ export function GlobalSystemGuard({ children }: GlobalSystemGuardProps) {
     return <>{children}</>;
   }
 
-  // Jika sistem aktif / master dev / di halaman auth / di halaman aktivasi → tampil normal
-  if (!isSystemInactive || isMasterDev || isAuthPage || isActivationPage) {
+  // Jika sistem aktif / master dev / super admin / di halaman auth / di halaman aktivasi → tampil normal
+  if (!isSystemInactive || isMasterDev || isSuperAdmin || isAuthPage || isActivationPage) {
     return <>{children}</>;
   }
 
