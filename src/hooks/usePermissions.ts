@@ -88,6 +88,7 @@ export function usePermissions() {
 
   return {
     isAuthenticated,
+    isMasterDev,
     isSuperAdmin,
     isAdmin,
     isStaff,
