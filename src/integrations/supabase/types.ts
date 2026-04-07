@@ -916,8 +916,14 @@ export type Database = {
       employee_attendance: {
         Row: {
           attendance_date: string
+          check_in_latitude: number | null
+          check_in_location_name: string | null
+          check_in_longitude: number | null
           check_in_photo_url: string | null
           check_in_time: string | null
+          check_out_latitude: number | null
+          check_out_location_name: string | null
+          check_out_longitude: number | null
           check_out_photo_url: string | null
           check_out_time: string | null
           created_at: string
@@ -929,8 +935,14 @@ export type Database = {
         }
         Insert: {
           attendance_date?: string
+          check_in_latitude?: number | null
+          check_in_location_name?: string | null
+          check_in_longitude?: number | null
           check_in_photo_url?: string | null
           check_in_time?: string | null
+          check_out_latitude?: number | null
+          check_out_location_name?: string | null
+          check_out_longitude?: number | null
           check_out_photo_url?: string | null
           check_out_time?: string | null
           created_at?: string
@@ -942,8 +954,14 @@ export type Database = {
         }
         Update: {
           attendance_date?: string
+          check_in_latitude?: number | null
+          check_in_location_name?: string | null
+          check_in_longitude?: number | null
           check_in_photo_url?: string | null
           check_in_time?: string | null
+          check_out_latitude?: number | null
+          check_out_location_name?: string | null
+          check_out_longitude?: number | null
           check_out_photo_url?: string | null
           check_out_time?: string | null
           created_at?: string
