@@ -13,8 +13,28 @@ export interface EmployeeAttendance {
   attendance_date: string;
   status: string;
   notes: string | null;
+  check_in_latitude: number | null;
+  check_in_longitude: number | null;
+  check_out_latitude: number | null;
+  check_out_longitude: number | null;
+  check_in_location_name: string | null;
+  check_out_location_name: string | null;
   created_at: string;
   updated_at: string;
+}
+
+function getCurrentPosition(): Promise<GeolocationPosition> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation tidak didukung browser ini"));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0,
+    });
+  });
 }
 
 export function useEmployeeAttendance() {
@@ -63,6 +83,16 @@ export function useCheckIn() {
     mutationFn: async (photoFile: File) => {
       if (!user) throw new Error("Not authenticated");
 
+      let latitude: number | null = null;
+      let longitude: number | null = null;
+      try {
+        const pos = await getCurrentPosition();
+        latitude = pos.coords.latitude;
+        longitude = pos.coords.longitude;
+      } catch (e) {
+        console.warn("Gagal mendapatkan lokasi:", e);
+      }
+
       // Upload photo
       const fileName = `attendance/${user.id}/${Date.now()}-checkin.jpg`;
       const { error: uploadError } = await supabase.storage
@@ -81,6 +111,8 @@ export function useCheckIn() {
         check_in_time: new Date().toISOString(),
         check_in_photo_url: publicUrl,
         status: new Date().getHours() > 8 ? "terlambat" : "hadir",
+        check_in_latitude: latitude,
+        check_in_longitude: longitude,
       });
       if (error) throw error;
     },
@@ -104,6 +136,16 @@ export function useCheckOut() {
     mutationFn: async ({ attendanceId, photoFile }: { attendanceId: string; photoFile: File }) => {
       if (!user) throw new Error("Not authenticated");
 
+      let latitude: number | null = null;
+      let longitude: number | null = null;
+      try {
+        const pos = await getCurrentPosition();
+        latitude = pos.coords.latitude;
+        longitude = pos.coords.longitude;
+      } catch (e) {
+        console.warn("Gagal mendapatkan lokasi:", e);
+      }
+
       const fileName = `attendance/${user.id}/${Date.now()}-checkout.jpg`;
       const { error: uploadError } = await supabase.storage
         .from("kepenghunian-files")
@@ -119,6 +161,8 @@ export function useCheckOut() {
         .update({
           check_out_time: new Date().toISOString(),
           check_out_photo_url: publicUrl,
+          check_out_latitude: latitude,
+          check_out_longitude: longitude,
         })
         .eq("id", attendanceId);
       if (error) throw error;
