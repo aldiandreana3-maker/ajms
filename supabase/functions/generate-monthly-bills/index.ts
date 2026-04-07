@@ -40,6 +40,7 @@ serve(async (req) => {
       .from("bills")
       .select("id")
       .eq("quarter_label", quarterLabel)
+      .eq("bill_type", "ipl")
       .eq("is_auto_generated", true)
       .limit(1);
 
