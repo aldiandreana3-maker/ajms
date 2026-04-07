@@ -59,13 +59,34 @@ export function GenerateBillDialog() {
 
     setIsGenerating(true);
     try {
+      // Check for existing bills in this quarter first
+      const { data: existingBills } = await supabase
+        .from("bills")
+        .select("unit_id")
+        .eq("quarter_label", quarter.quarterLabel)
+        .eq("bill_type", "ipl")
+        .eq("is_auto_generated", true);
+
+      const existingUnitIds = new Set((existingBills || []).map((b: any) => b.unit_id));
+      const newUnits = selectedUnits.filter((id) => !existingUnitIds.has(id));
+
+      if (newUnits.length === 0) {
+        toast.warning(`Semua unit yang dipilih sudah memiliki tagihan untuk periode ${quarter.quarterLabel}`);
+        setIsGenerating(false);
+        return;
+      }
+
+      if (newUnits.length < selectedUnits.length) {
+        toast.info(`${selectedUnits.length - newUnits.length} unit sudah memiliki tagihan, dilewati.`);
+      }
+
       let totalBills = 0;
 
-      for (const unitId of selectedUnits) {
+      for (const unitId of newUnits) {
         const unit = units?.find((u) => u.id === unitId);
         if (!unit) continue;
 
-        const matchedRate = rates.find((r) => unit.area_sqm && r.area_sqm === unit.area_sqm);
+        const matchedRate = rates?.find((r) => unit.area_sqm && r.area_sqm === unit.area_sqm);
         if (!matchedRate) {
           toast.warning(`Unit ${unit.unit_number} (${unit.area_sqm || '?'} m²) tidak cocok dengan tarif manapun, dilewati.`);
           continue;
@@ -79,7 +100,6 @@ export function GenerateBillDialog() {
           .limit(1)
           .maybeSingle();
 
-        // bill_rates stores quarterly (3-month) totals, divide by 3 for monthly
         const scMonthly = Math.round(matchedRate.monthly_sc / 3);
         const sfMonthly = Math.round(matchedRate.monthly_sf / 3);
 
