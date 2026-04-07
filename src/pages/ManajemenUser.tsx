@@ -241,7 +241,7 @@ export default function ManajemenUser() {
                                   setSelectedUser(u.id);
                                   setNewRole(u.role || "penghuni");
                                 }}
-                              disabled={u.id === currentUser?.id || (!isMasterDev && (u.role === "super_admin" || u.role === "master_dev"))}
+                              disabled={(!isMasterDev && u.id === currentUser?.id) || (!isMasterDev && (u.role === "super_admin" || u.role === "master_dev"))}
                             >
                               <Shield className="w-4 h-4 mr-1" />
                               Role
