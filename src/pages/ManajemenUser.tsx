@@ -66,7 +66,8 @@ const getSelectableRoles = (isMasterDev: boolean) => {
     { value: "penghuni", label: "Penghuni" },
   ];
   if (isMasterDev) {
-    roles.unshift({ value: "super_admin", label: "Super Admin" });
+    roles.unshift({ value: "master_dev", label: "Master Development" });
+    roles.splice(1, 0, { value: "super_admin", label: "Super Admin" });
   }
   return roles;
 };
