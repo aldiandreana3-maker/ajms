@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShieldAlert, ArrowLeft, Loader2 } from "lucide-react";
+import { ShieldAlert, ArrowLeft, Loader2, MapPin, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -96,7 +96,7 @@ export default function RekapKaryawan() {
                   <div className="overflow-auto">
                     <Table>
                       <TableHeader><TableRow>
-                        <TableHead>Nama</TableHead><TableHead>Tanggal</TableHead><TableHead>Masuk</TableHead><TableHead>Pulang</TableHead><TableHead>Status</TableHead>
+                        <TableHead>Nama</TableHead><TableHead>Tanggal</TableHead><TableHead>Masuk</TableHead><TableHead>Pulang</TableHead><TableHead>Lokasi Masuk</TableHead><TableHead>Lokasi Pulang</TableHead><TableHead>Status</TableHead>
                       </TableRow></TableHeader>
                       <TableBody>
                         {attendance?.map(a => (
@@ -105,6 +105,38 @@ export default function RekapKaryawan() {
                             <TableCell>{new Date(a.attendance_date).toLocaleDateString("id-ID")}</TableCell>
                             <TableCell>{formatTime(a.check_in_time)}</TableCell>
                             <TableCell>{formatTime(a.check_out_time)}</TableCell>
+                            <TableCell>
+                              {a.check_in_latitude && a.check_in_longitude ? (
+                                <a
+                                  href={`https://www.google.com/maps?q=${a.check_in_latitude},${a.check_in_longitude}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-primary hover:underline text-xs"
+                                >
+                                  <MapPin className="w-3 h-3" />
+                                  <span>{Number(a.check_in_latitude).toFixed(4)}, {Number(a.check_in_longitude).toFixed(4)}</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {a.check_out_latitude && a.check_out_longitude ? (
+                                <a
+                                  href={`https://www.google.com/maps?q=${a.check_out_latitude},${a.check_out_longitude}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-primary hover:underline text-xs"
+                                >
+                                  <MapPin className="w-3 h-3" />
+                                  <span>{Number(a.check_out_latitude).toFixed(4)}, {Number(a.check_out_longitude).toFixed(4)}</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">-</span>
+                              )}
+                            </TableCell>
                             <TableCell>{statusBadge(a.status)}</TableCell>
                           </TableRow>
                         ))}
