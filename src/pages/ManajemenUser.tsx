@@ -17,9 +17,10 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type AppRole = "super_admin" | "admin" | "staff" | "agent" | "penghuni" | "staff_tro" | "staff_finance" | "staff_hrd_ga" | "staff_engineering" | "staff_outsourcing_cleaning" | "staff_outsourcing_security" | "staff_outsourcing_parkir";
+type AppRole = "master_dev" | "super_admin" | "admin" | "staff" | "agent" | "penghuni" | "staff_tro" | "staff_finance" | "staff_hrd_ga" | "staff_engineering" | "staff_outsourcing_cleaning" | "staff_outsourcing_security" | "staff_outsourcing_parkir";
 
 const roleLabels: Record<string, string> = {
+  master_dev: "Master Development",
   super_admin: "Super Admin",
   admin: "Admin",
   staff: "Staff",
@@ -35,6 +36,7 @@ const roleLabels: Record<string, string> = {
 };
 
 const roleColors: Record<string, string> = {
+  master_dev: "bg-purple-600/20 text-purple-600 border-purple-600/30",
   super_admin: "bg-destructive/20 text-destructive border-destructive/30",
   admin: "bg-primary/20 text-primary border-primary/30",
   staff: "bg-info/20 text-info border-info/30",
@@ -49,8 +51,8 @@ const roleColors: Record<string, string> = {
   staff_outsourcing_parkir: "bg-amber-500/20 text-amber-600 border-amber-500/30",
 };
 
-// Roles available for selection - super_admin hanya terlihat oleh developer (admin@ajms.com)
-const getSelectableRoles = (isDeveloper: boolean) => {
+// Roles available for selection - master_dev never shown, super_admin only for master_dev
+const getSelectableRoles = (isMasterDev: boolean) => {
   const roles = [
     { value: "admin", label: "Admin" },
     { value: "agent", label: "Agent" },
@@ -63,15 +65,15 @@ const getSelectableRoles = (isDeveloper: boolean) => {
     { value: "staff_outsourcing_parkir", label: "Staff Outsourcing Parkir" },
     { value: "penghuni", label: "Penghuni" },
   ];
-  if (isDeveloper) {
+  if (isMasterDev) {
     roles.unshift({ value: "super_admin", label: "Super Admin" });
   }
   return roles;
 };
 
 export default function ManajemenUser() {
-  const { isSuperAdmin, isAdmin, user: currentUser } = useAuth();
-  const isDeveloper = currentUser?.email === "admin@ajms.com";
+  const { isSuperAdmin, isAdmin, isMasterDev, user: currentUser } = useAuth();
+  const isDeveloper = isMasterDev;
 
   const { data: users, isLoading } = useUsers();
   const updateRoleMutation = useUpdateUserRole();
@@ -186,7 +188,7 @@ export default function ManajemenUser() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users?.filter((u) => isDeveloper || u.email !== "admin@ajms.com").map((u) => (
+                  {users?.filter((u) => isMasterDev || (u.email !== "admin@ajms.com" && u.role !== "master_dev")).map((u) => (
                     <TableRow key={u.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -238,7 +240,7 @@ export default function ManajemenUser() {
                                   setSelectedUser(u.id);
                                   setNewRole(u.role || "penghuni");
                                 }}
-                              disabled={u.id === currentUser?.id || (!isSuperAdmin && u.role === "super_admin")}
+                              disabled={u.id === currentUser?.id || (!isMasterDev && (u.role === "super_admin" || u.role === "master_dev"))}
                             >
                               <Shield className="w-4 h-4 mr-1" />
                               Role
@@ -256,7 +258,7 @@ export default function ManajemenUser() {
                                       <SelectValue />
                                     </SelectTrigger>
                                      <SelectContent position="popper" side="bottom" align="start" className="max-h-60 overflow-y-auto">
-                                      {getSelectableRoles(isDeveloper).map((role) => (
+                                      {getSelectableRoles(isMasterDev).map((role) => (
                                         <SelectItem key={role.value} value={role.value}>
                                           {role.label}
                                         </SelectItem>
@@ -277,7 +279,7 @@ export default function ManajemenUser() {
                             variant="outline"
                             size="sm"
                             onClick={() => setResetPasswordUser({ id: u.id, email: u.email })}
-                            disabled={u.id === currentUser?.id || (!isSuperAdmin && u.role === "super_admin")}
+                            disabled={u.id === currentUser?.id || (!isMasterDev && (u.role === "super_admin" || u.role === "master_dev"))}
                           >
                             <KeyRound className="w-4 h-4 mr-1" />
                             Reset
@@ -287,7 +289,7 @@ export default function ManajemenUser() {
                             <Switch
                               checked={u.is_active}
                               onCheckedChange={() => handleToggleStatus(u.id, u.is_active)}
-                              disabled={u.id === currentUser?.id || updateStatusMutation.isPending || (!isSuperAdmin && u.role === "super_admin")}
+                              disabled={u.id === currentUser?.id || updateStatusMutation.isPending || (!isMasterDev && (u.role === "super_admin" || u.role === "master_dev"))}
                             />
                           </div>
                         </div>
