@@ -51,6 +51,13 @@ const roleColors: Record<string, string> = {
   staff_outsourcing_parkir: "bg-amber-500/20 text-amber-600 border-amber-500/30",
 };
 
+const HIDDEN_MASTER_EMAILS = ["admin@ajms.com", "admin_ajms@ajms.com"];
+
+const isHiddenMasterAccount = (email: string, role: AppRole | null) => {
+  const normalizedEmail = email.trim().toLowerCase();
+  return HIDDEN_MASTER_EMAILS.includes(normalizedEmail) || role === "master_dev";
+};
+
 // Roles available for selection - master_dev never shown, super_admin only for master_dev
 const getSelectableRoles = (isMasterDev: boolean) => {
   const roles = [
@@ -88,6 +95,7 @@ export default function ManajemenUser() {
   const [newPassword, setNewPassword] = useState("");
   const [isResetting, setIsResetting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const visibleUsers = users?.filter((u) => isMasterDev || !isHiddenMasterAccount(u.email, u.role)) ?? [];
 
   const handleUpdateRole = async () => {
     if (selectedUser) {
@@ -189,7 +197,7 @@ export default function ManajemenUser() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users?.filter((u) => isMasterDev || (u.email !== "admin@ajms.com" && u.email !== "admin_ajms@ajms.com" && u.role !== "master_dev")).map((u) => (
+                  {visibleUsers.map((u) => (
                     <TableRow key={u.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
@@ -297,7 +305,7 @@ export default function ManajemenUser() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {users?.length === 0 && (
+                  {visibleUsers.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                         Tidak ada user terdaftar
