@@ -189,7 +189,7 @@ export default function ManajemenUser() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users?.filter((u) => isMasterDev || (u.email !== "admin@ajms.com" && u.role !== "master_dev")).map((u) => (
+                  {users?.filter((u) => isMasterDev || (u.email !== "admin@ajms.com" && u.email !== "admin_ajms@ajms.com" && u.role !== "master_dev")).map((u) => (
                     <TableRow key={u.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
