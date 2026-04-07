@@ -30,12 +30,12 @@ export type RedFeature = typeof RED_CATEGORY_FEATURES[number];
 export type BlueFeature = typeof BLUE_CATEGORY_FEATURES[number];
 
 export function usePermissions() {
-  const { user, role, isSuperAdmin, isAdmin, isStaff } = useAuth();
+  const { user, role, isSuperAdmin, isAdmin, isStaff, isMasterDev } = useAuth();
 
   const isAuthenticated = !!user;
 
   // Check if user can edit RED category data
-  const canEditRedCategory = isSuperAdmin;
+  const canEditRedCategory = isSuperAdmin || isMasterDev;
 
   // Check if user can view RED category data
   const canViewRedCategory = isAuthenticated;
@@ -88,6 +88,7 @@ export function usePermissions() {
 
   return {
     isAuthenticated,
+    isMasterDev,
     isSuperAdmin,
     isAdmin,
     isStaff,

@@ -19,7 +19,7 @@ interface GlobalSystemGuardProps {
  */
 export function GlobalSystemGuard({ children }: GlobalSystemGuardProps) {
   const { data: systemStatus, isLoading, refetch } = useSystemStatus();
-  const { isSuperAdmin, user } = useAuth();
+  const { isSuperAdmin, isMasterDev, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -35,8 +35,8 @@ export function GlobalSystemGuard({ children }: GlobalSystemGuardProps) {
     return <>{children}</>;
   }
 
-  // Jika sistem aktif / super admin / di halaman auth / di halaman aktivasi → tampil normal
-  if (!isSystemInactive || isSuperAdmin || isAuthPage || isActivationPage) {
+  // Jika sistem aktif / master dev / di halaman auth / di halaman aktivasi → tampil normal
+  if (!isSystemInactive || isMasterDev || isAuthPage || isActivationPage) {
     return <>{children}</>;
   }
 

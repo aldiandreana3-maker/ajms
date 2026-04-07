@@ -64,7 +64,7 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut, isSuperAdmin, isAdmin, isStaff, isLimitedAccess, user, role } = useAuth();
+  const { signOut, isSuperAdmin, isAdmin, isStaff, isLimitedAccess, isMasterDev, user, role } = useAuth();
   const [kepengelolaanOpen, setKepengelolaanOpen] = useState(
     location.pathname.startsWith("/kepengelolaan")
   );

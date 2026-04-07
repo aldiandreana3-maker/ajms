@@ -146,7 +146,7 @@ async function sendBulananNotification() {
 }
 
 export default function AktivasiSistem() {
-  const { isSuperAdmin, isAdmin, isStaff, role, isLoading: authLoading } = useAuth();
+  const { isSuperAdmin, isAdmin, isStaff, role, isLoading: authLoading, isMasterDev } = useAuth();
   const { data: systemStatus, isLoading } = useSystemStatus();
   const { data: payments, isLoading: paymentsLoading } = useSystemPayments();
   const toggleStatus = useToggleSystemStatus();
@@ -250,8 +250,8 @@ export default function AktivasiSistem() {
           <p className="text-muted-foreground">Kelola status aktivasi dan pembayaran sistem</p>
         </div>
 
-        {/* System Status Card - Super Admin Only */}
-        {isSuperAdmin && (
+        {/* System Status Card - Master Dev Only */}
+        {isMasterDev && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

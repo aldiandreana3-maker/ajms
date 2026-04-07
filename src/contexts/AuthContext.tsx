@@ -3,7 +3,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
-type AppRole = "super_admin" | "admin" | "staff" | "agent" | "penghuni" | "staff_tro" | "staff_finance" | "staff_hrd_ga" | "staff_engineering" | "staff_outsourcing_cleaning" | "staff_outsourcing_security" | "staff_outsourcing_parkir";
+type AppRole = "master_dev" | "super_admin" | "admin" | "staff" | "agent" | "penghuni" | "staff_tro" | "staff_finance" | "staff_hrd_ga" | "staff_engineering" | "staff_outsourcing_cleaning" | "staff_outsourcing_security" | "staff_outsourcing_parkir";
 
 interface AuthContextType {
   user: User | null;
@@ -15,6 +15,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  isMasterDev: boolean;
   isStaff: boolean;
   isAgent: boolean;
   isPenghuni: boolean;
@@ -113,11 +114,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRole(null);
   };
 
-  const isAdmin = role === "admin" || role === "super_admin";
-  const isSuperAdmin = role === "super_admin";
+  const isMasterDev = role === "master_dev";
+  const isAdmin = role === "admin" || role === "super_admin" || isMasterDev;
+  const isSuperAdmin = role === "super_admin" || isMasterDev;
   const isAgent = role === "agent";
   const isPenghuni = role === "penghuni";
-  const isLimitedAccess = role === "penghuni" || role === "agent"; // Agent has same access as penghuni
+  const isLimitedAccess = role === "penghuni" || role === "agent";
   const isStaff = role === "staff" || role === "staff_tro" || role === "staff_finance" || role === "staff_hrd_ga" || role === "staff_engineering" || role === "staff_outsourcing_cleaning" || role === "staff_outsourcing_security" || role === "staff_outsourcing_parkir" || isAdmin;
 
   return (
@@ -132,6 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signOut,
         isAdmin,
         isSuperAdmin,
+        isMasterDev,
         isStaff,
         isAgent,
         isPenghuni,

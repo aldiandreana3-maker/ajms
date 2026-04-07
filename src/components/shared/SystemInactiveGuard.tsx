@@ -22,14 +22,14 @@ interface SystemInactiveGuardProps {
  */
 export function SystemInactiveGuard({ children }: SystemInactiveGuardProps) {
   const { data: systemStatus, isLoading } = useSystemStatus();
-  const { isSuperAdmin, isAdmin, role } = useAuth();
+  const { isSuperAdmin, isAdmin, isMasterDev, role } = useAuth();
   const navigate = useNavigate();
 
   const isSystemInactive = systemStatus?.system_status === "tidak_aktif";
-  const canAccessActivation = isSuperAdmin || isAdmin || role === "staff_tro" || role === "staff_finance";
+  const canAccessActivation = isMasterDev || isSuperAdmin || isAdmin || role === "staff_tro" || role === "staff_finance";
 
-  // While loading, system is active, or user is Super Admin → render children normally
-  if (isLoading || !isSystemInactive || isSuperAdmin) {
+  // While loading, system is active, or user is Master Dev → render children normally
+  if (isLoading || !isSystemInactive || isMasterDev) {
     return <>{children}</>;
   }
 
