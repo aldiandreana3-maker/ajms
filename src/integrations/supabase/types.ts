@@ -136,7 +136,6 @@ export type Database = {
           created_at: string
           id: string
           is_used: boolean | null
-          new_password: string
           reset_by: string
           user_email: string
           user_id: string
@@ -145,7 +144,6 @@ export type Database = {
           created_at?: string
           id?: string
           is_used?: boolean | null
-          new_password: string
           reset_by: string
           user_email: string
           user_id: string
@@ -154,7 +152,6 @@ export type Database = {
           created_at?: string
           id?: string
           is_used?: boolean | null
-          new_password?: string
           reset_by?: string
           user_email?: string
           user_id?: string
