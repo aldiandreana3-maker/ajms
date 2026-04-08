@@ -152,6 +152,7 @@ export default function AktivasiSistem() {
   const { data: payments, isLoading: paymentsLoading } = useSystemPayments();
   const toggleStatus = useToggleSystemStatus();
   const deletePayment = useDeletePayment();
+  const updatePaymentStatus = useUpdatePaymentStatus();
   const { toast } = useToast();
   const [payingType, setPayingType] = useState<string | null>(null);
   const [rincianDialog, setRincianDialog] = useState<"aktivasi" | "bulanan" | null>(null);
