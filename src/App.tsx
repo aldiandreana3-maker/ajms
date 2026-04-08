@@ -36,6 +36,13 @@ import RiwayatTransaksiListrik from "./pages/kepengelolaan/RiwayatTransaksiListr
 import DataMeterListrik from "./pages/kepengelolaan/DataMeterListrik";
 import LaporanPenjualanListrik from "./pages/kepengelolaan/LaporanPenjualanListrik";
 import Kelistrikan from "./pages/kepengelolaan/Kelistrikan";
+import Akuntansi from "./pages/kepengelolaan/akuntansi/Akuntansi";
+import DaftarAkun from "./pages/kepengelolaan/akuntansi/DaftarAkun";
+import JurnalTransaksi from "./pages/kepengelolaan/akuntansi/JurnalTransaksi";
+import PostingData from "./pages/kepengelolaan/akuntansi/PostingData";
+import BukuBesar from "./pages/kepengelolaan/akuntansi/BukuBesar";
+import NeracaSaldo from "./pages/kepengelolaan/akuntansi/NeracaSaldo";
+import Rekonsiliasi from "./pages/kepengelolaan/akuntansi/Rekonsiliasi";
 import HrdGa from "./pages/kepengelolaan/HrdGa";
 import RekapKaryawan from "./pages/kepengelolaan/RekapKaryawan";
 import SlipGaji from "./pages/kepengelolaan/SlipGaji";
@@ -107,6 +114,13 @@ const App = () => (
               <Route path="/kepengelolaan/finance/riwayat-listrik" element={guarded(<RiwayatTransaksiListrik />)} />
               <Route path="/kepengelolaan/finance/data-meter-listrik" element={guarded(<DataMeterListrik />)} />
               <Route path="/kepengelolaan/finance/laporan-listrik" element={guarded(<LaporanPenjualanListrik />)} />
+              <Route path="/kepengelolaan/finance/akuntansi" element={guarded(<Akuntansi />)} />
+              <Route path="/kepengelolaan/finance/akuntansi/daftar-akun" element={guarded(<DaftarAkun />)} />
+              <Route path="/kepengelolaan/finance/akuntansi/jurnal" element={guarded(<JurnalTransaksi />)} />
+              <Route path="/kepengelolaan/finance/akuntansi/posting" element={guarded(<PostingData />)} />
+              <Route path="/kepengelolaan/finance/akuntansi/buku-besar" element={guarded(<BukuBesar />)} />
+              <Route path="/kepengelolaan/finance/akuntansi/neraca-saldo" element={guarded(<NeracaSaldo />)} />
+              <Route path="/kepengelolaan/finance/akuntansi/rekonsiliasi" element={guarded(<Rekonsiliasi />)} />
               <Route path="/kepengelolaan/hrd-ga" element={guarded(<HrdGa />)} />
               <Route path="/kepengelolaan/hrd-ga/rekap" element={guarded(<RekapKaryawan />)} />
               <Route path="/kepengelolaan/hrd-ga/slip-gaji" element={guarded(<SlipGaji />)} />

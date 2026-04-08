@@ -699,6 +699,62 @@ export type Database = {
           },
         ]
       }
+      chart_of_accounts: {
+        Row: {
+          account_code: string
+          account_name: string
+          account_type: string
+          created_at: string
+          created_by: string | null
+          current_balance: number
+          description: string | null
+          id: string
+          is_active: boolean
+          normal_balance: string
+          opening_balance: number
+          parent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_code: string
+          account_name: string
+          account_type?: string
+          created_at?: string
+          created_by?: string | null
+          current_balance?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          normal_balance?: string
+          opening_balance?: number
+          parent_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_code?: string
+          account_name?: string
+          account_type?: string
+          created_at?: string
+          created_by?: string | null
+          current_balance?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          normal_balance?: string
+          opening_balance?: number
+          parent_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chart_of_accounts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commercial_tenants: {
         Row: {
           business_name: string
@@ -1550,6 +1606,99 @@ export type Database = {
         }
         Relationships: []
       }
+      journal_entries: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          entry_date: string
+          entry_number: string
+          id: string
+          is_posted: boolean
+          posted_at: string | null
+          posted_by: string | null
+          reference_number: string | null
+          total_credit: number
+          total_debit: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description: string
+          entry_date?: string
+          entry_number: string
+          id?: string
+          is_posted?: boolean
+          posted_at?: string | null
+          posted_by?: string | null
+          reference_number?: string | null
+          total_credit?: number
+          total_debit?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          entry_date?: string
+          entry_number?: string
+          id?: string
+          is_posted?: boolean
+          posted_at?: string | null
+          posted_by?: string | null
+          reference_number?: string | null
+          total_credit?: number
+          total_debit?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      journal_entry_lines: {
+        Row: {
+          account_id: string
+          created_at: string
+          credit_amount: number
+          debit_amount: number
+          description: string | null
+          id: string
+          journal_entry_id: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          credit_amount?: number
+          debit_amount?: number
+          description?: string | null
+          id?: string
+          journal_entry_id: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          credit_amount?: number
+          debit_amount?: number
+          description?: string | null
+          id?: string
+          journal_entry_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_entry_lines_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entry_lines_journal_entry_id_fkey"
+            columns: ["journal_entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       keluhan: {
         Row: {
           created_at: string | null
@@ -1978,6 +2127,65 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      reconciliations: {
+        Row: {
+          account_id: string
+          actual_balance: number
+          created_at: string
+          created_by: string | null
+          difference: number
+          id: string
+          notes: string | null
+          period_date: string
+          period_label: string
+          reconciled_at: string | null
+          reconciled_by: string | null
+          status: string
+          system_balance: number
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          actual_balance?: number
+          created_at?: string
+          created_by?: string | null
+          difference?: number
+          id?: string
+          notes?: string | null
+          period_date: string
+          period_label: string
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          status?: string
+          system_balance?: number
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          actual_balance?: number
+          created_at?: string
+          created_by?: string | null
+          difference?: number
+          id?: string
+          notes?: string | null
+          period_date?: string
+          period_label?: string
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          status?: string
+          system_balance?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reconciliations_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       security_patrols: {
         Row: {
