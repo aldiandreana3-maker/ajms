@@ -91,7 +91,7 @@ export default function IzinKerja() {
       sheetName: "Izin Kerja",
       data: exportData,
       columns: workPermitExportColumns,
-      databaseUrl: `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/work_permits`,
+      
     });
   };
 

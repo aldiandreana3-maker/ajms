@@ -147,7 +147,7 @@ export default function AbonemenParkir() {
       sheetName: "Abonemen Parkir",
       data: exportData,
       columns: parkingExportColumns,
-      databaseUrl: `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/parking_subscriptions`,
+      
     });
   };
 
