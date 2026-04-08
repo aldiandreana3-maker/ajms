@@ -82,11 +82,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Log the password reset (store temporarily for super admin to see)
+    // Log the password reset (without storing the password)
     await adminClient.from("admin_password_resets").insert({
       user_id: userId,
       user_email: userEmail,
-      new_password: newPassword,
       reset_by: currentUser.id,
     });
 

@@ -5,10 +5,9 @@ interface ExportConfig {
   sheetName: string;
   data: Record<string, any>[];
   columns: { header: string; key: string; width?: number }[];
-  databaseUrl?: string;
 }
 
-export function exportToExcel({ filename, sheetName, data, columns, databaseUrl }: ExportConfig) {
+export function exportToExcel({ filename, sheetName, data, columns }: ExportConfig) {
   // Transform data to use custom headers
   const transformedData = data.map((row) => {
     const newRow: Record<string, any> = {};
@@ -28,14 +27,6 @@ export function exportToExcel({ filename, sheetName, data, columns, databaseUrl 
   // Create workbook
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
-
-  // Add database link sheet if provided
-  if (databaseUrl) {
-    const linkData = [{ "Link Database": databaseUrl }];
-    const linkSheet = XLSX.utils.json_to_sheet(linkData);
-    linkSheet["!cols"] = [{ wch: 80 }];
-    XLSX.utils.book_append_sheet(workbook, linkSheet, "Link Database");
-  }
 
   // Generate file and download
   XLSX.writeFile(workbook, `${filename}.xlsx`);
