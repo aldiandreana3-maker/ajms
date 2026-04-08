@@ -7,8 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
-import { useSystemStatus, useToggleSystemStatus, useSystemPayments, useDeletePayment } from "@/hooks/useSystemActivation";
-import { Power, PowerOff, CheckCircle2, XCircle, Clock, Loader2, CreditCard, History, Trash2, Info, CheckCircle, Server, Shield, Bell } from "lucide-react";
+import { useSystemStatus, useToggleSystemStatus, useSystemPayments, useDeletePayment, useUpdatePaymentStatus } from "@/hooks/useSystemActivation";
+import { Power, PowerOff, CheckCircle2, XCircle, Clock, Loader2, CreditCard, History, Trash2, Info, CheckCircle, Server, Shield, Bell, MoreHorizontal } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { Navigate } from "react-router-dom";
@@ -151,6 +152,7 @@ export default function AktivasiSistem() {
   const { data: payments, isLoading: paymentsLoading } = useSystemPayments();
   const toggleStatus = useToggleSystemStatus();
   const deletePayment = useDeletePayment();
+  const updatePaymentStatus = useUpdatePaymentStatus();
   const { toast } = useToast();
   const [payingType, setPayingType] = useState<string | null>(null);
   const [rincianDialog, setRincianDialog] = useState<"aktivasi" | "bulanan" | null>(null);
@@ -455,7 +457,7 @@ export default function AktivasiSistem() {
                       <TableHead>Nominal</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Catatan</TableHead>
-                      {isSuperAdmin && <TableHead className="w-[60px]">Aksi</TableHead>}
+                      {isMasterDev && <TableHead className="w-[100px]">Aksi</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -468,32 +470,58 @@ export default function AktivasiSistem() {
                         <TableCell className="font-medium">{formatCurrency(Number(p.nominal))}</TableCell>
                         <TableCell>{statusBadge(p.status)}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{p.notes || "-"}</TableCell>
-                        {isSuperAdmin && (
+                        {isMasterDev && (
                           <TableCell>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Hapus Pembayaran?</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Data pembayaran ini akan dihapus permanen. Apakah Anda yakin?
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Batal</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => deletePayment.mutate(p.id)}
-                                    className="bg-destructive hover:bg-destructive/90"
-                                  >
-                                    Ya, Hapus
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <div className="flex items-center gap-1">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreHorizontal className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  {p.status !== "berhasil" && (
+                                    <DropdownMenuItem onClick={() => updatePaymentStatus.mutate({ id: p.id, status: "berhasil" })}>
+                                      <CheckCircle2 className="w-4 h-4 mr-2 text-primary" /> Ubah ke Berhasil
+                                    </DropdownMenuItem>
+                                  )}
+                                  {p.status !== "pending" && (
+                                    <DropdownMenuItem onClick={() => updatePaymentStatus.mutate({ id: p.id, status: "pending" })}>
+                                      <Clock className="w-4 h-4 mr-2 text-yellow-500" /> Ubah ke Pending
+                                    </DropdownMenuItem>
+                                  )}
+                                  {p.status !== "gagal" && (
+                                    <DropdownMenuItem onClick={() => updatePaymentStatus.mutate({ id: p.id, status: "gagal" })}>
+                                      <XCircle className="w-4 h-4 mr-2 text-destructive" /> Ubah ke Gagal
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Hapus Pembayaran?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Data pembayaran ini akan dihapus permanen. Apakah Anda yakin?
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => deletePayment.mutate(p.id)}
+                                      className="bg-destructive hover:bg-destructive/90"
+                                    >
+                                      Ya, Hapus
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           </TableCell>
                         )}
                       </TableRow>
