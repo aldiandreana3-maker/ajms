@@ -90,7 +90,7 @@ export default function KeluhanPenghuni() {
       sheetName: "Keluhan Penghuni",
       data: exportData,
       columns: keluhanExportColumns,
-      databaseUrl: `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/keluhan`,
+      
     });
   };
 

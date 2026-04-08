@@ -100,7 +100,7 @@ export default function KartuAkses() {
       sheetName: "Kartu Akses",
       data: exportData,
       columns: accessCardExportColumns,
-      databaseUrl: `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/access_cards`,
+      
     });
   };
 
