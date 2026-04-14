@@ -75,24 +75,42 @@ export function useBills() {
         }
       }
 
-      // Fetch bill_payments for all bills
+      // Fetch bill_payments for all bills in batches to avoid query limits
       if (allBills.length > 0) {
         const billIds = allBills.map((b) => b.id);
-        const { data: payments, error: pError } = await supabase
-          .from("bill_payments")
-          .select("*")
-          .in("bill_id", billIds)
-          .order("month_number", { ascending: true });
+        const paymentsByBill = new Map<string, BillPayment[]>();
+        
+        // Batch bill IDs in chunks of 300 to avoid URL length limits
+        const batchSize = 300;
+        for (let i = 0; i < billIds.length; i += batchSize) {
+          const batchIds = billIds.slice(i, i + batchSize);
+          
+          // Paginate within each batch
+          let pFrom = 0;
+          let pHasMore = true;
+          while (pHasMore) {
+            const { data: payments, error: pError } = await supabase
+              .from("bill_payments")
+              .select("*")
+              .in("bill_id", batchIds)
+              .order("month_number", { ascending: true })
+              .range(pFrom, pFrom + pageSize - 1);
 
-        if (!pError && payments) {
-          const paymentsByBill = new Map<string, BillPayment[]>();
-          for (const p of payments as BillPayment[]) {
-            if (!paymentsByBill.has(p.bill_id)) paymentsByBill.set(p.bill_id, []);
-            paymentsByBill.get(p.bill_id)!.push(p);
+            if (!pError && payments) {
+              for (const p of payments as BillPayment[]) {
+                if (!paymentsByBill.has(p.bill_id)) paymentsByBill.set(p.bill_id, []);
+                paymentsByBill.get(p.bill_id)!.push(p);
+              }
+              pHasMore = payments.length === pageSize;
+              pFrom += pageSize;
+            } else {
+              pHasMore = false;
+            }
           }
-          for (const bill of allBills) {
-            bill.bill_payments = paymentsByBill.get(bill.id) || [];
-          }
+        }
+
+        for (const bill of allBills) {
+          bill.bill_payments = paymentsByBill.get(bill.id) || [];
         }
       }
 
