@@ -30,8 +30,8 @@ interface EditInvoiceDialogProps {
 }
 
 export function EditInvoiceDialog({ bill, open, onOpenChange }: EditInvoiceDialogProps) {
-  const updateBill = useUpdateBill();
-  const updatePaymentDetail = useUpdateBillPaymentDetail();
+  const queryClient = useQueryClient();
+  const [saving, setSaving] = useState(false);
 
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
@@ -40,7 +40,7 @@ export function EditInvoiceDialog({ bill, open, onOpenChange }: EditInvoiceDialo
   const [editingPayments, setEditingPayments] = useState<Record<string, { sc_amount: number; sf_amount: number; is_paid: boolean }>>({});
 
   useEffect(() => {
-    if (bill) {
+    if (bill && open) {
       setDueDate(bill.due_date || "");
       setNotes(bill.notes || "");
       setScMonthly(bill.sc_monthly || 0);
@@ -52,7 +52,7 @@ export function EditInvoiceDialog({ bill, open, onOpenChange }: EditInvoiceDialo
       });
       setEditingPayments(payments);
     }
-  }, [bill]);
+  }, [bill, open]);
 
   // Auto-compute status based on monthly payments
   const computedStatus = useMemo(() => {
@@ -60,53 +60,71 @@ export function EditInvoiceDialog({ bill, open, onOpenChange }: EditInvoiceDialo
     if (payments.length === 0) return "unpaid";
     const paidCount = payments.filter((p) => p.is_paid).length;
     if (paidCount === 0) return "unpaid";
-    if (paidCount >= payments.length) return "paid"; // All 3 months paid = Lunas
-    return "partial"; // 1-2 months paid = Bayar Sebagian
+    if (paidCount >= payments.length) return "paid";
+    return "partial";
   }, [editingPayments]);
 
   if (!bill) return null;
 
   const handleSave = async () => {
-    const sc_total = scMonthly * 3;
-    const sf_total = sfMonthly * 3;
-    const total_amount = sc_total + sf_total;
+    setSaving(true);
+    try {
+      const sc_total = scMonthly * 3;
+      const sf_total = sfMonthly * 3;
+      const total_amount = sc_total + sf_total;
 
-    // Calculate paid amount from monthly details
-    const paidAmount = Object.values(editingPayments)
-      .filter((p) => p.is_paid)
-      .reduce((sum, p) => sum + p.sc_amount + p.sf_amount, 0);
+      const paidAmount = Object.values(editingPayments)
+        .filter((p) => p.is_paid)
+        .reduce((sum, p) => sum + p.sc_amount + p.sf_amount, 0);
 
-    // Update main bill with auto-computed status
-    await updateBill.mutateAsync({
-      id: bill.id,
-      due_date: dueDate,
-      notes: notes || null,
-      payment_status: computedStatus as "unpaid" | "paid" | "partial",
-      sc_monthly: scMonthly,
-      sf_monthly: sfMonthly,
-      sc_total,
-      sf_total,
-      total_amount,
-      amount: total_amount,
-      paid_amount: paidAmount > 0 ? paidAmount : null,
-      paid_at: computedStatus === "paid" ? new Date().toISOString() : null,
-    });
+      // 1. Update main bill
+      const { error: billError } = await supabase
+        .from("bills")
+        .update({
+          due_date: dueDate,
+          notes: notes || null,
+          payment_status: computedStatus as "unpaid" | "paid" | "partial",
+          sc_monthly: scMonthly,
+          sf_monthly: sfMonthly,
+          sc_total,
+          sf_total,
+          total_amount,
+          amount: total_amount,
+          paid_amount: paidAmount > 0 ? paidAmount : null,
+          paid_at: computedStatus === "paid" ? new Date().toISOString() : null,
+        })
+        .eq("id", bill.id);
 
-    // Update each payment detail
-    for (const [paymentId, vals] of Object.entries(editingPayments)) {
-      const totalAmount = vals.sc_amount + vals.sf_amount;
-      await updatePaymentDetail.mutateAsync({
-        id: paymentId,
-        sc_amount: vals.sc_amount,
-        sf_amount: vals.sf_amount,
-        total_amount: totalAmount,
-        is_paid: vals.is_paid,
-        paid_amount: vals.is_paid ? totalAmount : null,
-        paid_at: vals.is_paid ? new Date().toISOString() : null,
-      });
+      if (billError) throw billError;
+
+      // 2. Update all payment details
+      for (const [paymentId, vals] of Object.entries(editingPayments)) {
+        const totalAmount = vals.sc_amount + vals.sf_amount;
+        const { error: pError } = await supabase
+          .from("bill_payments")
+          .update({
+            sc_amount: vals.sc_amount,
+            sf_amount: vals.sf_amount,
+            total_amount: totalAmount,
+            is_paid: vals.is_paid,
+            paid_amount: vals.is_paid ? totalAmount : null,
+            paid_at: vals.is_paid ? new Date().toISOString() : null,
+          })
+          .eq("id", paymentId);
+
+        if (pError) throw pError;
+      }
+
+      // 3. Invalidate cache ONCE after all updates
+      await queryClient.invalidateQueries({ queryKey: ["bills"] });
+      queryClient.invalidateQueries({ queryKey: ["financial-report"] });
+      toast.success("Invoice berhasil diperbarui");
+      onOpenChange(false);
+    } catch (error: any) {
+      toast.error("Gagal menyimpan: " + error.message);
+    } finally {
+      setSaving(false);
     }
-
-    onOpenChange(false);
   };
 
   const isSaving = updateBill.isPending || updatePaymentDetail.isPending;
