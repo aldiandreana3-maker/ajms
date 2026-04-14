@@ -361,6 +361,73 @@ export function useCreateManualBill() {
   });
 }
 
+export function useUpdateBill() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      amount?: number;
+      total_amount?: number;
+      sc_monthly?: number;
+      sf_monthly?: number;
+      sc_total?: number;
+      sf_total?: number;
+      due_date?: string;
+      notes?: string | null;
+      payment_status?: "unpaid" | "paid" | "partial";
+      paid_amount?: number | null;
+      paid_at?: string | null;
+      quarter_label?: string | null;
+    }) => {
+      const { id, ...updates } = input;
+      const { error } = await supabase
+        .from("bills")
+        .update(updates as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+      queryClient.invalidateQueries({ queryKey: ["financial-report"] });
+      toast.success("Invoice berhasil diperbarui");
+    },
+    onError: (error) => {
+      toast.error("Gagal memperbarui invoice: " + error.message);
+    },
+  });
+}
+
+export function useUpdateBillPaymentDetail() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      sc_amount?: number;
+      sf_amount?: number;
+      total_amount?: number;
+      is_paid?: boolean;
+      paid_amount?: number | null;
+      paid_at?: string | null;
+    }) => {
+      const { id, ...updates } = input;
+      const { error } = await supabase
+        .from("bill_payments")
+        .update(updates as any)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+      toast.success("Detail pembayaran berhasil diperbarui");
+    },
+    onError: (error) => {
+      toast.error("Gagal memperbarui detail: " + error.message);
+    },
+  });
+}
+
 // Keep backward compat exports
 export const useCreateBill = useCreateQuarterlyBill;
 export const useUpdateBillPayment = usePayBillMonth;

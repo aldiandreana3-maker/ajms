@@ -1,14 +1,16 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import { Printer, FileText, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Printer, FileText, CheckCircle, Clock, AlertCircle, Pencil } from "lucide-react";
 import type { QuarterlyBill } from "@/hooks/useBills";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { EditInvoiceDialog } from "./EditInvoiceDialog";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
@@ -29,6 +31,9 @@ export function InvoiceDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const printRef = useRef<HTMLDivElement>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const { isSuperAdmin, isMasterDev, isAdmin } = useAuth();
+  const canEdit = isMasterDev || isSuperAdmin || isAdmin;
 
   // Fetch unit type info
   const { data: unitInfo } = useQuery({
@@ -281,11 +286,25 @@ export function InvoiceDialog({
 
         <div className="flex gap-2 justify-end">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Tutup</Button>
+          {canEdit && (
+            <Button variant="secondary" onClick={() => setEditOpen(true)}>
+              <Pencil className="w-4 h-4 mr-2" />
+              Edit Invoice
+            </Button>
+          )}
           <Button onClick={handlePrint}>
             <Printer className="w-4 h-4 mr-2" />
             Cetak Invoice
           </Button>
         </div>
+
+        {canEdit && (
+          <EditInvoiceDialog
+            bill={bill}
+            open={editOpen}
+            onOpenChange={setEditOpen}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
