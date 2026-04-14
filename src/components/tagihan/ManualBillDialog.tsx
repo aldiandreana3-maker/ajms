@@ -69,7 +69,7 @@ export function ManualBillDialog({ defaultUnitId, trigger }: ManualBillDialogPro
   };
 
   const resetForm = () => {
-    setUnitId("");
+    setUnitId(defaultUnitId || "");
     setBillType("");
     setAmount("");
     setDueDate("");
@@ -77,12 +77,24 @@ export function ManualBillDialog({ defaultUnitId, trigger }: ManualBillDialogPro
     setNotes("");
   };
 
+  // Sync defaultUnitId when dialog opens
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (open && defaultUnitId) {
+      setUnitId(defaultUnitId);
+    }
+    if (!open) resetForm();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline">
-          <Plus className="w-4 h-4 mr-2" />
-          Tagihan Manual
+        {trigger || (
+          <Button variant="outline">
+            <Plus className="w-4 h-4 mr-2" />
+            Tagihan Manual
+          </Button>
+        )}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
