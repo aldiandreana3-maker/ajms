@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Printer, FileText, CheckCircle, Clock, AlertCircle, Pencil, Trash2, Loader2 } from "lucide-react";
 import type { QuarterlyBill } from "@/hooks/useBills";
-import { useDeleteBill } from "@/hooks/useBills";
+import { useDeleteBill, useBills } from "@/hooks/useBills";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
