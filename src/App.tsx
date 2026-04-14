@@ -43,7 +43,7 @@ import PostingData from "./pages/kepengelolaan/akuntansi/PostingData";
 import BukuBesar from "./pages/kepengelolaan/akuntansi/BukuBesar";
 import NeracaSaldo from "./pages/kepengelolaan/akuntansi/NeracaSaldo";
 import Rekonsiliasi from "./pages/kepengelolaan/akuntansi/Rekonsiliasi";
-import DashboardAkuntansi from "./pages/kepengelolaan/akuntansi/DashboardAkuntansi";
+
 import LaporanLabaRugi from "./pages/kepengelolaan/akuntansi/LaporanLabaRugi";
 import LaporanNeraca from "./pages/kepengelolaan/akuntansi/LaporanNeraca";
 import LaporanArusKas from "./pages/kepengelolaan/akuntansi/LaporanArusKas";
@@ -125,7 +125,7 @@ const App = () => (
               <Route path="/kepengelolaan/finance/akuntansi/buku-besar" element={guarded(<BukuBesar />)} />
               <Route path="/kepengelolaan/finance/akuntansi/neraca-saldo" element={guarded(<NeracaSaldo />)} />
               <Route path="/kepengelolaan/finance/akuntansi/rekonsiliasi" element={guarded(<Rekonsiliasi />)} />
-              <Route path="/kepengelolaan/finance/akuntansi/dashboard" element={guarded(<DashboardAkuntansi />)} />
+              
               <Route path="/kepengelolaan/finance/akuntansi/laporan-laba-rugi" element={guarded(<LaporanLabaRugi />)} />
               <Route path="/kepengelolaan/finance/akuntansi/laporan-neraca" element={guarded(<LaporanNeraca />)} />
               <Route path="/kepengelolaan/finance/akuntansi/laporan-arus-kas" element={guarded(<LaporanArusKas />)} />
