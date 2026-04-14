@@ -127,7 +127,7 @@ export function EditInvoiceDialog({ bill, open, onOpenChange }: EditInvoiceDialo
     }
   };
 
-  const isSaving = updateBill.isPending || updatePaymentDetail.isPending;
+  const isSaving = saving;
   const statusInfo = statusLabels[computedStatus] || statusLabels.unpaid;
 
   return (
