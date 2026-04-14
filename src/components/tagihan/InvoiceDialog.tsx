@@ -24,7 +24,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: typeof 
 };
 
 export function InvoiceDialog({
-  bill,
+  bill: billProp,
   open,
   onOpenChange,
 }: {
@@ -38,6 +38,10 @@ export function InvoiceDialog({
   const { isSuperAdmin, isMasterDev, isAdmin } = useAuth();
   const canEdit = isMasterDev || isSuperAdmin || isAdmin;
   const deleteMutation = useDeleteBill();
+
+  // Use fresh data from cache to keep invoice in sync after edits
+  const { data: allBills } = useBills();
+  const bill = (allBills?.find((b) => b.id === billProp?.id) || billProp) as QuarterlyBill | null;
 
   // Fetch unit type info
   const { data: unitInfo } = useQuery({
@@ -78,6 +82,7 @@ export function InvoiceDialog({
   const status = statusConfig[bill.payment_status] || statusConfig.unpaid;
   const StatusIcon = status.icon;
   const paidMonths = bill.bill_payments?.filter((p) => p.is_paid).length || 0;
+  const totalMonths = bill.bill_payments?.length || 3;
   const totalPaid = bill.bill_payments?.filter((p) => p.is_paid).reduce((s, p) => s + (p.paid_amount || p.total_amount), 0) || 0;
   const remaining = bill.total_amount - totalPaid;
   const now = new Date();
