@@ -101,6 +101,7 @@ export default function Tagihan() {
         </div>
 
         <BillRatesCard />
+        <OutstandingBillsCard />
 
         <Card>
           <CardContent className="pt-6">
