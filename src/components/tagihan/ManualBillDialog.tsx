@@ -21,7 +21,12 @@ const BILL_TYPES = [
   { value: "perbaikan", label: "Perbaikan" },
 ];
 
-export function ManualBillDialog() {
+interface ManualBillDialogProps {
+  defaultUnitId?: string;
+  trigger?: React.ReactNode;
+}
+
+export function ManualBillDialog({ defaultUnitId, trigger }: ManualBillDialogProps = {}) {
   const { units } = useUnits();
   const createBill = useCreateManualBill();
 

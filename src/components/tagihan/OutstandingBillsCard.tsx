@@ -6,8 +6,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useBills, type QuarterlyBill } from "@/hooks/useBills";
-import { AlertTriangle, ChevronDown, ChevronRight, ChevronLeft, Search } from "lucide-react";
+import { ManualBillDialog } from "./ManualBillDialog";
+import { AlertTriangle, ChevronDown, ChevronRight, ChevronLeft, Search, FilePlus } from "lucide-react";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
