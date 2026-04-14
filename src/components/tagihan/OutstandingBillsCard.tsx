@@ -6,8 +6,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useBills, type QuarterlyBill } from "@/hooks/useBills";
-import { AlertTriangle, ChevronDown, ChevronRight, ChevronLeft, Search } from "lucide-react";
+import { ManualBillDialog } from "./ManualBillDialog";
+import { AlertTriangle, ChevronDown, ChevronRight, ChevronLeft, Search, FilePlus } from "lucide-react";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
@@ -131,6 +133,7 @@ export function OutstandingBillsCard() {
                     <TableHead>Tagihan Belum Lunas</TableHead>
                     <TableHead>Bulan Tertunggak</TableHead>
                     <TableHead>Total Outstanding</TableHead>
+                    <TableHead className="text-center">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -158,11 +161,28 @@ export function OutstandingBillsCard() {
                       <TableCell className="font-bold text-destructive">
                         {formatCurrency(u.totalOutstanding)}
                       </TableCell>
+                      <TableCell className="text-center">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span>
+                              <ManualBillDialog
+                                defaultUnitId={u.unitId || undefined}
+                                trigger={
+                                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <FilePlus className="w-4 h-4" />
+                                  </Button>
+                                }
+                              />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>Buat Tagihan Manual</TooltipContent>
+                        </Tooltip>
+                      </TableCell>
                     </TableRow>
                   ))}
                   {paginated.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
                         {searchQuery ? "Tidak ditemukan" : "Tidak ada tagihan tertunggak"}
                       </TableCell>
                     </TableRow>

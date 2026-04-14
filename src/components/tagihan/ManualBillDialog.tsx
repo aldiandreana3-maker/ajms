@@ -21,7 +21,12 @@ const BILL_TYPES = [
   { value: "perbaikan", label: "Perbaikan" },
 ];
 
-export function ManualBillDialog() {
+interface ManualBillDialogProps {
+  defaultUnitId?: string;
+  trigger?: React.ReactNode;
+}
+
+export function ManualBillDialog({ defaultUnitId, trigger }: ManualBillDialogProps = {}) {
   const { units } = useUnits();
   const createBill = useCreateManualBill();
 
@@ -64,7 +69,7 @@ export function ManualBillDialog() {
   };
 
   const resetForm = () => {
-    setUnitId("");
+    setUnitId(defaultUnitId || "");
     setBillType("");
     setAmount("");
     setDueDate("");
@@ -72,13 +77,24 @@ export function ManualBillDialog() {
     setNotes("");
   };
 
+  // Sync defaultUnitId when dialog opens
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (open && defaultUnitId) {
+      setUnitId(defaultUnitId);
+    }
+    if (!open) resetForm();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline">
-          <Plus className="w-4 h-4 mr-2" />
-          Tagihan Manual
-        </Button>
+        {trigger || (
+          <Button variant="outline">
+            <Plus className="w-4 h-4 mr-2" />
+            Tagihan Manual
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
