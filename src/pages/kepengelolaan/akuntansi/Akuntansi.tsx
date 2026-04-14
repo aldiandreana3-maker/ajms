@@ -2,10 +2,17 @@ import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShieldAlert, ArrowLeft, BookOpen, FileText, Send, BarChart3, Scale, CheckCircle, List } from "lucide-react";
+import { ShieldAlert, ArrowLeft, BookOpen, FileText, Send, BarChart3, Scale, CheckCircle, List, LayoutDashboard, TrendingUp, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const menuItems = [
+  {
+    icon: LayoutDashboard,
+    title: "Dashboard Keuangan",
+    description: "Ringkasan & Visualisasi",
+    detail: "Lihat ringkasan total aktiva, pendapatan, beban, laba/rugi, dan statistik jurnal secara visual.",
+    path: "/kepengelolaan/finance/akuntansi/dashboard",
+  },
   {
     icon: List,
     title: "Daftar Akun",
@@ -47,6 +54,27 @@ const menuItems = [
     description: "Pencocokan data",
     detail: "Mencocokkan data keuangan di sistem dengan data nyata (misalnya saldo bank).",
     path: "/kepengelolaan/finance/akuntansi/rekonsiliasi",
+  },
+  {
+    icon: TrendingUp,
+    title: "Laporan Laba Rugi",
+    description: "Pendapatan & Biaya",
+    detail: "Laporan pendapatan dikurangi biaya/beban untuk mengetahui laba atau rugi bersih.",
+    path: "/kepengelolaan/finance/akuntansi/laporan-laba-rugi",
+  },
+  {
+    icon: BarChart3,
+    title: "Laporan Neraca",
+    description: "Balance Sheet",
+    detail: "Posisi keuangan: Aktiva = Pasiva + Modal + Laba Ditahan.",
+    path: "/kepengelolaan/finance/akuntansi/laporan-neraca",
+  },
+  {
+    icon: ArrowUpDown,
+    title: "Laporan Arus Kas",
+    description: "Cash Flow Statement",
+    detail: "Arus masuk dan keluar kas dari aktivitas operasional, investasi, dan pendanaan.",
+    path: "/kepengelolaan/finance/akuntansi/laporan-arus-kas",
   },
 ];
 
@@ -101,6 +129,8 @@ export default function Akuntansi() {
             <span className="bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">Neraca Saldo</span>
             <span>→</span>
             <span className="bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">Rekonsiliasi</span>
+            <span>→</span>
+            <span className="bg-primary/10 text-primary px-3 py-1 rounded-full font-medium">Laporan</span>
           </div>
         </div>
 
