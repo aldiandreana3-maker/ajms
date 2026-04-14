@@ -19,7 +19,7 @@ const formatCurrency = (amount: number) =>
 
 const statusConfig: Record<string, { label: string; color: string; icon: typeof CheckCircle; bg: string }> = {
   unpaid: { label: "Belum Bayar", color: "text-warning", icon: AlertCircle, bg: "bg-warning/10 border-warning/30" },
-  partial: { label: "Sebagian Terbayar", color: "text-blue-600", icon: Clock, bg: "bg-blue-50 border-blue-200" },
+  partial: { label: "Bayar Sebagian", color: "text-blue-600", icon: Clock, bg: "bg-blue-50 border-blue-200" },
   paid: { label: "Lunas", color: "text-success", icon: CheckCircle, bg: "bg-success/10 border-success/30" },
 };
 
@@ -231,7 +231,7 @@ export function InvoiceDialog({
                     <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "right", fontWeight: 600 }}>{formatCurrency(p.total_amount)}</td>
                     <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "center" }}>
                       {p.is_paid ? (
-                        <span style={{ color: "#166534", fontWeight: 600 }}>✓ Lunas</span>
+                        <span style={{ color: "#166534", fontWeight: 600 }}>✓ Terbayar</span>
                       ) : (
                         <span style={{ color: "#92400e", fontWeight: 600 }}>Belum Bayar</span>
                       )}
