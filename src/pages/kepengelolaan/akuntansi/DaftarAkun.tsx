@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { CoaFormDialog } from "@/components/akuntansi/CoaFormDialog";
 import { CoaAuditDialog } from "@/components/akuntansi/CoaAuditDialog";
 import { CoaImportExport } from "@/components/akuntansi/CoaImportExport";
+import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 
 const ACCOUNT_TYPES = [
   { value: "AKTIVA", label: "Aktiva" },
@@ -38,6 +39,8 @@ export default function DaftarAkun() {
   const [editing, setEditing] = useState<ChartAccount | null>(null);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const canManage = isSuperAdmin || isAdmin;
 
@@ -67,6 +70,9 @@ export default function DaftarAkun() {
       return a.account_code.toLowerCase().includes(q) || a.account_name.toLowerCase().includes(q);
     });
 
+  const paginatedData = usePagination(filtered, itemsPerPage, currentPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+
   return (
     <MainLayout>
       <div className="space-y-4 animate-fade-in">
@@ -89,9 +95,9 @@ export default function DaftarAkun() {
           <div className="flex gap-2 flex-1">
             <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input className="pl-9" placeholder="Cari kode / nama akun..." value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Input className="pl-9" placeholder="Cari kode / nama akun..." value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }} />
             </div>
-            <Select value={filter} onValueChange={setFilter}>
+            <Select value={filter} onValueChange={(v) => { setFilter(v); setCurrentPage(1); }}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue placeholder="Filter tipe" />
               </SelectTrigger>
@@ -118,59 +124,68 @@ export default function DaftarAkun() {
         {isLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
         ) : (
-          <div className="rounded-xl border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="w-[50px]">No</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Account Code</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="text-center">Detail</TableHead>
-                  <TableHead>Up Level</TableHead>
-                  <TableHead>Map to Neraca</TableHead>
-                  <TableHead>Map to Cash Flow</TableHead>
-                  <TableHead>Pos Budget</TableHead>
-                  <TableHead>Sumber Dana</TableHead>
-                  {canManage && <TableHead className="text-right">Aksi</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.length === 0 ? (
-                  <TableRow><TableCell colSpan={canManage ? 11 : 10} className="text-center py-8 text-muted-foreground">Belum ada akun</TableCell></TableRow>
-                ) : filtered.map((acc, i) => (
-                  <TableRow key={acc.id} className={!acc.is_detail ? "bg-muted/30 font-semibold" : ""}>
-                    <TableCell className="text-center">{i + 1}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={`text-xs ${typeBadgeColor[acc.account_type] || ""}`}>
-                        {acc.account_type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">{acc.account_code}</TableCell>
-                    <TableCell>{acc.account_name}</TableCell>
-                    <TableCell className="text-center">
-                      <span className={`text-xs font-medium ${acc.is_detail ? "text-green-600" : "text-muted-foreground"}`}>
-                        {acc.is_detail ? "YES" : "NO"}
-                      </span>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">{acc.up_level || "-"}</TableCell>
-                    <TableCell className="text-sm">{acc.map_to_neraca || "-"}</TableCell>
-                    <TableCell className="text-sm">{acc.map_to_cash_flow || "-"}</TableCell>
-                    <TableCell className="text-sm">{acc.pos_budget || "-"}</TableCell>
-                    <TableCell className="text-sm">{acc.sumber_dana || "-"}</TableCell>
-                    {canManage && (
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => handleEdit(acc)}><Pencil className="w-4 h-4" /></Button>
-                          <Button variant="ghost" size="icon" onClick={() => { if (confirm("Hapus akun ini?")) deleteAccount.mutate(acc.id); }}><Trash2 className="w-4 h-4 text-destructive" /></Button>
-                        </div>
-                      </TableCell>
-                    )}
+          <>
+            <div className="rounded-xl border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="w-[50px]">No</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Account Code</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead className="text-center">Detail</TableHead>
+                    <TableHead>Up Level</TableHead>
+                    <TableHead>Map to Neraca</TableHead>
+                    <TableHead>Map to Cash Flow</TableHead>
+                    <TableHead>Pos Budget</TableHead>
+                    <TableHead>Sumber Dana</TableHead>
+                    {canManage && <TableHead className="text-right">Aksi</TableHead>}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {paginatedData.length === 0 ? (
+                    <TableRow><TableCell colSpan={canManage ? 11 : 10} className="text-center py-8 text-muted-foreground">Belum ada akun</TableCell></TableRow>
+                  ) : paginatedData.map((acc, i) => (
+                    <TableRow key={acc.id} className={!acc.is_detail ? "bg-muted/30 font-semibold" : ""}>
+                      <TableCell className="text-center">{startIndex + i + 1}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={`text-xs ${typeBadgeColor[acc.account_type] || ""}`}>
+                          {acc.account_type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">{acc.account_code}</TableCell>
+                      <TableCell>{acc.account_name}</TableCell>
+                      <TableCell className="text-center">
+                        <span className={`text-xs font-medium ${acc.is_detail ? "text-green-600" : "text-muted-foreground"}`}>
+                          {acc.is_detail ? "YES" : "NO"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">{acc.up_level || "-"}</TableCell>
+                      <TableCell className="text-sm">{acc.map_to_neraca || "-"}</TableCell>
+                      <TableCell className="text-sm">{acc.map_to_cash_flow || "-"}</TableCell>
+                      <TableCell className="text-sm">{acc.pos_budget || "-"}</TableCell>
+                      <TableCell className="text-sm">{acc.sumber_dana || "-"}</TableCell>
+                      {canManage && (
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(acc)}><Pencil className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => { if (confirm("Hapus akun ini?")) deleteAccount.mutate(acc.id); }}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <TablePagination
+              currentPage={currentPage}
+              totalItems={filtered.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
+          </>
         )}
 
         {/* Dialogs */}

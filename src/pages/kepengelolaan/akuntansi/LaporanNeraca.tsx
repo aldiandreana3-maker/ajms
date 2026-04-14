@@ -1,13 +1,60 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
+import { useChartOfAccounts, ChartAccount } from "@/hooks/useChartOfAccounts";
 import { ArrowLeft, Scale, Loader2 } from "lucide-react";
+import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 
 const formatRp = (n: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
+
+function PaginatedSection({ title, accs, color }: { title: string; accs: ChartAccount[]; color: string }) {
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  const paginated = usePagination(accs, perPage, page);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className={`text-lg ${color}`}>{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Kode Akun</TableHead>
+              <TableHead>Nama Akun</TableHead>
+              <TableHead className="text-right">Saldo</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginated.map((a) => (
+              <TableRow key={a.id}>
+                <TableCell className="font-mono text-sm">{a.account_code}</TableCell>
+                <TableCell>{a.account_name}</TableCell>
+                <TableCell className="text-right font-medium">{formatRp(a.current_balance)}</TableCell>
+              </TableRow>
+            ))}
+            <TableRow className="font-bold bg-muted/50">
+              <TableCell colSpan={2}>Total {title}</TableCell>
+              <TableCell className="text-right">{formatRp(accs.reduce((s, a) => s + a.current_balance, 0))}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+        <TablePagination
+          currentPage={page}
+          totalItems={accs.length}
+          itemsPerPage={perPage}
+          onPageChange={setPage}
+          onItemsPerPageChange={setPerPage}
+        />
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function LaporanNeraca() {
   const navigate = useNavigate();
@@ -22,45 +69,12 @@ export default function LaporanNeraca() {
   const totalPasiva = pasivaAccounts.reduce((s, a) => s + a.current_balance, 0);
   const totalModal = modalAccounts.reduce((s, a) => s + a.current_balance, 0);
 
-  // Laba ditahan dari pendapatan - beban
   const totalPendapatan = active.filter((a) => a.account_type === "PENDAPATAN").reduce((s, a) => s + a.current_balance, 0);
   const totalBeban = active.filter((a) => a.account_type === "BEBAN").reduce((s, a) => s + a.current_balance, 0);
   const labaDitahan = totalPendapatan - totalBeban;
 
   const totalPasivaModal = totalPasiva + totalModal + labaDitahan;
   const isBalanced = Math.abs(totalAktiva - totalPasivaModal) < 0.01;
-
-  const renderSection = (title: string, accs: typeof accounts, color: string) => (
-    <Card>
-      <CardHeader>
-        <CardTitle className={`text-lg ${color}`}>{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Kode Akun</TableHead>
-              <TableHead>Nama Akun</TableHead>
-              <TableHead className="text-right">Saldo</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {accs.map((a) => (
-              <TableRow key={a.id}>
-                <TableCell className="font-mono text-sm">{a.account_code}</TableCell>
-                <TableCell>{a.account_name}</TableCell>
-                <TableCell className="text-right font-medium">{formatRp(a.current_balance)}</TableCell>
-              </TableRow>
-            ))}
-            <TableRow className="font-bold bg-muted/50">
-              <TableCell colSpan={2}>Total {title}</TableCell>
-              <TableCell className="text-right">{formatRp(accs.reduce((s, a) => s + a.current_balance, 0))}</TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
 
   return (
     <MainLayout>
@@ -84,14 +98,13 @@ export default function LaporanNeraca() {
           </div>
         ) : (
           <div className="space-y-6">
-            {renderSection("Aktiva", aktivaAccounts, "text-blue-700")}
+            <PaginatedSection title="Aktiva" accs={aktivaAccounts} color="text-blue-700" />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {renderSection("Kewajiban (Pasiva)", pasivaAccounts, "text-red-700")}
-              {renderSection("Modal / Ekuitas", modalAccounts, "text-purple-700")}
+              <PaginatedSection title="Kewajiban (Pasiva)" accs={pasivaAccounts} color="text-red-700" />
+              <PaginatedSection title="Modal / Ekuitas" accs={modalAccounts} color="text-purple-700" />
             </div>
 
-            {/* Laba Ditahan */}
             <Card>
               <CardContent className="p-4">
                 <div className="flex justify-between items-center">
@@ -101,7 +114,6 @@ export default function LaporanNeraca() {
               </CardContent>
             </Card>
 
-            {/* Balance check */}
             <Card className={isBalanced ? "border-green-300" : "border-red-300"}>
               <CardContent className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">

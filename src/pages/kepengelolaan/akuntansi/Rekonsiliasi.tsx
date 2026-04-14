@@ -15,6 +15,7 @@ import { ArrowLeft, Plus, CheckCircle, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 
 const formatRp = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
@@ -27,6 +28,8 @@ export default function Rekonsiliasi() {
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ account_id: "", period_label: "", period_date: new Date().toISOString().split("T")[0], system_balance: 0, actual_balance: 0, notes: "" });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const handleSubmit = () => {
     if (!form.account_id || !form.period_label) return;
@@ -36,6 +39,8 @@ export default function Rekonsiliasi() {
   const markDone = (id: string) => {
     updateReconciliation.mutate({ id, status: "selesai", reconciled_at: new Date().toISOString() });
   };
+
+  const paginatedData = usePagination(reconciliations, itemsPerPage, currentPage);
 
   return (
     <MainLayout>
@@ -102,43 +107,52 @@ export default function Rekonsiliasi() {
         {isLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
         ) : (
-          <div className="rounded-xl border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Akun</TableHead>
-                  <TableHead>Periode</TableHead>
-                  <TableHead className="text-right">Saldo Sistem</TableHead>
-                  <TableHead className="text-right">Saldo Aktual</TableHead>
-                  <TableHead className="text-right">Selisih</TableHead>
-                  <TableHead>Status</TableHead>
-                  {canManage && <TableHead className="text-right">Aksi</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {reconciliations.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Belum ada data rekonsiliasi</TableCell></TableRow>
-                ) : reconciliations.map((r) => {
-                  const acc = accounts.find((a) => a.id === r.account_id);
-                  return (
-                    <TableRow key={r.id}>
-                      <TableCell className="font-medium">{acc ? `${acc.account_code} - ${acc.account_name}` : "-"}</TableCell>
-                      <TableCell>{r.period_label}</TableCell>
-                      <TableCell className="text-right font-mono">{formatRp(r.system_balance)}</TableCell>
-                      <TableCell className="text-right font-mono">{formatRp(r.actual_balance)}</TableCell>
-                      <TableCell className={`text-right font-mono ${r.difference !== 0 ? "text-destructive" : "text-green-600"}`}>{formatRp(r.difference)}</TableCell>
-                      <TableCell><Badge variant={r.status === "selesai" ? "default" : "secondary"}>{r.status === "selesai" ? "Selesai" : "Belum"}</Badge></TableCell>
-                      {canManage && (
-                        <TableCell className="text-right">
-                          {r.status !== "selesai" && <Button size="sm" variant="outline" onClick={() => markDone(r.id)}>Selesaikan</Button>}
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+          <>
+            <div className="rounded-xl border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Akun</TableHead>
+                    <TableHead>Periode</TableHead>
+                    <TableHead className="text-right">Saldo Sistem</TableHead>
+                    <TableHead className="text-right">Saldo Aktual</TableHead>
+                    <TableHead className="text-right">Selisih</TableHead>
+                    <TableHead>Status</TableHead>
+                    {canManage && <TableHead className="text-right">Aksi</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedData.length === 0 ? (
+                    <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Belum ada data rekonsiliasi</TableCell></TableRow>
+                  ) : paginatedData.map((r) => {
+                    const acc = accounts.find((a) => a.id === r.account_id);
+                    return (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-medium">{acc ? `${acc.account_code} - ${acc.account_name}` : "-"}</TableCell>
+                        <TableCell>{r.period_label}</TableCell>
+                        <TableCell className="text-right font-mono">{formatRp(r.system_balance)}</TableCell>
+                        <TableCell className="text-right font-mono">{formatRp(r.actual_balance)}</TableCell>
+                        <TableCell className={`text-right font-mono ${r.difference !== 0 ? "text-destructive" : "text-green-600"}`}>{formatRp(r.difference)}</TableCell>
+                        <TableCell><Badge variant={r.status === "selesai" ? "default" : "secondary"}>{r.status === "selesai" ? "Selesai" : "Belum"}</Badge></TableCell>
+                        {canManage && (
+                          <TableCell className="text-right">
+                            {r.status !== "selesai" && <Button size="sm" variant="outline" onClick={() => markDone(r.id)}>Selesaikan</Button>}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+            <TablePagination
+              currentPage={currentPage}
+              totalItems={reconciliations.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
+          </>
         )}
       </div>
     </MainLayout>

@@ -1,13 +1,68 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
+import { useChartOfAccounts, ChartAccount } from "@/hooks/useChartOfAccounts";
 import { ArrowLeft, ArrowUpDown, Loader2 } from "lucide-react";
+import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 
 const formatRp = (n: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
+
+function CashFlowSection({ title, accs, total }: { title: string; accs: ChartAccount[]; total: number }) {
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  const paginated = usePagination(accs, perPage, page);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {accs.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic">Tidak ada akun yang di-mapping ke kategori ini.</p>
+        ) : (
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Kode Akun</TableHead>
+                  <TableHead>Nama Akun</TableHead>
+                  <TableHead>Mapping</TableHead>
+                  <TableHead className="text-right">Saldo</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginated.map((a) => (
+                  <TableRow key={a.id}>
+                    <TableCell className="font-mono text-sm">{a.account_code}</TableCell>
+                    <TableCell>{a.account_name}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{a.map_to_cash_flow}</TableCell>
+                    <TableCell className="text-right font-medium">{formatRp(a.current_balance)}</TableCell>
+                  </TableRow>
+                ))}
+                <TableRow className="font-bold bg-muted/50">
+                  <TableCell colSpan={3}>Total</TableCell>
+                  <TableCell className="text-right">{formatRp(total)}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+            <TablePagination
+              currentPage={page}
+              totalItems={accs.length}
+              itemsPerPage={perPage}
+              onPageChange={setPage}
+              onItemsPerPageChange={setPerPage}
+            />
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function LaporanArusKas() {
   const navigate = useNavigate();
@@ -15,7 +70,6 @@ export default function LaporanArusKas() {
 
   const active = accounts.filter((a) => a.is_active);
 
-  // Group accounts by map_to_cash_flow
   const operasional = active.filter((a) => a.map_to_cash_flow?.toLowerCase().includes("operasi") || a.map_to_cash_flow?.toLowerCase().includes("operational"));
   const investasi = active.filter((a) => a.map_to_cash_flow?.toLowerCase().includes("investasi") || a.map_to_cash_flow?.toLowerCase().includes("invest"));
   const pendanaan = active.filter((a) => a.map_to_cash_flow?.toLowerCase().includes("pendanaan") || a.map_to_cash_flow?.toLowerCase().includes("financ"));
@@ -28,44 +82,6 @@ export default function LaporanArusKas() {
   const totalPendanaan = calcTotal(pendanaan);
   const totalUnmapped = calcTotal(unmapped);
   const totalArusKas = totalOperasional + totalInvestasi + totalPendanaan + totalUnmapped;
-
-  const renderSection = (title: string, accs: typeof accounts, total: number) => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {accs.length === 0 ? (
-          <p className="text-sm text-muted-foreground italic">Tidak ada akun yang di-mapping ke kategori ini.</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Kode Akun</TableHead>
-                <TableHead>Nama Akun</TableHead>
-                <TableHead>Mapping</TableHead>
-                <TableHead className="text-right">Saldo</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {accs.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell className="font-mono text-sm">{a.account_code}</TableCell>
-                  <TableCell>{a.account_name}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{a.map_to_cash_flow}</TableCell>
-                  <TableCell className="text-right font-medium">{formatRp(a.current_balance)}</TableCell>
-                </TableRow>
-              ))}
-              <TableRow className="font-bold bg-muted/50">
-                <TableCell colSpan={3}>Total</TableCell>
-                <TableCell className="text-right">{formatRp(total)}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
-  );
 
   return (
     <MainLayout>
@@ -89,10 +105,10 @@ export default function LaporanArusKas() {
           </div>
         ) : (
           <div className="space-y-6">
-            {renderSection("Arus Kas dari Aktivitas Operasional", operasional, totalOperasional)}
-            {renderSection("Arus Kas dari Aktivitas Investasi", investasi, totalInvestasi)}
-            {renderSection("Arus Kas dari Aktivitas Pendanaan", pendanaan, totalPendanaan)}
-            {unmapped.length > 0 && renderSection("Lainnya (Mapping Tidak Terkategori)", unmapped, totalUnmapped)}
+            <CashFlowSection title="Arus Kas dari Aktivitas Operasional" accs={operasional} total={totalOperasional} />
+            <CashFlowSection title="Arus Kas dari Aktivitas Investasi" accs={investasi} total={totalInvestasi} />
+            <CashFlowSection title="Arus Kas dari Aktivitas Pendanaan" accs={pendanaan} total={totalPendanaan} />
+            {unmapped.length > 0 && <CashFlowSection title="Lainnya (Mapping Tidak Terkategori)" accs={unmapped} total={totalUnmapped} />}
 
             <Card className="border-primary/30">
               <CardContent className="p-6">

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -5,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
 import { ArrowLeft, FileText, Loader2 } from "lucide-react";
+import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 
 const formatRp = (n: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
@@ -20,6 +22,14 @@ export default function LaporanLabaRugi() {
   const totalPendapatan = pendapatanAccounts.reduce((s, a) => s + a.current_balance, 0);
   const totalBeban = bebanAccounts.reduce((s, a) => s + a.current_balance, 0);
   const labaRugi = totalPendapatan - totalBeban;
+
+  const [pendapatanPage, setPendapatanPage] = useState(1);
+  const [pendapatanPerPage, setPendapatanPerPage] = useState(10);
+  const [bebanPage, setBebanPage] = useState(1);
+  const [bebanPerPage, setBebanPerPage] = useState(10);
+
+  const paginatedPendapatan = usePagination(pendapatanAccounts, pendapatanPerPage, pendapatanPage);
+  const paginatedBeban = usePagination(bebanAccounts, bebanPerPage, bebanPage);
 
   return (
     <MainLayout>
@@ -43,12 +53,11 @@ export default function LaporanLabaRugi() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Pendapatan */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg text-green-700">Pendapatan</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -58,7 +67,7 @@ export default function LaporanLabaRugi() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pendapatanAccounts.map((a) => (
+                    {paginatedPendapatan.map((a) => (
                       <TableRow key={a.id}>
                         <TableCell className="font-mono text-sm">{a.account_code}</TableCell>
                         <TableCell>{a.account_name}</TableCell>
@@ -71,15 +80,21 @@ export default function LaporanLabaRugi() {
                     </TableRow>
                   </TableBody>
                 </Table>
+                <TablePagination
+                  currentPage={pendapatanPage}
+                  totalItems={pendapatanAccounts.length}
+                  itemsPerPage={pendapatanPerPage}
+                  onPageChange={setPendapatanPage}
+                  onItemsPerPageChange={setPendapatanPerPage}
+                />
               </CardContent>
             </Card>
 
-            {/* Beban */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg text-red-700">Beban / Biaya</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -89,7 +104,7 @@ export default function LaporanLabaRugi() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {bebanAccounts.map((a) => (
+                    {paginatedBeban.map((a) => (
                       <TableRow key={a.id}>
                         <TableCell className="font-mono text-sm">{a.account_code}</TableCell>
                         <TableCell>{a.account_name}</TableCell>
@@ -102,10 +117,16 @@ export default function LaporanLabaRugi() {
                     </TableRow>
                   </TableBody>
                 </Table>
+                <TablePagination
+                  currentPage={bebanPage}
+                  totalItems={bebanAccounts.length}
+                  itemsPerPage={bebanPerPage}
+                  onPageChange={setBebanPage}
+                  onItemsPerPageChange={setBebanPerPage}
+                />
               </CardContent>
             </Card>
 
-            {/* Laba/Rugi */}
             <Card className={labaRugi >= 0 ? "border-green-300" : "border-red-300"}>
               <CardContent className="p-6">
                 <div className="flex justify-between items-center">
