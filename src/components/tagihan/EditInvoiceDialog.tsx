@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,13 +8,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Pencil, Save, Loader2 } from "lucide-react";
-import { useUpdateBill, useUpdateBillPaymentDetail, type QuarterlyBill, type BillPayment } from "@/hooks/useBills";
-import { format } from "date-fns";
-import { id as localeId } from "date-fns/locale";
+import { Pencil, Save, Loader2, Info } from "lucide-react";
+import { useUpdateBill, useUpdateBillPaymentDetail, type QuarterlyBill } from "@/hooks/useBills";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
+
+const statusLabels: Record<string, { label: string; color: string }> = {
+  unpaid: { label: "Belum Bayar", color: "bg-warning/10 text-warning border-warning/30" },
+  partial: { label: "Bayar Sebagian", color: "bg-blue-50 text-blue-700 border-blue-200" },
+  paid: { label: "Lunas", color: "bg-success/10 text-success border-success/30" },
+};
 
 interface EditInvoiceDialogProps {
   bill: QuarterlyBill | null;
@@ -28,7 +32,6 @@ export function EditInvoiceDialog({ bill, open, onOpenChange }: EditInvoiceDialo
 
   const [dueDate, setDueDate] = useState("");
   const [notes, setNotes] = useState("");
-  const [paymentStatus, setPaymentStatus] = useState<"unpaid" | "paid" | "partial">("unpaid");
   const [scMonthly, setScMonthly] = useState(0);
   const [sfMonthly, setSfMonthly] = useState(0);
   const [editingPayments, setEditingPayments] = useState<Record<string, { sc_amount: number; sf_amount: number; is_paid: boolean }>>({});
@@ -37,7 +40,6 @@ export function EditInvoiceDialog({ bill, open, onOpenChange }: EditInvoiceDialo
     if (bill) {
       setDueDate(bill.due_date || "");
       setNotes(bill.notes || "");
-      setPaymentStatus(bill.payment_status);
       setScMonthly(bill.sc_monthly || 0);
       setSfMonthly(bill.sf_monthly || 0);
 
@@ -49,6 +51,16 @@ export function EditInvoiceDialog({ bill, open, onOpenChange }: EditInvoiceDialo
     }
   }, [bill]);
 
+  // Auto-compute status based on monthly payments
+  const computedStatus = useMemo(() => {
+    const payments = Object.values(editingPayments);
+    if (payments.length === 0) return "unpaid";
+    const paidCount = payments.filter((p) => p.is_paid).length;
+    if (paidCount === 0) return "unpaid";
+    if (paidCount >= payments.length) return "paid"; // All 3 months paid = Lunas
+    return "partial"; // 1-2 months paid = Bayar Sebagian
+  }, [editingPayments]);
+
   if (!bill) return null;
 
   const handleSave = async () => {
@@ -56,19 +68,25 @@ export function EditInvoiceDialog({ bill, open, onOpenChange }: EditInvoiceDialo
     const sf_total = sfMonthly * 3;
     const total_amount = sc_total + sf_total;
 
-    // Update main bill
+    // Calculate paid amount from monthly details
+    const paidAmount = Object.values(editingPayments)
+      .filter((p) => p.is_paid)
+      .reduce((sum, p) => sum + p.sc_amount + p.sf_amount, 0);
+
+    // Update main bill with auto-computed status
     await updateBill.mutateAsync({
       id: bill.id,
       due_date: dueDate,
       notes: notes || null,
-      payment_status: paymentStatus,
+      payment_status: computedStatus as "unpaid" | "paid" | "partial",
       sc_monthly: scMonthly,
       sf_monthly: sfMonthly,
       sc_total,
       sf_total,
       total_amount,
       amount: total_amount,
-      paid_at: paymentStatus === "paid" ? new Date().toISOString() : null,
+      paid_amount: paidAmount > 0 ? paidAmount : null,
+      paid_at: computedStatus === "paid" ? new Date().toISOString() : null,
     });
 
     // Update each payment detail
@@ -89,6 +107,7 @@ export function EditInvoiceDialog({ bill, open, onOpenChange }: EditInvoiceDialo
   };
 
   const isSaving = updateBill.isPending || updatePaymentDetail.isPending;
+  const statusInfo = statusLabels[computedStatus] || statusLabels.unpaid;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -201,7 +220,7 @@ export function EditInvoiceDialog({ bill, open, onOpenChange }: EditInvoiceDialo
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="unpaid">Belum Bayar</SelectItem>
-                              <SelectItem value="paid">Lunas</SelectItem>
+                              <SelectItem value="paid">Terbayar</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>
@@ -215,20 +234,21 @@ export function EditInvoiceDialog({ bill, open, onOpenChange }: EditInvoiceDialo
 
           <Separator />
 
-          {/* Status & Notes */}
+          {/* Auto-computed Status Display */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label>Status Pembayaran</Label>
-              <Select value={paymentStatus} onValueChange={(v) => setPaymentStatus(v as any)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unpaid">Belum Bayar</SelectItem>
-                  <SelectItem value="partial">Sebagian Terbayar</SelectItem>
-                  <SelectItem value="paid">Lunas</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label className="flex items-center gap-1.5">
+                Status Pembayaran
+                <Info className="w-3.5 h-3.5 text-muted-foreground" />
+              </Label>
+              <div className="mt-1.5">
+                <Badge variant="outline" className={`text-sm px-3 py-1.5 ${statusInfo.color}`}>
+                  {statusInfo.label}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Status dihitung otomatis dari rincian bulanan di atas
+              </p>
             </div>
             <div>
               <Label>Catatan</Label>
