@@ -707,9 +707,15 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean
+          is_detail: boolean
+          map_to_cash_flow: string | null
+          map_to_neraca: string | null
           normal_balance: string
           opening_balance: number
           parent_id: string | null
+          pos_budget: string | null
+          sumber_dana: string | null
+          up_level: string | null
           updated_at: string
         }
         Insert: {
@@ -722,9 +728,15 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          is_detail?: boolean
+          map_to_cash_flow?: string | null
+          map_to_neraca?: string | null
           normal_balance?: string
           opening_balance?: number
           parent_id?: string | null
+          pos_budget?: string | null
+          sumber_dana?: string | null
+          up_level?: string | null
           updated_at?: string
         }
         Update: {
@@ -737,15 +749,62 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean
+          is_detail?: boolean
+          map_to_cash_flow?: string | null
+          map_to_neraca?: string | null
           normal_balance?: string
           opening_balance?: number
           parent_id?: string | null
+          pos_budget?: string | null
+          sumber_dana?: string | null
+          up_level?: string | null
           updated_at?: string
         }
         Relationships: [
           {
             foreignKeyName: "chart_of_accounts_parent_id_fkey"
             columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coa_audit_log: {
+        Row: {
+          account_id: string | null
+          action: string
+          changed_by: string | null
+          changed_by_name: string | null
+          created_at: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+        }
+        Insert: {
+          account_id?: string | null
+          action: string
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+        }
+        Update: {
+          account_id?: string | null
+          action?: string
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coa_audit_log_account_id_fkey"
+            columns: ["account_id"]
             isOneToOne: false
             referencedRelation: "chart_of_accounts"
             referencedColumns: ["id"]
