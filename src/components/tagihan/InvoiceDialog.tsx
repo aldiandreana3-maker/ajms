@@ -8,7 +8,7 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Printer, FileText, CheckCircle, Clock, AlertCircle, Pencil, Trash2, Loader2 } from "lucide-react";
 import type { QuarterlyBill } from "@/hooks/useBills";
-import { useDeleteBill } from "@/hooks/useBills";
+import { useDeleteBill, useBills } from "@/hooks/useBills";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,7 +24,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: typeof 
 };
 
 export function InvoiceDialog({
-  bill,
+  bill: billProp,
   open,
   onOpenChange,
 }: {
@@ -38,6 +38,10 @@ export function InvoiceDialog({
   const { isSuperAdmin, isMasterDev, isAdmin } = useAuth();
   const canEdit = isMasterDev || isSuperAdmin || isAdmin;
   const deleteMutation = useDeleteBill();
+
+  // Use fresh data from cache to keep invoice in sync after edits
+  const { data: allBills } = useBills();
+  const bill = (allBills?.find((b) => b.id === billProp?.id) || billProp) as QuarterlyBill | null;
 
   // Fetch unit type info
   const { data: unitInfo } = useQuery({
@@ -78,6 +82,7 @@ export function InvoiceDialog({
   const status = statusConfig[bill.payment_status] || statusConfig.unpaid;
   const StatusIcon = status.icon;
   const paidMonths = bill.bill_payments?.filter((p) => p.is_paid).length || 0;
+  const totalMonths = bill.bill_payments?.length || 3;
   const totalPaid = bill.bill_payments?.filter((p) => p.is_paid).reduce((s, p) => s + (p.paid_amount || p.total_amount), 0) || 0;
   const remaining = bill.total_amount - totalPaid;
   const now = new Date();
@@ -251,7 +256,7 @@ export function InvoiceDialog({
                   <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "right" }}>{formatCurrency(bill.sc_total)}</td>
                   <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "right" }}>{formatCurrency(bill.sf_total)}</td>
                   <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "right" }}>{formatCurrency(bill.total_amount)}</td>
-                  <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "center" }}>{paidMonths}/3</td>
+                  <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "center" }}>{paidMonths}/{totalMonths}</td>
                 </tr>
               </tbody>
             </table>
