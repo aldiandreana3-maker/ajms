@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useBillRates, useCreateBillRate, useUpdateBillRate, useDeleteBillRate, BillRate } from "@/hooks/useBillRates";
-import { Settings, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Settings, Plus, Pencil, Trash2, Loader2, ChevronDown, ChevronRight } from "lucide-react";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
@@ -17,6 +18,7 @@ export function BillRatesCard() {
   const updateMutation = useUpdateBillRate();
   const deleteMutation = useDeleteBillRate();
 
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [editingRate, setEditingRate] = useState<BillRate | null>(null);
   const [form, setForm] = useState({ area_label: "", area_sqm: "", quarterly_amount: "", monthly_sc: "", monthly_sf: "" });
@@ -66,146 +68,120 @@ export function BillRatesCard() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Settings className="w-5 h-5 text-primary" />
-          Tarif IPL per Tipe Unit
-        </CardTitle>
-        <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="w-4 h-4 mr-1" /> Tambah Tarif
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-sm">
-            <DialogHeader>
-              <DialogTitle>{editingRate ? "Edit Tarif" : "Tambah Tarif Baru"}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Label Tipe</Label>
-                <Input
-                  value={form.area_label}
-                  onChange={(e) => setForm({ ...form, area_label: e.target.value })}
-                  placeholder="Tipe 18.5 m²"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Luas (m²)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={form.area_sqm}
-                  onChange={(e) => setForm({ ...form, area_sqm: e.target.value })}
-                  placeholder="18.5"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Tarif Total per 3 Bulan (Rp)</Label>
-                <Input
-                  type="number"
-                  value={form.quarterly_amount}
-                  onChange={(e) => setForm({ ...form, quarterly_amount: e.target.value })}
-                  placeholder="666000"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>SC (Service Charge) per Bulan (Rp)</Label>
-                <Input
-                  type="number"
-                  value={form.monthly_sc}
-                  onChange={(e) => setForm({ ...form, monthly_sc: e.target.value })}
-                  placeholder="555000"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>SF (Sinking Fund) per Bulan (Rp)</Label>
-                <Input
-                  type="number"
-                  value={form.monthly_sf}
-                  onChange={(e) => setForm({ ...form, monthly_sf: e.target.value })}
-                  placeholder="111000"
-                  required
-                />
-              </div>
-              {(scVal > 0 || sfVal > 0) && (
-                <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
-                  <p className="font-medium">Ringkasan per Bulan:</p>
-                  <p>SC: <strong>{formatCurrency(scVal)}</strong></p>
-                  <p>SF: <strong>{formatCurrency(sfVal)}</strong></p>
-                  <p className="text-muted-foreground pt-1">Total/bulan: {formatCurrency(scVal + sfVal)}</p>
-                </div>
+      <Collapsible open={!isCollapsed} onOpenChange={(open) => setIsCollapsed(!open)}>
+        <CardHeader className="flex flex-row items-center justify-between py-3">
+          <CollapsibleTrigger asChild>
+            <button className="flex items-center gap-2 text-lg font-semibold hover:text-primary transition-colors">
+              {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+              <Settings className="w-5 h-5 text-primary" />
+              <span>Tarif IPL per Tipe Unit</span>
+              {isCollapsed && rates && (
+                <span className="text-sm font-normal text-muted-foreground ml-2">({rates.length} tipe)</span>
               )}
-              <Button type="submit" className="w-full" disabled={isPending}>
-                {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {editingRate ? "Simpan Perubahan" : "Tambah"}
+            </button>
+          </CollapsibleTrigger>
+          <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) resetForm(); }}>
+            <DialogTrigger asChild>
+              <Button size="sm" onClick={(e) => e.stopPropagation()}>
+                <Plus className="w-4 h-4 mr-1" /> Tambah Tarif
               </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex justify-center py-6">
-            <Loader2 className="w-5 h-5 animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tipe Unit</TableHead>
-                  <TableHead>Luas</TableHead>
-                  <TableHead>Total / 3 Bulan</TableHead>
-                  <TableHead>SC / Bulan</TableHead>
-                  <TableHead>SF / Bulan</TableHead>
-                  <TableHead>Total / Bulan</TableHead>
-                  <TableHead className="w-20">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rates?.map((rate) => (
-                  <TableRow key={rate.id}>
-                    <TableCell className="font-medium">{rate.area_label}</TableCell>
-                    <TableCell>{rate.area_sqm} m²</TableCell>
-                    <TableCell>{formatCurrency(rate.quarterly_amount)}</TableCell>
-                    <TableCell>{formatCurrency(rate.monthly_sc)}</TableCell>
-                    <TableCell>{formatCurrency(rate.monthly_sf)}</TableCell>
-                    <TableCell className="font-medium">{formatCurrency(rate.monthly_sc + rate.monthly_sf)}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(rate)}>
-                          <Pencil className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive"
-                          onClick={() => deleteMutation.mutate(rate.id)}
-                          disabled={deleteMutation.isPending}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {(!rates || rates.length === 0) && (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-6">
-                      Belum ada tarif
-                    </TableCell>
-                  </TableRow>
+            </DialogTrigger>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>{editingRate ? "Edit Tarif" : "Tambah Tarif Baru"}</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Label Tipe</Label>
+                  <Input value={form.area_label} onChange={(e) => setForm({ ...form, area_label: e.target.value })} placeholder="Tipe 18.5 m²" required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Luas (m²)</Label>
+                  <Input type="number" step="0.1" value={form.area_sqm} onChange={(e) => setForm({ ...form, area_sqm: e.target.value })} placeholder="18.5" required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tarif Total per 3 Bulan (Rp)</Label>
+                  <Input type="number" value={form.quarterly_amount} onChange={(e) => setForm({ ...form, quarterly_amount: e.target.value })} placeholder="666000" required />
+                </div>
+                <div className="space-y-2">
+                  <Label>SC (Service Charge) per Bulan (Rp)</Label>
+                  <Input type="number" value={form.monthly_sc} onChange={(e) => setForm({ ...form, monthly_sc: e.target.value })} placeholder="555000" required />
+                </div>
+                <div className="space-y-2">
+                  <Label>SF (Sinking Fund) per Bulan (Rp)</Label>
+                  <Input type="number" value={form.monthly_sf} onChange={(e) => setForm({ ...form, monthly_sf: e.target.value })} placeholder="111000" required />
+                </div>
+                {(scVal > 0 || sfVal > 0) && (
+                  <div className="p-3 bg-muted rounded-lg text-sm space-y-1">
+                    <p className="font-medium">Ringkasan per Bulan:</p>
+                    <p>SC: <strong>{formatCurrency(scVal)}</strong></p>
+                    <p>SF: <strong>{formatCurrency(sfVal)}</strong></p>
+                    <p className="text-muted-foreground pt-1">Total/bulan: {formatCurrency(scVal + sfVal)}</p>
+                  </div>
                 )}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
+                <Button type="submit" className="w-full" disabled={isPending}>
+                  {isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  {editingRate ? "Simpan Perubahan" : "Tambah"}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CollapsibleContent>
+          <CardContent className="pt-0">
+            {isLoading ? (
+              <div className="flex justify-center py-6">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tipe Unit</TableHead>
+                      <TableHead>Luas</TableHead>
+                      <TableHead>Total / 3 Bulan</TableHead>
+                      <TableHead>SC / Bulan</TableHead>
+                      <TableHead>SF / Bulan</TableHead>
+                      <TableHead>Total / Bulan</TableHead>
+                      <TableHead className="w-20">Aksi</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rates?.map((rate) => (
+                      <TableRow key={rate.id}>
+                        <TableCell className="font-medium">{rate.area_label}</TableCell>
+                        <TableCell>{rate.area_sqm} m²</TableCell>
+                        <TableCell>{formatCurrency(rate.quarterly_amount)}</TableCell>
+                        <TableCell>{formatCurrency(rate.monthly_sc)}</TableCell>
+                        <TableCell>{formatCurrency(rate.monthly_sf)}</TableCell>
+                        <TableCell className="font-medium">{formatCurrency(rate.monthly_sc + rate.monthly_sf)}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(rate)}>
+                              <Pencil className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deleteMutation.mutate(rate.id)} disabled={deleteMutation.isPending}>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {(!rates || rates.length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center text-muted-foreground py-6">
+                          Belum ada tarif
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
     </Card>
   );
 }
