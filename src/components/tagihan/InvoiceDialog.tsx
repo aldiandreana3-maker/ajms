@@ -256,7 +256,7 @@ export function InvoiceDialog({
                   <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "right" }}>{formatCurrency(bill.sc_total)}</td>
                   <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "right" }}>{formatCurrency(bill.sf_total)}</td>
                   <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "right" }}>{formatCurrency(bill.total_amount)}</td>
-                  <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "center" }}>{paidMonths}/3</td>
+                  <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "center" }}>{paidMonths}/{totalMonths}</td>
                 </tr>
               </tbody>
             </table>
