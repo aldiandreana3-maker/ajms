@@ -1,12 +1,14 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import { Printer, FileText, CheckCircle, Clock, AlertCircle, Pencil } from "lucide-react";
+import { Printer, FileText, CheckCircle, Clock, AlertCircle, Pencil, Trash2, Loader2 } from "lucide-react";
 import type { QuarterlyBill } from "@/hooks/useBills";
+import { useDeleteBill } from "@/hooks/useBills";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,8 +34,10 @@ export function InvoiceDialog({
 }) {
   const printRef = useRef<HTMLDivElement>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const { isSuperAdmin, isMasterDev, isAdmin } = useAuth();
   const canEdit = isMasterDev || isSuperAdmin || isAdmin;
+  const deleteMutation = useDeleteBill();
 
   // Fetch unit type info
   const { data: unitInfo } = useQuery({
@@ -116,196 +120,243 @@ export function InvoiceDialog({
     setTimeout(() => { w.print(); w.close(); }, 300);
   };
 
+  const handleDelete = () => {
+    deleteMutation.mutate(bill.id, {
+      onSuccess: () => {
+        setDeleteConfirmOpen(false);
+        onOpenChange(false);
+      },
+    });
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            Invoice Tagihan
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Invoice Tagihan
+            </DialogTitle>
+          </DialogHeader>
 
-        <div ref={printRef} className="bg-white text-black p-6 border rounded-lg text-sm">
-          {/* Header */}
-          <div className="invoice-header" style={{ textAlign: "center", borderBottom: "3px solid #1a1a1a", paddingBottom: "16px", marginBottom: "20px" }}>
-            <h1 style={{ fontSize: "22px", margin: "0", letterSpacing: "3px", fontWeight: "bold" }}>INVOICE</h1>
-            <p style={{ fontSize: "10px", color: "#666", margin: "4px 0 0" }}>Apartment Management System</p>
-          </div>
+          <div ref={printRef} className="bg-white text-black p-6 border rounded-lg text-sm">
+            {/* Header */}
+            <div className="invoice-header" style={{ textAlign: "center", borderBottom: "3px solid #1a1a1a", paddingBottom: "16px", marginBottom: "20px" }}>
+              <h1 style={{ fontSize: "22px", margin: "0", letterSpacing: "3px", fontWeight: "bold" }}>INVOICE</h1>
+              <p style={{ fontSize: "10px", color: "#666", margin: "4px 0 0" }}>Apartment Management System</p>
+            </div>
 
-          {/* Info Grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
-            {/* Left: Data Penghuni */}
-            <div>
-              <h3 style={{ fontSize: "11px", textTransform: "uppercase", color: "#666", letterSpacing: "1px", margin: "0 0 8px", borderBottom: "1px solid #e5e5e5", paddingBottom: "4px" }}>
-                Data Penghuni
-              </h3>
-              <div style={{ fontSize: "11px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
-                  <span style={{ color: "#666" }}>Nama</span>
-                  <span style={{ fontWeight: 600 }}>{bill.penghuni?.full_name || "-"}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
-                  <span style={{ color: "#666" }}>No. Unit</span>
-                  <span style={{ fontWeight: 600 }}>{bill.units?.unit_number || bill.unit_number || "-"}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
-                  <span style={{ color: "#666" }}>Tipe Unit</span>
-                  <span style={{ fontWeight: 600 }}>{unitInfo?.type || "-"}{unitInfo?.area_sqm ? ` (${unitInfo.area_sqm} m²)` : ""}</span>
-                </div>
-                {bill.penghuni?.phone && (
+            {/* Info Grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
+              {/* Left: Data Penghuni */}
+              <div>
+                <h3 style={{ fontSize: "11px", textTransform: "uppercase", color: "#666", letterSpacing: "1px", margin: "0 0 8px", borderBottom: "1px solid #e5e5e5", paddingBottom: "4px" }}>
+                  Data Penghuni
+                </h3>
+                <div style={{ fontSize: "11px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
-                    <span style={{ color: "#666" }}>Telepon</span>
-                    <span style={{ fontWeight: 600 }}>{bill.penghuni.phone}</span>
+                    <span style={{ color: "#666" }}>Nama</span>
+                    <span style={{ fontWeight: 600 }}>{bill.penghuni?.full_name || "-"}</span>
                   </div>
-                )}
-                {agentInfo && (
                   <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
-                    <span style={{ color: "#666" }}>Agent</span>
-                    <span style={{ fontWeight: 600 }}>{agentInfo.name}</span>
+                    <span style={{ color: "#666" }}>No. Unit</span>
+                    <span style={{ fontWeight: 600 }}>{bill.units?.unit_number || bill.unit_number || "-"}</span>
                   </div>
-                )}
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
+                    <span style={{ color: "#666" }}>Tipe Unit</span>
+                    <span style={{ fontWeight: 600 }}>{unitInfo?.type || "-"}{unitInfo?.area_sqm ? ` (${unitInfo.area_sqm} m²)` : ""}</span>
+                  </div>
+                  {bill.penghuni?.phone && (
+                    <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
+                      <span style={{ color: "#666" }}>Telepon</span>
+                      <span style={{ fontWeight: 600 }}>{bill.penghuni.phone}</span>
+                    </div>
+                  )}
+                  {agentInfo && (
+                    <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
+                      <span style={{ color: "#666" }}>Agent</span>
+                      <span style={{ fontWeight: 600 }}>{agentInfo.name}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right: Info Invoice */}
+              <div>
+                <h3 style={{ fontSize: "11px", textTransform: "uppercase", color: "#666", letterSpacing: "1px", margin: "0 0 8px", borderBottom: "1px solid #e5e5e5", paddingBottom: "4px" }}>
+                  Informasi Invoice
+                </h3>
+                <div style={{ fontSize: "11px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
+                    <span style={{ color: "#666" }}>Tanggal Invoice</span>
+                    <span style={{ fontWeight: 600 }}>{format(new Date(bill.created_at), "dd MMMM yyyy", { locale: localeId })}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
+                    <span style={{ color: "#666" }}>Jam Dibuat</span>
+                    <span style={{ fontWeight: 600 }}>{format(new Date(bill.created_at), "HH:mm", { locale: localeId })} WIB</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
+                    <span style={{ color: "#666" }}>Periode</span>
+                    <span style={{ fontWeight: 600 }}>{bill.quarter_label || "-"}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
+                    <span style={{ color: "#666" }}>Jatuh Tempo</span>
+                    <span style={{ fontWeight: 600, color: "#dc2626" }}>{bill.due_date ? format(new Date(bill.due_date), "dd MMMM yyyy", { locale: localeId }) : "-"}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Right: Info Invoice */}
-            <div>
-              <h3 style={{ fontSize: "11px", textTransform: "uppercase", color: "#666", letterSpacing: "1px", margin: "0 0 8px", borderBottom: "1px solid #e5e5e5", paddingBottom: "4px" }}>
-                Informasi Invoice
-              </h3>
-              <div style={{ fontSize: "11px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
-                  <span style={{ color: "#666" }}>Tanggal Invoice</span>
-                  <span style={{ fontWeight: 600 }}>{format(new Date(bill.created_at), "dd MMMM yyyy", { locale: localeId })}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
-                  <span style={{ color: "#666" }}>Jam Dibuat</span>
-                  <span style={{ fontWeight: 600 }}>{format(new Date(bill.created_at), "HH:mm", { locale: localeId })} WIB</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
-                  <span style={{ color: "#666" }}>Periode</span>
-                  <span style={{ fontWeight: 600 }}>{bill.quarter_label || "-"}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
-                  <span style={{ color: "#666" }}>Jatuh Tempo</span>
-                  <span style={{ fontWeight: 600, color: "#dc2626" }}>{bill.due_date ? format(new Date(bill.due_date), "dd MMMM yyyy", { locale: localeId }) : "-"}</span>
-                </div>
+            {/* Monthly Breakdown Table */}
+            <h3 style={{ fontSize: "11px", textTransform: "uppercase", color: "#666", letterSpacing: "1px", margin: "0 0 8px", borderBottom: "1px solid #e5e5e5", paddingBottom: "4px" }}>
+              Rincian Tagihan Per Bulan
+            </h3>
+            <table className="detail-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px", marginBottom: "16px" }}>
+              <thead>
+                <tr style={{ background: "#f5f5f5" }}>
+                  <th style={{ border: "1px solid #d4d4d4", padding: "8px", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#525252" }}>Bulan</th>
+                  <th style={{ border: "1px solid #d4d4d4", padding: "8px", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#525252" }}>Service Charge</th>
+                  <th style={{ border: "1px solid #d4d4d4", padding: "8px", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#525252" }}>Sinking Fund</th>
+                  <th style={{ border: "1px solid #d4d4d4", padding: "8px", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#525252" }}>Total</th>
+                  <th style={{ border: "1px solid #d4d4d4", padding: "8px", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#525252" }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bill.bill_payments?.map((p) => (
+                  <tr key={p.id}>
+                    <td style={{ border: "1px solid #d4d4d4", padding: "8px", fontWeight: 600 }}>{p.month_label}</td>
+                    <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "right" }}>{formatCurrency(p.sc_amount)}</td>
+                    <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "right" }}>{formatCurrency(p.sf_amount)}</td>
+                    <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "right", fontWeight: 600 }}>{formatCurrency(p.total_amount)}</td>
+                    <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "center" }}>
+                      {p.is_paid ? (
+                        <span style={{ color: "#166534", fontWeight: 600 }}>✓ Lunas</span>
+                      ) : (
+                        <span style={{ color: "#92400e", fontWeight: 600 }}>Belum Bayar</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {(!bill.bill_payments || bill.bill_payments.length === 0) && (
+                  <tr>
+                    <td colSpan={5} style={{ border: "1px solid #d4d4d4", padding: "12px", textAlign: "center", color: "#999" }}>
+                      Tidak ada rincian bulanan
+                    </td>
+                  </tr>
+                )}
+                {/* Total Row */}
+                <tr style={{ fontWeight: "bold", background: "#fafafa" }}>
+                  <td style={{ border: "1px solid #d4d4d4", padding: "8px" }}>TOTAL</td>
+                  <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "right" }}>{formatCurrency(bill.sc_total)}</td>
+                  <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "right" }}>{formatCurrency(bill.sf_total)}</td>
+                  <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "right" }}>{formatCurrency(bill.total_amount)}</td>
+                  <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "center" }}>{paidMonths}/3</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Summary */}
+            <div style={{ border: "1px solid #d4d4d4", borderRadius: "6px", padding: "12px", marginTop: "16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: "12px" }}>
+                <span>Total Tagihan</span>
+                <span style={{ fontWeight: 600 }}>{formatCurrency(bill.total_amount)}</span>
               </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: "12px" }}>
+                <span>Total Terbayar</span>
+                <span style={{ fontWeight: 600, color: "#166534" }}>{formatCurrency(totalPaid)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0 4px", fontSize: "14px", fontWeight: "bold", borderTop: "2px solid #1a1a1a", marginTop: "4px" }}>
+                <span>Sisa Tagihan</span>
+                <span style={{ color: remaining > 0 ? "#dc2626" : "#166534" }}>{formatCurrency(remaining)}</span>
+              </div>
+            </div>
+
+            {/* Status Badge */}
+            <div style={{ textAlign: "center", margin: "16px 0" }}>
+              <span style={{
+                display: "inline-block", padding: "8px 24px", borderRadius: "6px",
+                fontWeight: "bold", fontSize: "14px", letterSpacing: "1px",
+                background: bill.payment_status === "paid" ? "#dcfce7" : bill.payment_status === "partial" ? "#dbeafe" : "#fef3c7",
+                color: bill.payment_status === "paid" ? "#166534" : bill.payment_status === "partial" ? "#1e40af" : "#92400e",
+                border: `2px solid ${bill.payment_status === "paid" ? "#22c55e" : bill.payment_status === "partial" ? "#3b82f6" : "#f59e0b"}`,
+              }}>
+                {bill.payment_status === "paid" ? "✓ " : ""}{statusConfig[bill.payment_status]?.label || "Belum Bayar"}
+              </span>
+            </div>
+
+            {bill.notes && (
+              <div style={{ fontSize: "11px", color: "#666", marginTop: "12px", padding: "8px", background: "#fafafa", borderRadius: "4px" }}>
+                <strong>Catatan:</strong> {bill.notes}
+              </div>
+            )}
+
+            {/* Footer */}
+            <div style={{ textAlign: "center", fontSize: "9px", color: "#999", borderTop: "1px solid #e5e5e5", paddingTop: "12px", marginTop: "24px" }}>
+              <p>Invoice dibuat pada: {format(now, "dd MMMM yyyy", { locale: localeId })} pukul {format(now, "HH:mm", { locale: localeId })} WIB</p>
+              <p style={{ marginTop: "2px" }}>Dokumen ini dicetak secara otomatis oleh sistem</p>
             </div>
           </div>
 
-          {/* Monthly Breakdown Table */}
-          <h3 style={{ fontSize: "11px", textTransform: "uppercase", color: "#666", letterSpacing: "1px", margin: "0 0 8px", borderBottom: "1px solid #e5e5e5", paddingBottom: "4px" }}>
-            Rincian Tagihan Per Bulan
-          </h3>
-          <table className="detail-table" style={{ width: "100%", borderCollapse: "collapse", fontSize: "11px", marginBottom: "16px" }}>
-            <thead>
-              <tr style={{ background: "#f5f5f5" }}>
-                <th style={{ border: "1px solid #d4d4d4", padding: "8px", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#525252" }}>Bulan</th>
-                <th style={{ border: "1px solid #d4d4d4", padding: "8px", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#525252" }}>Service Charge</th>
-                <th style={{ border: "1px solid #d4d4d4", padding: "8px", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#525252" }}>Sinking Fund</th>
-                <th style={{ border: "1px solid #d4d4d4", padding: "8px", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#525252" }}>Total</th>
-                <th style={{ border: "1px solid #d4d4d4", padding: "8px", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#525252" }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {bill.bill_payments?.map((p) => (
-                <tr key={p.id}>
-                  <td style={{ border: "1px solid #d4d4d4", padding: "8px", fontWeight: 600 }}>{p.month_label}</td>
-                  <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "right" }}>{formatCurrency(p.sc_amount)}</td>
-                  <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "right" }}>{formatCurrency(p.sf_amount)}</td>
-                  <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "right", fontWeight: 600 }}>{formatCurrency(p.total_amount)}</td>
-                  <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "center" }}>
-                    {p.is_paid ? (
-                      <span style={{ color: "#166534", fontWeight: 600 }}>✓ Lunas</span>
-                    ) : (
-                      <span style={{ color: "#92400e", fontWeight: 600 }}>Belum Bayar</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {(!bill.bill_payments || bill.bill_payments.length === 0) && (
-                <tr>
-                  <td colSpan={5} style={{ border: "1px solid #d4d4d4", padding: "12px", textAlign: "center", color: "#999" }}>
-                    Tidak ada rincian bulanan
-                  </td>
-                </tr>
+          <div className="flex gap-2 justify-between">
+            <div>
+              {canEdit && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Hapus Tagihan
+                </Button>
               )}
-              {/* Total Row */}
-              <tr style={{ fontWeight: "bold", background: "#fafafa" }}>
-                <td style={{ border: "1px solid #d4d4d4", padding: "8px" }}>TOTAL</td>
-                <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "right" }}>{formatCurrency(bill.sc_total)}</td>
-                <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "right" }}>{formatCurrency(bill.sf_total)}</td>
-                <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "right" }}>{formatCurrency(bill.total_amount)}</td>
-                <td style={{ border: "1px solid #d4d4d4", padding: "8px", textAlign: "center" }}>{paidMonths}/3</td>
-              </tr>
-            </tbody>
-          </table>
-
-          {/* Summary */}
-          <div style={{ border: "1px solid #d4d4d4", borderRadius: "6px", padding: "12px", marginTop: "16px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: "12px" }}>
-              <span>Total Tagihan</span>
-              <span style={{ fontWeight: 600 }}>{formatCurrency(bill.total_amount)}</span>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: "12px" }}>
-              <span>Total Terbayar</span>
-              <span style={{ fontWeight: 600, color: "#166534" }}>{formatCurrency(totalPaid)}</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0 4px", fontSize: "14px", fontWeight: "bold", borderTop: "2px solid #1a1a1a", marginTop: "4px" }}>
-              <span>Sisa Tagihan</span>
-              <span style={{ color: remaining > 0 ? "#dc2626" : "#166534" }}>{formatCurrency(remaining)}</span>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>Tutup</Button>
+              {canEdit && (
+                <Button variant="secondary" onClick={() => setEditOpen(true)}>
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Edit Invoice
+                </Button>
+              )}
+              <Button onClick={handlePrint}>
+                <Printer className="w-4 h-4 mr-2" />
+                Cetak Invoice
+              </Button>
             </div>
           </div>
 
-          {/* Status Badge */}
-          <div style={{ textAlign: "center", margin: "16px 0" }}>
-            <span style={{
-              display: "inline-block", padding: "8px 24px", borderRadius: "6px",
-              fontWeight: "bold", fontSize: "14px", letterSpacing: "1px",
-              background: bill.payment_status === "paid" ? "#dcfce7" : bill.payment_status === "partial" ? "#dbeafe" : "#fef3c7",
-              color: bill.payment_status === "paid" ? "#166534" : bill.payment_status === "partial" ? "#1e40af" : "#92400e",
-              border: `2px solid ${bill.payment_status === "paid" ? "#22c55e" : bill.payment_status === "partial" ? "#3b82f6" : "#f59e0b"}`,
-            }}>
-              {bill.payment_status === "paid" ? "✓ " : ""}{statusConfig[bill.payment_status]?.label || "Belum Bayar"}
-            </span>
-          </div>
-
-          {bill.notes && (
-            <div style={{ fontSize: "11px", color: "#666", marginTop: "12px", padding: "8px", background: "#fafafa", borderRadius: "4px" }}>
-              <strong>Catatan:</strong> {bill.notes}
-            </div>
-          )}
-
-          {/* Footer */}
-          <div style={{ textAlign: "center", fontSize: "9px", color: "#999", borderTop: "1px solid #e5e5e5", paddingTop: "12px", marginTop: "24px" }}>
-            <p>Invoice dibuat pada: {format(now, "dd MMMM yyyy", { locale: localeId })} pukul {format(now, "HH:mm", { locale: localeId })} WIB</p>
-            <p style={{ marginTop: "2px" }}>Dokumen ini dicetak secara otomatis oleh sistem</p>
-          </div>
-        </div>
-
-        <div className="flex gap-2 justify-end">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Tutup</Button>
           {canEdit && (
-            <Button variant="secondary" onClick={() => setEditOpen(true)}>
-              <Pencil className="w-4 h-4 mr-2" />
-              Edit Invoice
-            </Button>
+            <EditInvoiceDialog
+              bill={bill}
+              open={editOpen}
+              onOpenChange={setEditOpen}
+            />
           )}
-          <Button onClick={handlePrint}>
-            <Printer className="w-4 h-4 mr-2" />
-            Cetak Invoice
-          </Button>
-        </div>
+        </DialogContent>
+      </Dialog>
 
-        {canEdit && (
-          <EditInvoiceDialog
-            bill={bill}
-            open={editOpen}
-            onOpenChange={setEditOpen}
-          />
-        )}
-      </DialogContent>
-    </Dialog>
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Tagihan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus tagihan kuartalan ini beserta semua detail pembayarannya? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDelete}
+            >
+              {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
