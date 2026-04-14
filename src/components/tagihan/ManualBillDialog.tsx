@@ -95,7 +95,6 @@ export function ManualBillDialog({ defaultUnitId, trigger }: ManualBillDialogPro
             Tagihan Manual
           </Button>
         )}
-        </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
