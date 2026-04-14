@@ -105,12 +105,18 @@ export function useChartOfAccounts() {
   const deleteAccount = useMutation({
     mutationFn: async (id: string) => {
       const oldAccount = accounts.find((a) => a.id === id);
+      
+      // Delete related records first to avoid foreign key constraints
+      await supabase.from("coa_audit_log" as any).delete().eq("account_id", id);
+      await supabase.from("reconciliations" as any).delete().eq("account_id", id);
+      await supabase.from("journal_entry_lines" as any).delete().eq("account_id", id);
+      
       const { error } = await supabase
         .from("chart_of_accounts" as any)
         .delete()
         .eq("id", id);
       if (error) throw error;
-      await logAudit("delete", id, oldAccount, null);
+      await logAudit("delete", null, oldAccount, null);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chart_of_accounts"] });
