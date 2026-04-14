@@ -31,6 +31,9 @@ export function InvoiceDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const printRef = useRef<HTMLDivElement>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const { isSuperAdmin, isMasterDev, isAdmin } = useAuth();
+  const canEdit = isMasterDev || isSuperAdmin || isAdmin;
 
   // Fetch unit type info
   const { data: unitInfo } = useQuery({
