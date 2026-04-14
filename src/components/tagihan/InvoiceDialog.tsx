@@ -1,14 +1,16 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import { Printer, FileText, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Printer, FileText, CheckCircle, Clock, AlertCircle, Pencil } from "lucide-react";
 import type { QuarterlyBill } from "@/hooks/useBills";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { EditInvoiceDialog } from "./EditInvoiceDialog";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
