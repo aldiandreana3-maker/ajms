@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { ArrowLeft, Send, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 
 const formatRp = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
@@ -19,6 +21,14 @@ export default function PostingData() {
 
   const unposted = entries.filter((e) => !e.is_posted);
   const posted = entries.filter((e) => e.is_posted);
+
+  const [unpostedPage, setUnpostedPage] = useState(1);
+  const [unpostedPerPage, setUnpostedPerPage] = useState(10);
+  const [postedPage, setPostedPage] = useState(1);
+  const [postedPerPage, setPostedPerPage] = useState(10);
+
+  const paginatedUnposted = usePagination(unposted, unpostedPerPage, unpostedPage);
+  const paginatedPosted = usePagination(posted, postedPerPage, postedPage);
 
   return (
     <MainLayout>
@@ -46,6 +56,55 @@ export default function PostingData() {
         {isLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
         ) : (
+          <>
+            <div className="rounded-xl border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>No. Jurnal</TableHead>
+                    <TableHead>Tanggal</TableHead>
+                    <TableHead>Deskripsi</TableHead>
+                    <TableHead className="text-right">Debit</TableHead>
+                    <TableHead className="text-right">Kredit</TableHead>
+                    {canManage && <TableHead className="text-right">Aksi</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedUnposted.length === 0 ? (
+                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Semua jurnal sudah diposting</TableCell></TableRow>
+                  ) : paginatedUnposted.map((e) => (
+                    <TableRow key={e.id}>
+                      <TableCell className="font-mono font-medium">{e.entry_number}</TableCell>
+                      <TableCell>{format(new Date(e.entry_date), "dd MMM yyyy", { locale: idLocale })}</TableCell>
+                      <TableCell>{e.description}</TableCell>
+                      <TableCell className="text-right font-mono">{formatRp(e.total_debit)}</TableCell>
+                      <TableCell className="text-right font-mono">{formatRp(e.total_credit)}</TableCell>
+                      {canManage && (
+                        <TableCell className="text-right">
+                          <Button size="sm" onClick={() => postEntry.mutate(e.id)} disabled={postEntry.isPending}>
+                            {postEntry.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4 mr-1" />Posting</>}
+                          </Button>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            {unposted.length > 0 && (
+              <TablePagination
+                currentPage={unpostedPage}
+                totalItems={unposted.length}
+                itemsPerPage={unpostedPerPage}
+                onPageChange={setUnpostedPage}
+                onItemsPerPageChange={setUnpostedPerPage}
+              />
+            )}
+          </>
+        )}
+
+        <h2 className="text-lg font-semibold mt-8">Jurnal Sudah Diposting ({posted.length})</h2>
+        <>
           <div className="rounded-xl border overflow-x-auto">
             <Table>
               <TableHeader>
@@ -55,62 +114,35 @@ export default function PostingData() {
                   <TableHead>Deskripsi</TableHead>
                   <TableHead className="text-right">Debit</TableHead>
                   <TableHead className="text-right">Kredit</TableHead>
-                  {canManage && <TableHead className="text-right">Aksi</TableHead>}
+                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {unposted.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Semua jurnal sudah diposting</TableCell></TableRow>
-                ) : unposted.map((e) => (
+                {paginatedPosted.length === 0 ? (
+                  <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Belum ada jurnal yang diposting</TableCell></TableRow>
+                ) : paginatedPosted.map((e) => (
                   <TableRow key={e.id}>
                     <TableCell className="font-mono font-medium">{e.entry_number}</TableCell>
                     <TableCell>{format(new Date(e.entry_date), "dd MMM yyyy", { locale: idLocale })}</TableCell>
                     <TableCell>{e.description}</TableCell>
                     <TableCell className="text-right font-mono">{formatRp(e.total_debit)}</TableCell>
                     <TableCell className="text-right font-mono">{formatRp(e.total_credit)}</TableCell>
-                    {canManage && (
-                      <TableCell className="text-right">
-                        <Button size="sm" onClick={() => postEntry.mutate(e.id)} disabled={postEntry.isPending}>
-                          {postEntry.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4 mr-1" />Posting</>}
-                        </Button>
-                      </TableCell>
-                    )}
+                    <TableCell><Badge>Terposting</Badge></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
-        )}
-
-        <h2 className="text-lg font-semibold mt-8">Jurnal Sudah Diposting ({posted.length})</h2>
-        <div className="rounded-xl border overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>No. Jurnal</TableHead>
-                <TableHead>Tanggal</TableHead>
-                <TableHead>Deskripsi</TableHead>
-                <TableHead className="text-right">Debit</TableHead>
-                <TableHead className="text-right">Kredit</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {posted.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Belum ada jurnal yang diposting</TableCell></TableRow>
-              ) : posted.map((e) => (
-                <TableRow key={e.id}>
-                  <TableCell className="font-mono font-medium">{e.entry_number}</TableCell>
-                  <TableCell>{format(new Date(e.entry_date), "dd MMM yyyy", { locale: idLocale })}</TableCell>
-                  <TableCell>{e.description}</TableCell>
-                  <TableCell className="text-right font-mono">{formatRp(e.total_debit)}</TableCell>
-                  <TableCell className="text-right font-mono">{formatRp(e.total_credit)}</TableCell>
-                  <TableCell><Badge>Terposting</Badge></TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+          {posted.length > 0 && (
+            <TablePagination
+              currentPage={postedPage}
+              totalItems={posted.length}
+              itemsPerPage={postedPerPage}
+              onPageChange={setPostedPage}
+              onItemsPerPageChange={setPostedPerPage}
+            />
+          )}
+        </>
       </div>
     </MainLayout>
   );

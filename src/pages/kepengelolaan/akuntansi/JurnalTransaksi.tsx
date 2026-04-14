@@ -14,6 +14,7 @@ import { ArrowLeft, Plus, Trash2, FileText, Loader2, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 
 const formatRp = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
@@ -28,6 +29,8 @@ export default function JurnalTransaksi() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLines, setDetailLines] = useState<JournalEntryLine[]>([]);
   const [detailEntry, setDetailEntry] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [form, setForm] = useState({ entry_number: "", entry_date: new Date().toISOString().split("T")[0], description: "", reference_number: "" });
   const [lines, setLines] = useState<{ account_id: string; debit_amount: number; credit_amount: number; description: string }[]>([
@@ -67,6 +70,8 @@ export default function JurnalTransaksi() {
     setDetailLines(l);
     setDetailOpen(true);
   };
+
+  const paginatedEntries = usePagination(entries, itemsPerPage, currentPage);
 
   return (
     <MainLayout>
@@ -146,43 +151,52 @@ export default function JurnalTransaksi() {
         {isLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
         ) : (
-          <div className="rounded-xl border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>No. Jurnal</TableHead>
-                  <TableHead>Tanggal</TableHead>
-                  <TableHead>Deskripsi</TableHead>
-                  <TableHead className="text-right">Debit</TableHead>
-                  <TableHead className="text-right">Kredit</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {entries.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Belum ada jurnal</TableCell></TableRow>
-                ) : entries.map((e) => (
-                  <TableRow key={e.id}>
-                    <TableCell className="font-mono font-medium">{e.entry_number}</TableCell>
-                    <TableCell>{format(new Date(e.entry_date), "dd MMM yyyy", { locale: idLocale })}</TableCell>
-                    <TableCell>{e.description}</TableCell>
-                    <TableCell className="text-right font-mono">{formatRp(e.total_debit)}</TableCell>
-                    <TableCell className="text-right font-mono">{formatRp(e.total_credit)}</TableCell>
-                    <TableCell>
-                      <Badge variant={e.is_posted ? "default" : "secondary"}>{e.is_posted ? "Terposting" : "Draft"}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => showDetail(e)}><Eye className="w-4 h-4" /></Button>
-                        {canManage && !e.is_posted && <Button variant="ghost" size="icon" onClick={() => deleteEntry.mutate(e.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>}
-                      </div>
-                    </TableCell>
+          <>
+            <div className="rounded-xl border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>No. Jurnal</TableHead>
+                    <TableHead>Tanggal</TableHead>
+                    <TableHead>Deskripsi</TableHead>
+                    <TableHead className="text-right">Debit</TableHead>
+                    <TableHead className="text-right">Kredit</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {paginatedEntries.length === 0 ? (
+                    <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Belum ada jurnal</TableCell></TableRow>
+                  ) : paginatedEntries.map((e) => (
+                    <TableRow key={e.id}>
+                      <TableCell className="font-mono font-medium">{e.entry_number}</TableCell>
+                      <TableCell>{format(new Date(e.entry_date), "dd MMM yyyy", { locale: idLocale })}</TableCell>
+                      <TableCell>{e.description}</TableCell>
+                      <TableCell className="text-right font-mono">{formatRp(e.total_debit)}</TableCell>
+                      <TableCell className="text-right font-mono">{formatRp(e.total_credit)}</TableCell>
+                      <TableCell>
+                        <Badge variant={e.is_posted ? "default" : "secondary"}>{e.is_posted ? "Terposting" : "Draft"}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => showDetail(e)}><Eye className="w-4 h-4" /></Button>
+                          {canManage && !e.is_posted && <Button variant="ghost" size="icon" onClick={() => deleteEntry.mutate(e.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <TablePagination
+              currentPage={currentPage}
+              totalItems={entries.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
+          </>
         )}
 
         <Dialog open={detailOpen} onOpenChange={setDetailOpen}>

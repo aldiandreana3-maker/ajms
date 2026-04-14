@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -5,12 +6,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
 import { ArrowLeft, Scale, Loader2 } from "lucide-react";
+import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 
 const formatRp = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
 export default function NeracaSaldo() {
   const navigate = useNavigate();
   const { accounts, isLoading } = useChartOfAccounts();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const activeAccounts = accounts.filter((a) => a.is_active);
 
@@ -22,6 +26,7 @@ export default function NeracaSaldo() {
   });
 
   const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01;
+  const paginatedAccounts = usePagination(activeAccounts, itemsPerPage, currentPage);
 
   return (
     <MainLayout>
@@ -53,35 +58,44 @@ export default function NeracaSaldo() {
         {isLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
         ) : (
-          <div className="rounded-xl border overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Kode</TableHead>
-                  <TableHead>Nama Akun</TableHead>
-                  <TableHead>Tipe</TableHead>
-                  <TableHead className="text-right">Debit</TableHead>
-                  <TableHead className="text-right">Kredit</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {activeAccounts.map((a) => (
-                  <TableRow key={a.id}>
-                    <TableCell className="font-mono">{a.account_code}</TableCell>
-                    <TableCell className="font-medium">{a.account_name}</TableCell>
-                    <TableCell className="capitalize">{a.account_type}</TableCell>
-                    <TableCell className="text-right font-mono">{a.normal_balance === "debit" ? formatRp(a.current_balance) : "-"}</TableCell>
-                    <TableCell className="text-right font-mono">{a.normal_balance === "kredit" ? formatRp(a.current_balance) : "-"}</TableCell>
+          <>
+            <div className="rounded-xl border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Kode</TableHead>
+                    <TableHead>Nama Akun</TableHead>
+                    <TableHead>Tipe</TableHead>
+                    <TableHead className="text-right">Debit</TableHead>
+                    <TableHead className="text-right">Kredit</TableHead>
                   </TableRow>
-                ))}
-                <TableRow className="bg-muted/50 font-bold">
-                  <TableCell colSpan={3}>TOTAL</TableCell>
-                  <TableCell className="text-right font-mono">{formatRp(totalDebit)}</TableCell>
-                  <TableCell className="text-right font-mono">{formatRp(totalCredit)}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {paginatedAccounts.map((a) => (
+                    <TableRow key={a.id}>
+                      <TableCell className="font-mono">{a.account_code}</TableCell>
+                      <TableCell className="font-medium">{a.account_name}</TableCell>
+                      <TableCell className="capitalize">{a.account_type}</TableCell>
+                      <TableCell className="text-right font-mono">{a.normal_balance === "debit" ? formatRp(a.current_balance) : "-"}</TableCell>
+                      <TableCell className="text-right font-mono">{a.normal_balance === "kredit" ? formatRp(a.current_balance) : "-"}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="bg-muted/50 font-bold">
+                    <TableCell colSpan={3}>TOTAL</TableCell>
+                    <TableCell className="text-right font-mono">{formatRp(totalDebit)}</TableCell>
+                    <TableCell className="text-right font-mono">{formatRp(totalCredit)}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+            <TablePagination
+              currentPage={currentPage}
+              totalItems={activeAccounts.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
+          </>
         )}
       </div>
     </MainLayout>
