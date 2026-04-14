@@ -142,9 +142,9 @@ export function OutstandingBillsCard() {
                         <div className="flex flex-col gap-1">
                           {u.bills.map((b) => (
                             <Badge key={b.id} variant="outline" className="text-xs w-fit">
-                              {b.quarter_label || b.billing_period}
+                              {b.quarter_label || "-"}
                               {b.payment_status === "partial" && (
-                                <span className="ml-1 text-blue-600">(Sebagian)</span>
+                                <span className="ml-1 text-primary">(Sebagian)</span>
                               )}
                             </Badge>
                           ))}
