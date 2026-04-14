@@ -13,10 +13,27 @@ export interface ChartAccount {
   opening_balance: number;
   current_balance: number;
   is_active: boolean;
+  is_detail: boolean;
+  up_level: string;
+  map_to_neraca: string;
+  map_to_cash_flow: string;
+  pos_budget: string;
+  sumber_dana: string;
   description: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface CoaAuditLog {
+  id: string;
+  account_id: string | null;
+  action: string;
+  old_data: any;
+  new_data: any;
+  changed_by: string | null;
+  changed_by_name: string | null;
+  created_at: string;
 }
 
 export function useChartOfAccounts() {
@@ -36,12 +53,27 @@ export function useChartOfAccounts() {
     enabled: !!user,
   });
 
+  const logAudit = async (action: string, accountId: string | null, oldData: any, newData: any) => {
+    await supabase.from("coa_audit_log" as any).insert({
+      account_id: accountId,
+      action,
+      old_data: oldData,
+      new_data: newData,
+      changed_by: user?.id,
+      changed_by_name: user?.email || "",
+    } as any);
+  };
+
   const addAccount = useMutation({
     mutationFn: async (account: Partial<ChartAccount>) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("chart_of_accounts" as any)
-        .insert({ ...account, created_by: user?.id } as any);
+        .insert({ ...account, created_by: user?.id } as any)
+        .select()
+        .single();
       if (error) throw error;
+      await logAudit("create", (data as any).id, null, data);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chart_of_accounts"] });
@@ -52,11 +84,16 @@ export function useChartOfAccounts() {
 
   const updateAccount = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<ChartAccount> & { id: string }) => {
-      const { error } = await supabase
+      const oldAccount = accounts.find((a) => a.id === id);
+      const { data, error } = await supabase
         .from("chart_of_accounts" as any)
         .update(updates as any)
-        .eq("id", id);
+        .eq("id", id)
+        .select()
+        .single();
       if (error) throw error;
+      await logAudit("update", id, oldAccount, data);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chart_of_accounts"] });
@@ -67,11 +104,13 @@ export function useChartOfAccounts() {
 
   const deleteAccount = useMutation({
     mutationFn: async (id: string) => {
+      const oldAccount = accounts.find((a) => a.id === id);
       const { error } = await supabase
         .from("chart_of_accounts" as any)
         .delete()
         .eq("id", id);
       if (error) throw error;
+      await logAudit("delete", id, oldAccount, null);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chart_of_accounts"] });
@@ -80,5 +119,43 @@ export function useChartOfAccounts() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  return { accounts, isLoading, addAccount, updateAccount, deleteAccount };
+  const bulkInsert = useMutation({
+    mutationFn: async (accountsList: Partial<ChartAccount>[]) => {
+      const withCreator = accountsList.map((a) => ({ ...a, created_by: user?.id }));
+      const { data, error } = await supabase
+        .from("chart_of_accounts" as any)
+        .insert(withCreator as any)
+        .select();
+      if (error) throw error;
+      await logAudit("bulk_import", null, null, { count: accountsList.length });
+      return data;
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["chart_of_accounts"] });
+      toast.success(`${vars.length} akun berhasil diimpor`);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return { accounts, isLoading, addAccount, updateAccount, deleteAccount, bulkInsert };
+}
+
+export function useCoaAuditLog() {
+  const { user } = useAuth();
+
+  const { data: logs = [], isLoading } = useQuery({
+    queryKey: ["coa_audit_log"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("coa_audit_log" as any)
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return (data || []) as unknown as CoaAuditLog[];
+    },
+    enabled: !!user,
+  });
+
+  return { logs, isLoading };
 }
