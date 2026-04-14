@@ -37,7 +37,7 @@ export interface CoaAuditLog {
 }
 
 export function useChartOfAccounts() {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: accounts = [], isLoading } = useQuery({
