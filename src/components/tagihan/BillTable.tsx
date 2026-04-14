@@ -3,9 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Loader2, Search, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CheckCircle, XCircle, FileText } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CheckCircle, FileText } from "lucide-react";
 import type { QuarterlyBill } from "@/hooks/useBills";
 import { InvoiceDialog } from "./InvoiceDialog";
 
@@ -26,20 +25,11 @@ const statusLabels: Record<string, string> = {
 
 export function BillTable({
   bills,
-  onPayMonth,
-  onRevertMonth,
-  onDelete,
-  isDeleting,
   showInvoice = false,
 }: {
   bills: QuarterlyBill[];
-  onPayMonth?: (paymentId: string, amount: number) => void;
-  onRevertMonth?: (paymentId: string) => void;
-  onDelete?: (id: string) => void;
-  isDeleting?: boolean;
   showInvoice?: boolean;
 }) {
-  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [expandedBill, setExpandedBill] = useState<string | null>(null);
   const [invoiceBill, setInvoiceBill] = useState<QuarterlyBill | null>(null);
 
@@ -68,7 +58,7 @@ export function BillTable({
     setExpandedBill((prev) => (prev === billId ? null : billId));
   };
 
-  const hasActions = onDelete || showInvoice;
+  const colSpan = showInvoice ? 11 : 10;
 
   return (
     <>
@@ -111,14 +101,13 @@ export function BillTable({
               <TableHead>Total</TableHead>
               <TableHead>Terbayar</TableHead>
               <TableHead>Status</TableHead>
-              {hasActions && <TableHead>{showInvoice && !onDelete ? "Invoice" : "Aksi"}</TableHead>}
+              {showInvoice && <TableHead>Invoice</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginatedBills.map((b) => {
               const isExpanded = expandedBill === b.id;
               const paidMonths = b.bill_payments?.filter((p) => p.is_paid).length || 0;
-              const colSpan = hasActions ? 11 : 10;
 
               return (
                 <>{/* Main row */}
@@ -146,31 +135,17 @@ export function BillTable({
                         {statusLabels[b.payment_status] || b.payment_status}
                       </Badge>
                     </TableCell>
-                    {hasActions && (
+                    {showInvoice && (
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          {showInvoice && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 gap-1"
-                              onClick={(e) => { e.stopPropagation(); setInvoiceBill(b); }}
-                            >
-                              <FileText className="w-3.5 h-3.5" />
-                              Invoice
-                            </Button>
-                          )}
-                          {onDelete && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={(e) => { e.stopPropagation(); setDeleteId(b.id); }}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 gap-1"
+                          onClick={(e) => { e.stopPropagation(); setInvoiceBill(b); }}
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          Invoice
+                        </Button>
                       </TableCell>
                     )}
                   </TableRow>
@@ -189,7 +164,6 @@ export function BillTable({
                                 <TableHead>SF</TableHead>
                                 <TableHead>Total</TableHead>
                                 <TableHead>Status</TableHead>
-                                {(onPayMonth || onRevertMonth) && <TableHead>Aksi</TableHead>}
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -208,25 +182,11 @@ export function BillTable({
                                       <Badge className="bg-warning/20 text-warning border-warning/30">Belum Bayar</Badge>
                                     )}
                                   </TableCell>
-                                  {(onPayMonth || onRevertMonth) && (
-                                    <TableCell>
-                                      {!p.is_paid && onPayMonth && (
-                                        <Button variant="outline" size="sm" onClick={() => onPayMonth(p.id, p.total_amount)}>
-                                          Bayar
-                                        </Button>
-                                      )}
-                                      {p.is_paid && onRevertMonth && (
-                                        <Button variant="outline" size="sm" className="text-destructive" onClick={() => onRevertMonth(p.id)}>
-                                          <XCircle className="w-3 h-3 mr-1" />Batalkan
-                                        </Button>
-                                      )}
-                                    </TableCell>
-                                  )}
                                 </TableRow>
                               ))}
                               {(!b.bill_payments || b.bill_payments.length === 0) && (
                                 <TableRow>
-                                  <TableCell colSpan={(onPayMonth || onRevertMonth) ? 6 : 5} className="text-center text-muted-foreground py-4">
+                                  <TableCell colSpan={5} className="text-center text-muted-foreground py-4">
                                     Tidak ada data pembayaran
                                   </TableCell>
                                 </TableRow>
@@ -242,7 +202,7 @@ export function BillTable({
             })}
             {paginatedBills.length === 0 && (
               <TableRow>
-                <TableCell colSpan={hasActions ? 11 : 10} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={colSpan} className="text-center text-muted-foreground py-8">
                   {searchQuery ? "Tidak ditemukan tagihan yang cocok" : "Tidak ada tagihan"}
                 </TableCell>
               </TableRow>
@@ -277,33 +237,6 @@ export function BillTable({
           </div>
         </div>
       )}
-
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Tagihan</AlertDialogTitle>
-            <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus tagihan kuartalan ini beserta semua detail pembayarannya?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                if (deleteId && onDelete) {
-                  onDelete(deleteId);
-                  setDeleteId(null);
-                }
-              }}
-            >
-              {isDeleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-              Hapus
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Invoice Dialog */}
       <InvoiceDialog
