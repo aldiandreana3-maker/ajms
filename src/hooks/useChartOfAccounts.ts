@@ -60,7 +60,7 @@ export function useChartOfAccounts() {
       old_data: oldData,
       new_data: newData,
       changed_by: user?.id,
-      changed_by_name: profile?.full_name || user?.email || "",
+      changed_by_name: user?.email || "",
     } as any);
   };
 
