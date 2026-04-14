@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBills } from "@/hooks/useBills";
 import { useAuth } from "@/contexts/AuthContext";
 import { BillRatesCard } from "@/components/tagihan/BillRatesCard";
+import { OutstandingBillsCard } from "@/components/tagihan/OutstandingBillsCard";
 import { GenerateBillDialog } from "@/components/tagihan/GenerateBillDialog";
 import { BillingStatementDialog } from "@/components/tagihan/BillingStatementDialog";
 import { ManualBillDialog } from "@/components/tagihan/ManualBillDialog";
