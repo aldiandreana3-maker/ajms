@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { CreateBillSchema, PayBillSchema } from "@/lib/validation";
 
 export interface BillPayment {
   id: string;
@@ -123,7 +124,7 @@ export function useCreateQuarterlyBill() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: {
+    mutationFn: async (rawInput: {
       unit_id: string;
       unit_number: string;
       penghuni_id?: string | null;
@@ -136,6 +137,7 @@ export function useCreateQuarterlyBill() {
       notes?: string;
       is_auto_generated?: boolean;
     }) => {
+      const input = CreateBillSchema.parse(rawInput);
       const sc_total = input.sc_monthly * 3;
       const sf_total = input.sf_monthly * 3;
       const total_amount = sc_total + sf_total;
@@ -208,7 +210,8 @@ export function usePayBillMonth() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ paymentId, paid_amount }: { paymentId: string; paid_amount: number }) => {
+    mutationFn: async (rawInput: { paymentId: string; paid_amount: number }) => {
+      const { paymentId, paid_amount } = PayBillSchema.parse(rawInput);
       // Mark the monthly payment as paid
       const { data: payment, error } = await supabase
         .from("bill_payments")

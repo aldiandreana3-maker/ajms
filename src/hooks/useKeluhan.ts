@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { CreateKeluhanSchema } from "@/lib/validation";
 
 interface Keluhan {
   id: string;
@@ -55,7 +56,8 @@ export function useCreateKeluhan() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: CreateKeluhanInput) => {
+    mutationFn: async (rawInput: CreateKeluhanInput) => {
+      const input = CreateKeluhanSchema.parse(rawInput);
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       if (sessionError || !sessionData.session) {
         throw new Error("Silakan login terlebih dahulu");
