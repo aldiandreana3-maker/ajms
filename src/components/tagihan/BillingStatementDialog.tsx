@@ -42,12 +42,26 @@ export function BillingStatementDialog() {
   const { data: units } = useQuery({
     queryKey: ["units-for-statement"],
     queryFn: async (): Promise<UnitInfo[]> => {
-      const { data, error } = await supabase
-        .from("units")
-        .select("id, unit_number, area_sqm")
-        .order("unit_number", { ascending: true });
-      if (error) throw error;
-      return data;
+      const allUnits: UnitInfo[] = [];
+      const pageSize = 1000;
+      let from = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("units")
+          .select("id, unit_number, area_sqm")
+          .order("unit_number", { ascending: true })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allUnits.push(...data);
+          from += pageSize;
+          if (data.length < pageSize) hasMore = false;
+        } else {
+          hasMore = false;
+        }
+      }
+      return allUnits;
     },
     enabled: isOpen,
   });
