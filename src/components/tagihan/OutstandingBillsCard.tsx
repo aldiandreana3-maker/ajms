@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 import { useBills, type QuarterlyBill } from "@/hooks/useBills";
 import { AlertTriangle, ChevronDown, ChevronRight, ChevronLeft, Search } from "lucide-react";
+import { AddOutstandingDialog } from "./AddOutstandingDialog";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
