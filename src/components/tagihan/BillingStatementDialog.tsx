@@ -35,7 +35,8 @@ interface PenghuniInfo {
 
 export function BillingStatementDialog() {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedUnitId, setSelectedUnitId] = useState("");
+  const [unitSearch, setUnitSearch] = useState("");
+  const [unitPopoverOpen, setUnitPopoverOpen] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   const { data: units } = useQuery({
