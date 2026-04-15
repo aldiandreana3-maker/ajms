@@ -109,8 +109,8 @@ export default function PelayananPaket() {
 
   // File upload
   const { uploadFile, uploading } = useFileUpload({
-    bucket: "packages",
-    folder: "photos",
+    bucket: "kepenghunian-files",
+    folder: "packages",
     compressImages: true,
   });
 
