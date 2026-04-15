@@ -5,22 +5,22 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useUnits } from "@/hooks/useUnits";
 import { useBillRates } from "@/hooks/useBillRates";
 import { useCreateQuarterlyBill } from "@/hooks/useBills";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Loader2 } from "lucide-react";
-import { UnitCombobox } from "./UnitCombobox";
+import { Plus, Loader2, Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
 
-// Generate past quarters (previous years)
-function generatePastQuarters(): { value: string; label: string; start: string; end: string; quarterLabel: string }[] {
+function generatePastQuarters() {
   const currentYear = new Date().getFullYear();
   const quarters: { value: string; label: string; start: string; end: string; quarterLabel: string }[] = [];
-
   for (let year = currentYear - 5; year <= currentYear; year++) {
     quarters.push(
       { value: `Q1-${year}`, label: `Jan-Mar ${year}`, start: `${year}-01-01`, end: `${year}-03-31`, quarterLabel: `Jan-Mar ${year}` },
@@ -29,8 +29,7 @@ function generatePastQuarters(): { value: string; label: string; start: string; 
       { value: `Q4-${year}`, label: `Okt-Des ${year}`, start: `${year}-10-01`, end: `${year}-12-31`, quarterLabel: `Okt-Des ${year}` },
     );
   }
-
-  return quarters.reverse(); // Most recent first
+  return quarters.reverse();
 }
 
 const PAST_QUARTERS = generatePastQuarters();
@@ -42,22 +41,30 @@ export function AddOutstandingDialog() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [unitId, setUnitId] = useState("");
+  const [unitOpen, setUnitOpen] = useState(false);
+  const [unitSearch, setUnitSearch] = useState("");
   const [selectedQuarter, setSelectedQuarter] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [scMonthly, setScMonthly] = useState(0);
   const [sfMonthly, setSfMonthly] = useState(0);
   const [notes, setNotes] = useState("");
+  const [penghuniName, setPenghuniName] = useState("-");
 
   const selectedUnit = units?.find((u) => u.id === unitId);
   const quarter = PAST_QUARTERS.find((q) => q.value === selectedQuarter);
 
-  // Auto-match rate based on unit area
+  const filteredUnits = useMemo(() => {
+    if (!units) return [];
+    if (!unitSearch) return units.slice(0, 50);
+    const q = unitSearch.toLowerCase();
+    return units.filter((u) => u.unit_number.toLowerCase().includes(q)).slice(0, 50);
+  }, [units, unitSearch]);
+
   const matchedRate = useMemo(() => {
     if (!selectedUnit?.area_sqm || !rates) return null;
     return rates.find((r) => r.area_sqm === selectedUnit.area_sqm) || null;
   }, [selectedUnit, rates]);
 
-  // Auto-fill SC/SF when rate matched
   useEffect(() => {
     if (matchedRate) {
       setScMonthly(Math.round(matchedRate.monthly_sc));
@@ -68,15 +75,10 @@ export function AddOutstandingDialog() {
     }
   }, [matchedRate]);
 
-  // Auto-fill due date from quarter end
   useEffect(() => {
-    if (quarter) {
-      setDueDate(quarter.end);
-    }
+    if (quarter) setDueDate(quarter.end);
   }, [quarter]);
 
-  // Get penghuni name for display
-  const [penghuniName, setPenghuniName] = useState("-");
   useEffect(() => {
     if (!unitId) { setPenghuniName("-"); return; }
     supabase
@@ -100,7 +102,6 @@ export function AddOutstandingDialog() {
       return;
     }
 
-    // Check duplicate
     const { data: existing } = await supabase
       .from("bills")
       .select("id")
@@ -139,8 +140,8 @@ export function AddOutstandingDialog() {
       toast.success(`Tagihan outstanding ${quarter.quarterLabel} berhasil ditambahkan`);
       setIsOpen(false);
       resetForm();
-    } catch (err: any) {
-      // Error already handled by mutation
+    } catch {
+      // handled by mutation
     }
   };
 
@@ -152,6 +153,7 @@ export function AddOutstandingDialog() {
     setSfMonthly(0);
     setNotes("");
     setPenghuniName("-");
+    setUnitSearch("");
   };
 
   return (
@@ -167,10 +169,36 @@ export function AddOutstandingDialog() {
           <DialogTitle>Tambah Outstanding Tagihan Sebelumnya</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Unit selection */}
+          {/* Unit selection from DB */}
           <div className="space-y-2">
-            <Label>Unit</Label>
-            <UnitCombobox value={unitId} onChange={setUnitId} />
+            <Popover open={unitOpen} onOpenChange={setUnitOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
+                  {selectedUnit ? `${selectedUnit.unit_number}${selectedUnit.area_sqm ? ` (${selectedUnit.area_sqm} m²)` : ''}` : "Ketik atau pilih unit..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                <Command shouldFilter={false}>
+                  <CommandInput placeholder="Cari unit..." value={unitSearch} onValueChange={setUnitSearch} />
+                  <CommandList>
+                    <CommandEmpty>Unit tidak ditemukan</CommandEmpty>
+                    <CommandGroup>
+                      {filteredUnits.map((u) => (
+                        <CommandItem
+                          key={u.id}
+                          value={u.id}
+                          onSelect={() => { setUnitId(u.id); setUnitOpen(false); }}
+                        >
+                          <Check className={cn("mr-2 h-4 w-4", unitId === u.id ? "opacity-100" : "opacity-0")} />
+                          {u.unit_number}{u.area_sqm ? ` — ${u.area_sqm} m²` : ''}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Auto-fill info */}
@@ -195,7 +223,7 @@ export function AddOutstandingDialog() {
             </div>
           )}
 
-          {/* Quarter selection */}
+          {/* Quarter */}
           <div className="space-y-2">
             <Label>Periode Kuartal</Label>
             <Select value={selectedQuarter} onValueChange={setSelectedQuarter}>
@@ -214,21 +242,11 @@ export function AddOutstandingDialog() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>SC / bulan (Rp)</Label>
-              <Input
-                type="number"
-                value={scMonthly || ""}
-                onChange={(e) => setScMonthly(Number(e.target.value))}
-                placeholder="0"
-              />
+              <Input type="number" value={scMonthly || ""} onChange={(e) => setScMonthly(Number(e.target.value))} placeholder="0" />
             </div>
             <div className="space-y-2">
               <Label>SF / bulan (Rp)</Label>
-              <Input
-                type="number"
-                value={sfMonthly || ""}
-                onChange={(e) => setSfMonthly(Number(e.target.value))}
-                placeholder="0"
-              />
+              <Input type="number" value={sfMonthly || ""} onChange={(e) => setSfMonthly(Number(e.target.value))} placeholder="0" />
             </div>
           </div>
 
