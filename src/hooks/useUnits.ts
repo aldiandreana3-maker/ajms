@@ -41,9 +41,6 @@ export function useUnits() {
       }
 
       return allUnits;
-
-      if (error) throw error;
-      return data as Unit[];
     },
   });
 
