@@ -1,9 +1,11 @@
 import { useState, useRef, useMemo, Fragment } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Loader2, Printer } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2, Printer } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -33,6 +35,8 @@ interface PenghuniInfo {
 export function BillingStatementDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedUnitId, setSelectedUnitId] = useState("");
+  const [unitSearch, setUnitSearch] = useState("");
+  const [unitPopoverOpen, setUnitPopoverOpen] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   const { data: units } = useQuery({
@@ -50,6 +54,15 @@ export function BillingStatementDialog() {
 
   const selectedUnit = units?.find((u) => u.id === selectedUnitId);
 
+  const filteredUnits = useMemo(() => {
+    if (!units) return [];
+    if (!unitSearch) return units;
+    const q = unitSearch.toLowerCase();
+    return units.filter(
+      (u) => u.unit_number.toLowerCase().includes(q) || (u.area_sqm && String(u.area_sqm).includes(q))
+    );
+  }, [units, unitSearch]);
+
   const { data: penghuniData } = useQuery({
     queryKey: ["penghuni-for-statement", selectedUnitId],
     queryFn: async (): Promise<PenghuniInfo | null> => {
@@ -66,7 +79,6 @@ export function BillingStatementDialog() {
     enabled: !!selectedUnitId,
   });
 
-  // Fetch quarterly bills for this unit
   const { data: bills, isLoading: billsLoading } = useQuery({
     queryKey: ["bills-for-statement", selectedUnitId],
     queryFn: async (): Promise<QuarterlyBill[]> => {
@@ -78,7 +90,6 @@ export function BillingStatementDialog() {
         .order("quarter_start", { ascending: true });
       if (error) throw error;
 
-      // Fetch payments
       const billIds = (data || []).map((b: any) => b.id);
       if (billIds.length === 0) return [];
 
@@ -144,16 +155,38 @@ export function BillingStatementDialog() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Pilih Unit</Label>
-            <Select value={selectedUnitId} onValueChange={setSelectedUnitId}>
-              <SelectTrigger><SelectValue placeholder="Pilih unit..." /></SelectTrigger>
-              <SelectContent>
-                {units?.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.unit_number} {u.area_sqm ? `(${u.area_sqm} m²)` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={unitPopoverOpen} onOpenChange={setUnitPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" role="combobox" aria-expanded={unitPopoverOpen} className="w-full justify-between font-normal">
+                  {selectedUnit ? `${selectedUnit.unit_number} ${selectedUnit.area_sqm ? `(${selectedUnit.area_sqm} m²)` : ""}` : "Ketik atau pilih unit..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                <Command shouldFilter={false}>
+                  <CommandInput placeholder="Cari unit... (cth: TA01, B12)" value={unitSearch} onValueChange={setUnitSearch} />
+                  <CommandList>
+                    <CommandEmpty>Unit tidak ditemukan</CommandEmpty>
+                    <CommandGroup>
+                      {filteredUnits.slice(0, 100).map((u) => (
+                        <CommandItem
+                          key={u.id}
+                          value={u.id}
+                          onSelect={() => {
+                            setSelectedUnitId(u.id);
+                            setUnitPopoverOpen(false);
+                            setUnitSearch("");
+                          }}
+                        >
+                          <Check className={cn("mr-2 h-4 w-4", selectedUnitId === u.id ? "opacity-100" : "opacity-0")} />
+                          {u.unit_number} {u.area_sqm ? `(${u.area_sqm} m²)` : ""}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {billsLoading && (
@@ -169,7 +202,6 @@ export function BillingStatementDialog() {
                   BILLING STATEMENT
                 </div>
 
-                {/* Info */}
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
                   <table className="info" style={{ borderCollapse: "collapse" }}>
                     <tbody>
@@ -187,7 +219,6 @@ export function BillingStatementDialog() {
                   </table>
                 </div>
 
-                {/* Bills Table */}
                 {bills && bills.length > 0 ? (
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10px" }}>
                     <thead>
@@ -230,7 +261,6 @@ export function BillingStatementDialog() {
                           </tr>
                         </Fragment>
                       ))}
-                      {/* Grand total */}
                       <tr style={{ fontWeight: "bold", borderTop: "3px double #333" }}>
                         <td colSpan={2} style={{ border: "1px solid #333", padding: "6px", textAlign: "right", fontSize: "11px" }}>GRAND TOTAL</td>
                         <td style={{ border: "1px solid #333", padding: "6px", textAlign: "right", fontSize: "11px" }}>
@@ -250,7 +280,6 @@ export function BillingStatementDialog() {
                   <p style={{ textAlign: "center", padding: "20px", color: "#999" }}>Belum ada tagihan untuk unit ini</p>
                 )}
 
-                {/* Footer */}
                 <div style={{ marginTop: "20px", textAlign: "right", fontSize: "9px", color: "#999" }}>
                   Dicetak pada: {format(new Date(), "dd MMMM yyyy, HH:mm", { locale: localeId })}
                 </div>
