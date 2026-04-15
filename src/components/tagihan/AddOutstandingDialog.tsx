@@ -60,8 +60,8 @@ export function AddOutstandingDialog() {
   // Auto-fill SC/SF when rate matched
   useEffect(() => {
     if (matchedRate) {
-      setScMonthly(Math.round(matchedRate.monthly_sc / 3));
-      setSfMonthly(Math.round(matchedRate.monthly_sf / 3));
+      setScMonthly(Math.round(matchedRate.monthly_sc));
+      setSfMonthly(Math.round(matchedRate.monthly_sf));
     } else {
       setScMonthly(0);
       setSfMonthly(0);
@@ -167,10 +167,6 @@ export function AddOutstandingDialog() {
           <DialogTitle>Tambah Outstanding Tagihan Sebelumnya</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="p-3 bg-muted rounded-lg text-sm text-muted-foreground">
-            Input tagihan SC & SF dari periode sebelumnya yang belum terbayar. SC dan SF otomatis sesuai tipe unit.
-          </div>
-
           {/* Unit selection */}
           <div className="space-y-2">
             <Label>Unit</Label>
