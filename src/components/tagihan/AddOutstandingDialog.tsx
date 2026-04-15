@@ -167,10 +167,37 @@ export function AddOutstandingDialog() {
           <DialogTitle>Tambah Outstanding Tagihan Sebelumnya</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Unit selection */}
+          {/* Unit selection - using DB units for proper ID matching */}
           <div className="space-y-2">
-            <Label>Unit</Label>
-            <UnitCombobox value={unitId} onChange={setUnitId} />
+            <Label>Pilih Unit</Label>
+            <Popover open={unitOpen} onOpenChange={setUnitOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
+                  {selectedUnit ? `${selectedUnit.unit_number}${selectedUnit.area_sqm ? ` (${selectedUnit.area_sqm} m²)` : ''}` : "Ketik atau pilih unit..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                <Command shouldFilter={false}>
+                  <CommandInput placeholder="Cari unit..." value={unitSearch} onValueChange={setUnitSearch} />
+                  <CommandList>
+                    <CommandEmpty>Unit tidak ditemukan</CommandEmpty>
+                    <CommandGroup>
+                      {filteredUnits.map((u) => (
+                        <CommandItem
+                          key={u.id}
+                          value={u.id}
+                          onSelect={() => { setUnitId(u.id); setUnitOpen(false); }}
+                        >
+                          <Check className={cn("mr-2 h-4 w-4", unitId === u.id ? "opacity-100" : "opacity-0")} />
+                          {u.unit_number}{u.area_sqm ? ` — ${u.area_sqm} m²` : ''}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Auto-fill info */}
