@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { UpdateRoleSchema } from "@/lib/validation";
 
 type AppRole = "master_dev" | "super_admin" | "admin" | "staff" | "agent" | "penghuni" | "staff_tro" | "staff_finance" | "staff_hrd_ga" | "staff_engineering" | "staff_outsourcing_cleaning" | "staff_outsourcing_security" | "staff_outsourcing_parkir";
 
@@ -46,7 +47,8 @@ export function useUpdateUserRole() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: AppRole }) => {
+    mutationFn: async (rawInput: { userId: string; role: AppRole }) => {
+      const { userId, role } = UpdateRoleSchema.parse(rawInput);
       // First, delete existing role
       await supabase.from("user_roles").delete().eq("user_id", userId);
 
