@@ -6,10 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useBills, type QuarterlyBill } from "@/hooks/useBills";
-import { ManualBillDialog } from "./ManualBillDialog";
-import { AlertTriangle, ChevronDown, ChevronRight, ChevronLeft, Search, FilePlus } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronRight, ChevronLeft, Search } from "lucide-react";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
@@ -21,6 +19,9 @@ interface UnitOutstanding {
   bills: QuarterlyBill[];
   totalOutstanding: number;
   unpaidMonths: number;
+  totalSC: number;
+  totalSF: number;
+  totalOther: number;
 }
 
 export function OutstandingBillsCard() {
@@ -45,11 +46,17 @@ export function OutstandingBillsCard() {
       const unpaidMonths = totalMonths - paidMonths;
       const paidAmount = bill.paid_amount || 0;
       const outstanding = (bill.total_amount || 0) - paidAmount;
+      const scOut = Math.max(0, (bill.sc_total || 0) - (paidAmount > 0 ? Math.min(paidAmount, bill.sc_total || 0) : 0));
+      const sfOut = Math.max(0, (bill.sf_total || 0) - Math.max(0, paidAmount - (bill.sc_total || 0)));
+      const otherOut = Math.max(0, outstanding - scOut - sfOut);
 
       if (existing) {
         existing.bills.push(bill);
         existing.totalOutstanding += outstanding;
         existing.unpaidMonths += unpaidMonths;
+        existing.totalSC += scOut;
+        existing.totalSF += sfOut;
+        existing.totalOther += otherOut;
       } else {
         unitMap.set(unitKey, {
           unitNumber: bill.units?.unit_number || bill.unit_number || "-",
@@ -58,6 +65,9 @@ export function OutstandingBillsCard() {
           bills: [bill],
           totalOutstanding: outstanding,
           unpaidMonths,
+          totalSC: scOut,
+          totalSF: sfOut,
+          totalOther: otherOut,
         });
       }
     }
@@ -78,6 +88,9 @@ export function OutstandingBillsCard() {
   const paginated = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const grandTotal = outstandingByUnit.reduce((sum, u) => sum + u.totalOutstanding, 0);
+  const grandSC = outstandingByUnit.reduce((sum, u) => sum + u.totalSC, 0);
+  const grandSF = outstandingByUnit.reduce((sum, u) => sum + u.totalSF, 0);
+  const grandOther = outstandingByUnit.reduce((sum, u) => sum + u.totalOther, 0);
 
   if (outstandingByUnit.length === 0) return null;
 
@@ -90,7 +103,7 @@ export function OutstandingBillsCard() {
               <div className="flex items-center gap-2 text-lg font-semibold">
                 {isCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                 <AlertTriangle className="w-5 h-5 text-warning" />
-                <span>Outstanding Tagihan per Unit</span>
+                <span>Outstanding + Tarif Tagihan per Unit</span>
                 <Badge variant="outline" className="ml-2 text-warning border-warning/30">
                   {outstandingByUnit.length} unit
                 </Badge>
@@ -101,6 +114,26 @@ export function OutstandingBillsCard() {
         </CardHeader>
         <CollapsibleContent>
           <CardContent className="pt-0 space-y-4">
+            {/* Summary cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-xs text-muted-foreground">Total Outstanding</p>
+                <p className="text-base font-bold text-destructive">{formatCurrency(grandTotal)}</p>
+              </div>
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-xs text-muted-foreground">Service Charge (SC)</p>
+                <p className="text-base font-bold text-foreground">{formatCurrency(grandSC)}</p>
+              </div>
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-xs text-muted-foreground">Sinking Fund (SF)</p>
+                <p className="text-base font-bold text-foreground">{formatCurrency(grandSF)}</p>
+              </div>
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-xs text-muted-foreground">Lain-lain</p>
+                <p className="text-base font-bold text-foreground">{formatCurrency(grandOther)}</p>
+              </div>
+            </div>
+
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="relative w-full sm:w-72">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -130,10 +163,12 @@ export function OutstandingBillsCard() {
                   <TableRow>
                     <TableHead>Unit</TableHead>
                     <TableHead>Penghuni</TableHead>
-                    <TableHead>Tagihan Belum Lunas</TableHead>
-                    <TableHead>Bulan Tertunggak</TableHead>
-                    <TableHead>Total Outstanding</TableHead>
-                    <TableHead className="text-center">Aksi</TableHead>
+                    <TableHead>Periode Tertunggak</TableHead>
+                    <TableHead>Bulan</TableHead>
+                    <TableHead className="text-right">SC</TableHead>
+                    <TableHead className="text-right">SF</TableHead>
+                    <TableHead className="text-right">Lain-lain</TableHead>
+                    <TableHead className="text-right">Total Outstanding</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -155,34 +190,20 @@ export function OutstandingBillsCard() {
                       </TableCell>
                       <TableCell>
                         <Badge className="bg-warning/20 text-warning border-warning/30">
-                          {u.unpaidMonths} bulan
+                          {u.unpaidMonths} bln
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-bold text-destructive">
+                      <TableCell className="text-right text-sm">{formatCurrency(u.totalSC)}</TableCell>
+                      <TableCell className="text-right text-sm">{formatCurrency(u.totalSF)}</TableCell>
+                      <TableCell className="text-right text-sm">{formatCurrency(u.totalOther)}</TableCell>
+                      <TableCell className="text-right font-bold text-destructive">
                         {formatCurrency(u.totalOutstanding)}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span>
-                              <ManualBillDialog
-                                defaultUnitId={u.unitId || undefined}
-                                trigger={
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <FilePlus className="w-4 h-4" />
-                                  </Button>
-                                }
-                              />
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>Buat Tagihan Manual</TooltipContent>
-                        </Tooltip>
                       </TableCell>
                     </TableRow>
                   ))}
                   {paginated.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-6">
                         {searchQuery ? "Tidak ditemukan" : "Tidak ada tagihan tertunggak"}
                       </TableCell>
                     </TableRow>
