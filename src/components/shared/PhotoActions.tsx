@@ -7,6 +7,21 @@ import { supabase } from "@/integrations/supabase/client";
 // Helper to get signed URL for storage paths
 async function getDisplayUrl(photoUrl: string): Promise<string> {
   if (photoUrl.startsWith("http://") || photoUrl.startsWith("https://")) {
+    // Check if it's a broken public URL from a private bucket - extract path and get signed URL
+    const packagesMatch = photoUrl.match(/\/storage\/v1\/object\/public\/packages\/(.+)/);
+    if (packagesMatch) {
+      const { data, error } = await supabase.storage
+        .from("packages")
+        .createSignedUrl(packagesMatch[1], 3600);
+      if (!error && data?.signedUrl) return data.signedUrl;
+    }
+    const kepMatch = photoUrl.match(/\/storage\/v1\/object\/public\/kepenghunian-files\/(.+)/);
+    if (kepMatch) {
+      const { data, error } = await supabase.storage
+        .from("kepenghunian-files")
+        .createSignedUrl(kepMatch[1], 3600);
+      if (!error && data?.signedUrl) return data.signedUrl;
+    }
     return photoUrl;
   }
   const { data, error } = await supabase.storage

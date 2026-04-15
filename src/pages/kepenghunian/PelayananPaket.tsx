@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { PhotoCell } from "@/components/shared/PhotoActions";
 import {
   Table,
   TableBody,
@@ -101,15 +102,13 @@ export default function PelayananPaket() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
-  const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
-  const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
 
   // File upload
-  const { uploadFile, getPublicUrl, uploading } = useFileUpload({
-    bucket: "packages",
-    folder: "photos",
+  const { uploadFile, uploading } = useFileUpload({
+    bucket: "kepenghunian-files",
+    folder: "packages",
     compressImages: true,
   });
 
@@ -130,11 +129,11 @@ export default function PelayananPaket() {
     
     let photoUrl: string | undefined;
     
-    // Upload photo if exists
+    // Upload photo if exists - save file path for signed URL access
     if (photoFile) {
       const filePath = await uploadFile(photoFile);
       if (filePath) {
-        photoUrl = getPublicUrl(filePath) || undefined;
+        photoUrl = filePath;
       }
     }
     
@@ -170,10 +169,6 @@ export default function PelayananPaket() {
     }
   };
 
-  const handleViewPhoto = (url: string) => {
-    setSelectedPhotoUrl(url);
-    setPhotoDialogOpen(true);
-  };
 
   const handlePrintReceipt = (pkg: any) => {
     setSelectedPackage(pkg);
@@ -407,24 +402,10 @@ export default function PelayananPaket() {
                           {format(new Date(pkg.created_at), "yyyy-MM-dd HH:mm:ss")}
                         </TableCell>
                         <TableCell>
-                          {pkg.photo_url ? (
-                            <div className="space-y-1">
-                              <img
-                                src={pkg.photo_url}
-                                alt="Foto paket"
-                                className="w-16 h-16 object-cover rounded cursor-pointer"
-                                onClick={() => handleViewPhoto(pkg.photo_url!)}
-                              />
-                              <button
-                                onClick={() => handleViewPhoto(pkg.photo_url!)}
-                                className="text-xs text-primary hover:underline"
-                              >
-                                Lihat Foto
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground">-</span>
-                          )}
+                          <PhotoCell
+                            photos={[{ url: pkg.photo_url, label: "Foto Paket" }]}
+                            showThumbnail
+                          />
                         </TableCell>
                         <TableCell>{pkg.item_type}</TableCell>
                         <TableCell>{pkg.owner_name}</TableCell>
@@ -509,17 +490,6 @@ export default function PelayananPaket() {
           </CardContent>
         </Card>
 
-        {/* Photo Dialog */}
-        <Dialog open={photoDialogOpen} onOpenChange={setPhotoDialogOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Foto Paket</DialogTitle>
-            </DialogHeader>
-            {selectedPhotoUrl && (
-              <img src={selectedPhotoUrl} alt="Foto paket" className="w-full h-auto rounded" />
-            )}
-          </DialogContent>
-        </Dialog>
 
         {/* Receipt Dialog */}
         <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>
