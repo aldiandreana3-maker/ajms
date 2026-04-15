@@ -102,8 +102,6 @@ export default function PelayananPaket() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
-  const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
-  const [selectedPhotoUrl, setSelectedPhotoUrl] = useState<string | null>(null);
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
 
@@ -171,10 +169,6 @@ export default function PelayananPaket() {
     }
   };
 
-  const handleViewPhoto = (url: string) => {
-    setSelectedPhotoUrl(url);
-    setPhotoDialogOpen(true);
-  };
 
   const handlePrintReceipt = (pkg: any) => {
     setSelectedPackage(pkg);
@@ -496,17 +490,6 @@ export default function PelayananPaket() {
           </CardContent>
         </Card>
 
-        {/* Photo Dialog */}
-        <Dialog open={photoDialogOpen} onOpenChange={setPhotoDialogOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Foto Paket</DialogTitle>
-            </DialogHeader>
-            {selectedPhotoUrl && (
-              <img src={selectedPhotoUrl} alt="Foto paket" className="w-full h-auto rounded" />
-            )}
-          </DialogContent>
-        </Dialog>
 
         {/* Receipt Dialog */}
         <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>
