@@ -264,6 +264,18 @@ export default function PelayananPaket() {
               <p className="text-muted-foreground">Kelola paket masuk untuk penghuni</p>
             </div>
           </div>
+          {canDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCleanupDialogOpen(true)}
+              disabled={cleanupOldPackages.isPending}
+              className="text-destructive border-destructive/50 hover:bg-destructive/10"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              {cleanupOldPackages.isPending ? "Membersihkan..." : "Hapus Paket Lama"}
+            </Button>
+          )}
           {canManage && (
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
