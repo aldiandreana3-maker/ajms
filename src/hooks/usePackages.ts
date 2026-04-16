@@ -241,6 +241,40 @@ export function useUpdatePackageStatus() {
   });
 }
 
+export function useCleanupOldPackages() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const fourMonthsAgo = new Date();
+      fourMonthsAgo.setMonth(fourMonthsAgo.getMonth() - 4);
+
+      const { data, error } = await supabase
+        .from("packages")
+        .delete()
+        .eq("status", "diambil")
+        .lt("created_at", fourMonthsAgo.toISOString())
+        .select("id");
+
+      if (error) throw error;
+      return data?.length || 0;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["packages"] });
+      queryClient.invalidateQueries({ queryKey: ["packages-paginated"] });
+      if (count > 0) {
+        toast.success(`${count} paket lama berhasil dihapus`);
+      } else {
+        toast.info("Tidak ada paket lama yang perlu dihapus");
+      }
+    },
+    onError: (error) => {
+      console.error("Error cleaning up packages:", error);
+      toast.error("Gagal membersihkan paket lama");
+    },
+  });
+}
+
 export function useDeletePackage() {
   const queryClient = useQueryClient();
 

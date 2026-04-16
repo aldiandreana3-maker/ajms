@@ -151,18 +151,26 @@ export function PhotoCell({ photos, showThumbnail = false }: PhotoCellProps) {
 
   const validPhotos = photos.filter((p) => p.url);
 
+  // Build a stable key from photo URLs to detect changes
+  const photosKey = validPhotos.map((p) => p.url).join("|");
+
   // Load thumbnail URLs
   useEffect(() => {
     if (showThumbnail && validPhotos.length > 0) {
+      // Reset thumbnails when photos change
+      setThumbnailUrls({});
       validPhotos.forEach((photo, index) => {
-        if (photo.url && !thumbnailUrls[index]) {
+        if (photo.url) {
           getDisplayUrl(photo.url).then((url) => {
             setThumbnailUrls((prev) => ({ ...prev, [index]: url }));
+          }).catch(() => {
+            // Fallback: use original URL if signed URL fails
+            setThumbnailUrls((prev) => ({ ...prev, [index]: photo.url! }));
           });
         }
       });
     }
-  }, [showThumbnail, validPhotos.length]);
+  }, [showThumbnail, photosKey]);
 
   useEffect(() => {
     if (selectedPhoto && isOpen) {
