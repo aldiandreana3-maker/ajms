@@ -10,14 +10,24 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import type { QuarterlyBill, BillPayment } from "@/hooks/useBills";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
 
 function parseTower(unitNumber: string): string {
-  if (unitNumber.startsWith("T") && unitNumber.length >= 2) return unitNumber[1];
+  if (unitNumber.startsWith("T") && unitNumber.length >= 2) return "T" + unitNumber[1];
   return "-";
+}
+
+function formatPeriode(quarterLabel: string | null, quarterStart: string | null): string {
+  if (quarterLabel) return quarterLabel;
+  if (quarterStart) return format(new Date(quarterStart), "MMM yyyy");
+  return "-";
+}
+
+function formatInvDate(quarterStart: string | null): string {
+  if (!quarterStart) return "-";
+  return format(new Date(quarterStart), "dd/MM/yyyy");
 }
 
 interface UnitInfo {
@@ -30,6 +40,22 @@ interface PenghuniInfo {
   full_name: string;
   phone: string | null;
   address: string | null;
+}
+
+interface BillRow {
+  id: string;
+  quarter_label: string | null;
+  quarter_start: string | null;
+  sc_total: number;
+  sf_total: number;
+  total_amount: number;
+  paid_amount: number | null;
+  paid_at: string | null;
+  payment_status: string | null;
+  bill_type: string;
+  billing_period: string;
+  notes: string | null;
+  amount: number;
 }
 
 export function BillingStatementDialog() {
@@ -95,37 +121,96 @@ export function BillingStatementDialog() {
 
   const { data: bills, isLoading: billsLoading } = useQuery({
     queryKey: ["bills-for-statement", selectedUnitId],
-    queryFn: async (): Promise<QuarterlyBill[]> => {
-      const { data, error } = await supabase
-        .from("bills")
-        .select("*")
-        .eq("unit_id", selectedUnitId)
-        .not("quarter_label", "is", null)
-        .order("quarter_start", { ascending: true });
-      if (error) throw error;
-
-      const billIds = (data || []).map((b: any) => b.id);
-      if (billIds.length === 0) return [];
-
-      const { data: payments } = await supabase
-        .from("bill_payments")
-        .select("*")
-        .in("bill_id", billIds)
-        .order("month_number", { ascending: true });
-
-      const paymentsByBill = new Map<string, BillPayment[]>();
-      (payments || []).forEach((p: any) => {
-        if (!paymentsByBill.has(p.bill_id)) paymentsByBill.set(p.bill_id, []);
-        paymentsByBill.get(p.bill_id)!.push(p);
-      });
-
-      return (data || []).map((b: any) => ({
-        ...b,
-        bill_payments: paymentsByBill.get(b.id) || [],
-      })) as QuarterlyBill[];
+    queryFn: async (): Promise<BillRow[]> => {
+      const allBills: BillRow[] = [];
+      const pageSize = 1000;
+      let from = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("bills")
+          .select("id, quarter_label, quarter_start, sc_total, sf_total, total_amount, paid_amount, paid_at, payment_status, bill_type, billing_period, notes, amount")
+          .eq("unit_id", selectedUnitId)
+          .order("billing_period", { ascending: true })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allBills.push(...(data as BillRow[]));
+          from += pageSize;
+          if (data.length < pageSize) hasMore = false;
+        } else {
+          hasMore = false;
+        }
+      }
+      return allBills;
     },
     enabled: !!selectedUnitId,
   });
+
+  // Separate bills into IPL (SC+SF) and non-IPL (Air, etc.)
+  const { scRows, sfRows, otherGroups, totals } = useMemo(() => {
+    if (!bills) return { scRows: [], sfRows: [], otherGroups: new Map<string, BillRow[]>(), totals: { invoice: 0, receipts: 0, correction: 0, os: 0 } };
+
+    const iplBills = bills.filter(b => b.bill_type === "ipl");
+    const nonIplBills = bills.filter(b => b.bill_type !== "ipl");
+
+    // SC rows from IPL bills
+    const scRows = iplBills.map(b => ({
+      periode: formatPeriode(b.quarter_label, b.quarter_start),
+      invDate: formatInvDate(b.quarter_start),
+      invoiceAmount: b.sc_total || 0,
+      receiptAmount: b.payment_status === "paid" ? (b.sc_total || 0) : b.payment_status === "partial" ? Math.min(b.paid_amount || 0, b.sc_total || 0) : 0,
+      receiveDate: b.paid_at ? format(new Date(b.paid_at), "dd/MM/yyyy") : "",
+      correctionAmount: 0,
+      postingDate: "",
+      os: 0 as number,
+    }));
+    scRows.forEach(r => { r.os = r.invoiceAmount - r.receiptAmount - r.correctionAmount; });
+
+    // SF rows from IPL bills
+    const sfRows = iplBills.map(b => ({
+      periode: formatPeriode(b.quarter_label, b.quarter_start),
+      invDate: formatInvDate(b.quarter_start),
+      invoiceAmount: b.sf_total || 0,
+      receiptAmount: b.payment_status === "paid" ? (b.sf_total || 0) : 0,
+      receiveDate: b.paid_at ? format(new Date(b.paid_at), "dd/MM/yyyy") : "",
+      correctionAmount: 0,
+      postingDate: "",
+      os: 0 as number,
+    }));
+    sfRows.forEach(r => { r.os = r.invoiceAmount - r.receiptAmount - r.correctionAmount; });
+
+    // Group non-IPL bills by bill_type
+    const otherGroups = new Map<string, typeof scRows>();
+    nonIplBills.forEach(b => {
+      const typeLabel = getBillTypeLabel(b.bill_type);
+      if (!otherGroups.has(typeLabel)) otherGroups.set(typeLabel, []);
+      const receiptAmt = b.payment_status === "paid" ? (b.total_amount || b.amount || 0) : (b.paid_amount || 0);
+      const invoiceAmt = b.total_amount || b.amount || 0;
+      otherGroups.get(typeLabel)!.push({
+        periode: b.quarter_label || format(new Date(b.billing_period), "MMM yyyy"),
+        invDate: format(new Date(b.billing_period), "dd/MM/yyyy"),
+        invoiceAmount: invoiceAmt,
+        receiptAmount: receiptAmt,
+        receiveDate: b.paid_at ? format(new Date(b.paid_at), "dd/MM/yyyy") : "",
+        correctionAmount: 0,
+        postingDate: "",
+        os: invoiceAmt - receiptAmt,
+      });
+    });
+
+    // Totals
+    const allRows = [...scRows, ...sfRows];
+    otherGroups.forEach(rows => allRows.push(...rows));
+    const totals = {
+      invoice: allRows.reduce((s, r) => s + r.invoiceAmount, 0),
+      receipts: allRows.reduce((s, r) => s + r.receiptAmount, 0),
+      correction: allRows.reduce((s, r) => s + r.correctionAmount, 0),
+      os: allRows.reduce((s, r) => s + r.os, 0),
+    };
+
+    return { scRows, sfRows, otherGroups, totals };
+  }, [bills]);
 
   const handlePrint = () => {
     const printContent = printRef.current;
@@ -136,15 +221,17 @@ export function BillingStatementDialog() {
       <!DOCTYPE html><html><head>
         <title>Billing Statement - ${selectedUnit?.unit_number || ""}</title>
         <style>
-          @page { margin: 15mm; size: A4; }
+          @page { margin: 12mm; size: A4; }
           body { font-family: Arial, sans-serif; font-size: 11px; color: #000; margin: 0; padding: 0; }
           table { width: 100%; border-collapse: collapse; }
-          th, td { border: 1px solid #333; padding: 4px 6px; font-size: 10px; }
+          th, td { border: 1px solid #333; padding: 3px 5px; font-size: 10px; }
           th { background: #f0f0f0; font-weight: bold; text-align: center; }
           .amount { text-align: right; }
-          .header { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 16px; }
-          .info td { border: none; padding: 2px 4px; }
-          .total td { font-weight: bold; border-top: 2px solid #333; }
+          .header { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 14px; }
+          .info-table td { border: none; padding: 1px 4px; font-size: 11px; }
+          .subtotal-row td { font-weight: bold; }
+          .total-row td { font-weight: bold; }
+          .type-label { font-weight: bold; }
         </style>
       </head><body>${printContent.innerHTML}</body></html>
     `);
@@ -152,6 +239,65 @@ export function BillingStatementDialog() {
     printWindow.focus();
     setTimeout(() => { printWindow.print(); printWindow.close(); }, 300);
   };
+
+  const cellStyle = (extra?: React.CSSProperties): React.CSSProperties => ({
+    border: "1px solid #333",
+    padding: "3px 5px",
+    fontSize: "10px",
+    ...extra,
+  });
+
+  const thStyle: React.CSSProperties = {
+    border: "1px solid #333",
+    padding: "3px 5px",
+    fontSize: "10px",
+    background: "#f0f0f0",
+    fontWeight: "bold",
+    textAlign: "center",
+  };
+
+  const renderRows = (rows: typeof scRows, typeLabel: string) => {
+    if (rows.length === 0) return null;
+    const subInvoice = rows.reduce((s, r) => s + r.invoiceAmount, 0);
+    const subReceipts = rows.reduce((s, r) => s + r.receiptAmount, 0);
+    const subCorrection = rows.reduce((s, r) => s + r.correctionAmount, 0);
+    const subOs = rows.reduce((s, r) => s + r.os, 0);
+
+    return (
+      <Fragment>
+        {rows.map((r, idx) => (
+          <tr key={`${typeLabel}-${idx}`}>
+            {idx === 0 && (
+              <td rowSpan={rows.length} style={{ ...cellStyle({ fontWeight: "bold", verticalAlign: "top" }) }}>
+                {typeLabel}
+              </td>
+            )}
+            <td style={cellStyle()}>{r.periode}</td>
+            <td style={cellStyle({ textAlign: "center" })}>{r.invDate}</td>
+            <td style={cellStyle({ textAlign: "right" })}>{formatCurrency(r.invoiceAmount)}</td>
+            <td style={cellStyle({ textAlign: "right" })}>{r.receiptAmount > 0 ? formatCurrency(r.receiptAmount) : "0"}</td>
+            <td style={cellStyle({ textAlign: "center" })}>{r.receiveDate}</td>
+            <td style={cellStyle({ textAlign: "right" })}>{r.correctionAmount > 0 ? formatCurrency(r.correctionAmount) : "0"}</td>
+            <td style={cellStyle({ textAlign: "center" })}>{r.postingDate}</td>
+            <td style={cellStyle({ textAlign: "right" })}>{formatCurrency(r.os)}</td>
+          </tr>
+        ))}
+        <tr>
+          <td colSpan={3} style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right" }) }}>
+            Sub Total {typeLabel}
+          </td>
+          <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right" }) }}>{formatCurrency(subInvoice)}</td>
+          <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right" }) }}>{formatCurrency(subReceipts)}</td>
+          <td style={cellStyle({ fontWeight: "bold" })}></td>
+          <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right" }) }}>{formatCurrency(subCorrection)}</td>
+          <td style={cellStyle({ fontWeight: "bold" })}></td>
+          <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right" }) }}>{formatCurrency(subOs)}</td>
+        </tr>
+      </Fragment>
+    );
+  };
+
+  const hasData = scRows.length > 0 || sfRows.length > 0 || otherGroups.size > 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -161,7 +307,7 @@ export function BillingStatementDialog() {
           Billing Statement
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Cetak Billing Statement</DialogTitle>
         </DialogHeader>
@@ -211,82 +357,98 @@ export function BillingStatementDialog() {
 
           {selectedUnitId && !billsLoading && (
             <>
-              <div ref={printRef} className="bg-white text-black p-6 border rounded-lg text-xs">
+              <div ref={printRef} className="bg-white text-black p-6 border rounded-lg text-xs overflow-x-auto">
                 <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "16px", marginBottom: "16px" }}>
                   BILLING STATEMENT
                 </div>
 
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
-                  <table className="info" style={{ borderCollapse: "collapse" }}>
+                  <table className="info-table" style={{ borderCollapse: "collapse" }}>
                     <tbody>
-                      <tr><td style={{ fontWeight: "bold", border: "none", padding: "2px 4px" }}>Tenant name</td><td style={{ border: "none", padding: "2px" }}>:</td><td style={{ border: "none", padding: "2px 4px" }}>{penghuniData?.full_name || "-"}</td></tr>
-                      <tr><td style={{ fontWeight: "bold", border: "none", padding: "2px 4px" }}>Address</td><td style={{ border: "none", padding: "2px" }}>:</td><td style={{ border: "none", padding: "2px 4px", maxWidth: "250px" }}>{penghuniData?.address || "-"}</td></tr>
-                      <tr><td style={{ fontWeight: "bold", border: "none", padding: "2px 4px" }}>Phone</td><td style={{ border: "none", padding: "2px" }}>:</td><td style={{ border: "none", padding: "2px 4px" }}>{penghuniData?.phone || "-"}</td></tr>
+                      <tr>
+                        <td style={{ fontWeight: "bold", border: "none", padding: "1px 4px" }}>Tenant name</td>
+                        <td style={{ border: "none", padding: "1px 2px" }}>:</td>
+                        <td style={{ border: "none", padding: "1px 4px" }}>{penghuniData?.full_name || "-"}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ fontWeight: "bold", border: "none", padding: "1px 4px" }}>Address</td>
+                        <td style={{ border: "none", padding: "1px 2px" }}>:</td>
+                        <td style={{ border: "none", padding: "1px 4px", maxWidth: "280px" }}>{penghuniData?.address || "-"}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ fontWeight: "bold", border: "none", padding: "1px 4px" }}>Phone</td>
+                        <td style={{ border: "none", padding: "1px 2px" }}>:</td>
+                        <td style={{ border: "none", padding: "1px 4px" }}>{penghuniData?.phone ? `- / ${penghuniData.phone}` : "-"}</td>
+                      </tr>
                     </tbody>
                   </table>
-                  <table className="info" style={{ borderCollapse: "collapse" }}>
+                  <table className="info-table" style={{ borderCollapse: "collapse" }}>
                     <tbody>
-                      <tr><td style={{ fontWeight: "bold", border: "none", padding: "2px 4px" }}>Lot No.</td><td style={{ border: "none", padding: "2px" }}>:</td><td style={{ border: "none", padding: "2px 4px" }}>{selectedUnit?.unit_number || "-"}</td></tr>
-                      <tr><td style={{ fontWeight: "bold", border: "none", padding: "2px 4px" }}>Area</td><td style={{ border: "none", padding: "2px" }}>:</td><td style={{ border: "none", padding: "2px 4px" }}>{selectedUnit?.area_sqm || "-"} M2</td></tr>
-                      <tr><td style={{ fontWeight: "bold", border: "none", padding: "2px 4px" }}>Tower</td><td style={{ border: "none", padding: "2px" }}>:</td><td style={{ border: "none", padding: "2px 4px" }}>T{selectedUnit ? parseTower(selectedUnit.unit_number) : "-"}</td></tr>
+                      <tr>
+                        <td style={{ fontWeight: "bold", border: "none", padding: "1px 4px" }}>Lot No.</td>
+                        <td style={{ border: "none", padding: "1px 2px" }}>:</td>
+                        <td style={{ border: "none", padding: "1px 4px" }}>{selectedUnit?.unit_number || "-"}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ fontWeight: "bold", border: "none", padding: "1px 4px" }}>Area</td>
+                        <td style={{ border: "none", padding: "1px 2px" }}>:</td>
+                        <td style={{ border: "none", padding: "1px 4px" }}>{selectedUnit?.area_sqm ? `${selectedUnit.area_sqm}` : "-"}&nbsp;&nbsp;M2</td>
+                      </tr>
+                      <tr>
+                        <td style={{ fontWeight: "bold", border: "none", padding: "1px 4px" }}>Tower</td>
+                        <td style={{ border: "none", padding: "1px 2px" }}>:</td>
+                        <td style={{ border: "none", padding: "1px 4px" }}>{selectedUnit ? parseTower(selectedUnit.unit_number) : "-"}</td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
 
-                {bills && bills.length > 0 ? (
+                {hasData ? (
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10px" }}>
                     <thead>
                       <tr>
-                        <th style={{ border: "1px solid #333", padding: "4px", background: "#f0f0f0" }}>Periode</th>
-                        <th style={{ border: "1px solid #333", padding: "4px", background: "#f0f0f0" }}>Bulan</th>
-                        <th style={{ border: "1px solid #333", padding: "4px", background: "#f0f0f0" }}>SC</th>
-                        <th style={{ border: "1px solid #333", padding: "4px", background: "#f0f0f0" }}>SF</th>
-                        <th style={{ border: "1px solid #333", padding: "4px", background: "#f0f0f0" }}>Total</th>
-                        <th style={{ border: "1px solid #333", padding: "4px", background: "#f0f0f0" }}>Status</th>
+                        <th rowSpan={2} style={thStyle}>Type</th>
+                        <th colSpan={3} style={thStyle}>Invoice</th>
+                        <th colSpan={2} style={thStyle}>Receipts</th>
+                        <th colSpan={2} style={thStyle}>Correction</th>
+                        <th rowSpan={2} style={thStyle}>O/S</th>
+                      </tr>
+                      <tr>
+                        <th style={thStyle}>Periode</th>
+                        <th style={thStyle}>Inv Date</th>
+                        <th style={thStyle}>Rp.</th>
+                        <th style={thStyle}>Rp.</th>
+                        <th style={thStyle}>Receive Date</th>
+                        <th style={thStyle}>Rp.</th>
+                        <th style={thStyle}>Posting Date</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {bills.map((bill) => (
-                        <Fragment key={bill.id}>
-                          {bill.bill_payments?.map((p, idx) => (
-                            <tr key={p.id}>
-                              {idx === 0 && (
-                                <td rowSpan={3} style={{ border: "1px solid #333", padding: "4px", fontWeight: "bold", verticalAlign: "top" }}>
-                                  {bill.quarter_label}
-                                </td>
-                              )}
-                              <td style={{ border: "1px solid #333", padding: "4px" }}>{p.month_label}</td>
-                              <td style={{ border: "1px solid #333", padding: "4px", textAlign: "right" }}>{formatCurrency(p.sc_amount)}</td>
-                              <td style={{ border: "1px solid #333", padding: "4px", textAlign: "right" }}>{formatCurrency(p.sf_amount)}</td>
-                              <td style={{ border: "1px solid #333", padding: "4px", textAlign: "right" }}>{formatCurrency(p.total_amount)}</td>
-                              <td style={{ border: "1px solid #333", padding: "4px", textAlign: "center" }}>
-                                {p.is_paid ? "✓ Lunas" : "Belum"}
-                              </td>
-                            </tr>
-                          ))}
-                          <tr style={{ fontWeight: "bold", borderTop: "2px solid #333" }}>
-                            <td colSpan={2} style={{ border: "1px solid #333", padding: "4px", textAlign: "right" }}>Subtotal {bill.quarter_label}</td>
-                            <td style={{ border: "1px solid #333", padding: "4px", textAlign: "right" }}>{formatCurrency(bill.sc_total)}</td>
-                            <td style={{ border: "1px solid #333", padding: "4px", textAlign: "right" }}>{formatCurrency(bill.sf_total)}</td>
-                            <td style={{ border: "1px solid #333", padding: "4px", textAlign: "right" }}>{formatCurrency(bill.total_amount)}</td>
-                            <td style={{ border: "1px solid #333", padding: "4px", textAlign: "center" }}>
-                              {bill.payment_status === "paid" ? "✓ Lunas" : bill.payment_status === "partial" ? "Sebagian" : "Belum"}
-                            </td>
-                          </tr>
+                      {renderRows(scRows, "Service Charge")}
+                      {renderRows(sfRows, "Sinking Fund")}
+                      {Array.from(otherGroups.entries()).map(([label, rows]) => (
+                        <Fragment key={label}>
+                          {renderRows(rows, label)}
                         </Fragment>
                       ))}
-                      <tr style={{ fontWeight: "bold", borderTop: "3px double #333" }}>
-                        <td colSpan={2} style={{ border: "1px solid #333", padding: "6px", textAlign: "right", fontSize: "11px" }}>GRAND TOTAL</td>
-                        <td style={{ border: "1px solid #333", padding: "6px", textAlign: "right", fontSize: "11px" }}>
-                          {formatCurrency(bills.reduce((s, b) => s + b.sc_total, 0))}
+                      <tr>
+                        <td colSpan={3} style={{ ...cellStyle({ fontWeight: "bold", textAlign: "center", fontSize: "11px", borderTop: "2px solid #333" }) }}>
+                          Total
                         </td>
-                        <td style={{ border: "1px solid #333", padding: "6px", textAlign: "right", fontSize: "11px" }}>
-                          {formatCurrency(bills.reduce((s, b) => s + b.sf_total, 0))}
+                        <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right", fontSize: "11px", borderTop: "2px solid #333" }) }}>
+                          {formatCurrency(totals.invoice)}
                         </td>
-                        <td style={{ border: "1px solid #333", padding: "6px", textAlign: "right", fontSize: "11px" }}>
-                          {formatCurrency(bills.reduce((s, b) => s + b.total_amount, 0))}
+                        <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right", fontSize: "11px", borderTop: "2px solid #333" }) }}>
+                          {formatCurrency(totals.receipts)}
                         </td>
-                        <td style={{ border: "1px solid #333", padding: "6px" }}></td>
+                        <td style={{ ...cellStyle({ fontWeight: "bold", borderTop: "2px solid #333" }) }}></td>
+                        <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right", fontSize: "11px", borderTop: "2px solid #333" }) }}>
+                          {formatCurrency(totals.correction)}
+                        </td>
+                        <td style={{ ...cellStyle({ fontWeight: "bold", borderTop: "2px solid #333" }) }}></td>
+                        <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right", fontSize: "11px", borderTop: "2px solid #333" }) }}>
+                          {formatCurrency(totals.os)}
+                        </td>
                       </tr>
                     </tbody>
                   </table>
@@ -300,7 +462,7 @@ export function BillingStatementDialog() {
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={handlePrint} disabled={!bills || bills.length === 0}>
+                <Button onClick={handlePrint} disabled={!hasData}>
                   <Printer className="w-4 h-4 mr-2" />
                   Cetak
                 </Button>
@@ -311,4 +473,17 @@ export function BillingStatementDialog() {
       </DialogContent>
     </Dialog>
   );
+}
+
+function getBillTypeLabel(billType: string): string {
+  const map: Record<string, string> = {
+    air: "Air",
+    listrik: "Listrik",
+    keamanan: "Keamanan",
+    kebersihan: "Kebersihan",
+    denda: "Denda",
+    perbaikan: "Perbaikan",
+    lainnya: "Lain-lain",
+  };
+  return map[billType] || billType;
 }
