@@ -256,12 +256,14 @@ export function BillingStatementDialog() {
     textAlign: "center",
   };
 
-  const renderRows = (rows: typeof scRows, typeLabel: string) => {
+  type StatementRow = { periode: string; invDate: string; invoiceAmount: number; receiptAmount: number; receiveDate: string; correctionAmount: number; postingDate: string; os: number };
+
+  const renderRows = (rows: StatementRow[], typeLabel: string) => {
     if (rows.length === 0) return null;
-    const subInvoice = rows.reduce((s, r) => s + r.invoiceAmount, 0);
-    const subReceipts = rows.reduce((s, r) => s + r.receiptAmount, 0);
-    const subCorrection = rows.reduce((s, r) => s + r.correctionAmount, 0);
-    const subOs = rows.reduce((s, r) => s + r.os, 0);
+    const subInvoice = rows.reduce((s: number, r) => s + r.invoiceAmount, 0);
+    const subReceipts = rows.reduce((s: number, r) => s + r.receiptAmount, 0);
+    const subCorrection = rows.reduce((s: number, r) => s + r.correctionAmount, 0);
+    const subOs = rows.reduce((s: number, r) => s + r.os, 0);
 
     return (
       <Fragment>
