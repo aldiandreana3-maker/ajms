@@ -58,6 +58,29 @@ interface BillRow {
   amount: number;
 }
 
+type StatementRow = {
+  periode: string;
+  invDate: string;
+  invoiceAmount: number;
+  receiptAmount: number;
+  receiveDate: string;
+  correctionAmount: number;
+  postingDate: string;
+  os: number;
+  billingYear: number;
+};
+
+/**
+ * Correction rules:
+ * - Only for billing year <= 2023
+ * - Max 25% of invoice amount
+ * - Year >= 2024: no correction allowed
+ */
+function calcCorrection(invoiceAmount: number, billingYear: number): number {
+  if (billingYear >= 2024) return 0;
+  return Math.round(invoiceAmount * 0.25);
+}
+
 export function BillingStatementDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedUnitId, setSelectedUnitId] = useState("");
@@ -147,56 +170,83 @@ export function BillingStatementDialog() {
     enabled: !!selectedUnitId,
   });
 
-  // Separate bills into IPL (SC+SF) and non-IPL (Air, etc.)
   const { scRows, sfRows, otherGroups, totals } = useMemo(() => {
-    type SR = { periode: string; invDate: string; invoiceAmount: number; receiptAmount: number; receiveDate: string; correctionAmount: number; postingDate: string; os: number };
-    if (!bills) return { scRows: [] as SR[], sfRows: [] as SR[], otherGroups: new Map<string, SR[]>(), totals: { invoice: 0, receipts: 0, correction: 0, os: 0 } };
+    if (!bills) return { scRows: [] as StatementRow[], sfRows: [] as StatementRow[], otherGroups: new Map<string, StatementRow[]>(), totals: { invoice: 0, receipts: 0, correction: 0, os: 0 } };
 
     const iplBills = bills.filter(b => b.bill_type === "ipl");
     const nonIplBills = bills.filter(b => b.bill_type !== "ipl");
 
-    // SC rows from IPL bills
-    const scRows = iplBills.map(b => ({
-      periode: formatPeriode(b.quarter_label, b.quarter_start),
-      invDate: formatInvDate(b.quarter_start),
-      invoiceAmount: b.sc_total || 0,
-      receiptAmount: b.payment_status === "paid" ? (b.sc_total || 0) : b.payment_status === "partial" ? Math.min(b.paid_amount || 0, b.sc_total || 0) : 0,
-      receiveDate: b.paid_at ? format(new Date(b.paid_at), "dd/MM/yyyy") : "",
-      correctionAmount: 0,
-      postingDate: "",
-      os: 0 as number,
-    }));
-    scRows.forEach(r => { r.os = r.invoiceAmount - r.receiptAmount - r.correctionAmount; });
+    const getBillingYear = (b: BillRow) => new Date(b.billing_period).getFullYear();
 
-    // SF rows from IPL bills
-    const sfRows = iplBills.map(b => ({
-      periode: formatPeriode(b.quarter_label, b.quarter_start),
-      invDate: formatInvDate(b.quarter_start),
-      invoiceAmount: b.sf_total || 0,
-      receiptAmount: b.payment_status === "paid" ? (b.sf_total || 0) : 0,
-      receiveDate: b.paid_at ? format(new Date(b.paid_at), "dd/MM/yyyy") : "",
-      correctionAmount: 0,
-      postingDate: "",
-      os: 0 as number,
-    }));
-    sfRows.forEach(r => { r.os = r.invoiceAmount - r.receiptAmount - r.correctionAmount; });
+    // SC rows
+    const scRows: StatementRow[] = iplBills.map(b => {
+      const invoiceAmount = b.sc_total || 0;
+      const billingYear = getBillingYear(b);
+      // Receipt: actual paid amount allocated to SC proportionally
+      const totalBill = (b.sc_total || 0) + (b.sf_total || 0);
+      const scRatio = totalBill > 0 ? (b.sc_total || 0) / totalBill : 0.5;
+      const paidTotal = b.paid_amount || 0;
+      const receiptAmount = Math.min(Math.round(paidTotal * scRatio), invoiceAmount);
+      const correctionAmount = calcCorrection(invoiceAmount, billingYear);
+      const os = Math.max(0, invoiceAmount - receiptAmount - correctionAmount);
 
-    // Group non-IPL bills by bill_type
-    const otherGroups = new Map<string, SR[]>();
+      return {
+        periode: formatPeriode(b.quarter_label, b.quarter_start),
+        invDate: formatInvDate(b.quarter_start),
+        invoiceAmount,
+        receiptAmount,
+        receiveDate: b.paid_at ? format(new Date(b.paid_at), "dd/MM/yyyy") : "",
+        correctionAmount,
+        postingDate: correctionAmount > 0 ? formatInvDate(b.quarter_start) : "",
+        os,
+        billingYear,
+      };
+    });
+
+    // SF rows
+    const sfRows: StatementRow[] = iplBills.map(b => {
+      const invoiceAmount = b.sf_total || 0;
+      const billingYear = getBillingYear(b);
+      const totalBill = (b.sc_total || 0) + (b.sf_total || 0);
+      const sfRatio = totalBill > 0 ? (b.sf_total || 0) / totalBill : 0.5;
+      const paidTotal = b.paid_amount || 0;
+      const receiptAmount = Math.min(Math.round(paidTotal * sfRatio), invoiceAmount);
+      const correctionAmount = calcCorrection(invoiceAmount, billingYear);
+      const os = Math.max(0, invoiceAmount - receiptAmount - correctionAmount);
+
+      return {
+        periode: formatPeriode(b.quarter_label, b.quarter_start),
+        invDate: formatInvDate(b.quarter_start),
+        invoiceAmount,
+        receiptAmount,
+        receiveDate: b.paid_at ? format(new Date(b.paid_at), "dd/MM/yyyy") : "",
+        correctionAmount,
+        postingDate: correctionAmount > 0 ? formatInvDate(b.quarter_start) : "",
+        os,
+        billingYear,
+      };
+    });
+
+    // Non-IPL groups
+    const otherGroups = new Map<string, StatementRow[]>();
     nonIplBills.forEach(b => {
       const typeLabel = getBillTypeLabel(b.bill_type);
       if (!otherGroups.has(typeLabel)) otherGroups.set(typeLabel, []);
-      const receiptAmt = b.payment_status === "paid" ? (b.total_amount || b.amount || 0) : (b.paid_amount || 0);
       const invoiceAmt = b.total_amount || b.amount || 0;
+      const receiptAmt = b.paid_amount || 0;
+      const billingYear = getBillingYear(b);
+      const correctionAmount = calcCorrection(invoiceAmt, billingYear);
+      const os = Math.max(0, invoiceAmt - receiptAmt - correctionAmount);
       otherGroups.get(typeLabel)!.push({
         periode: b.quarter_label || format(new Date(b.billing_period), "MMM yyyy"),
         invDate: format(new Date(b.billing_period), "dd/MM/yyyy"),
         invoiceAmount: invoiceAmt,
         receiptAmount: receiptAmt,
         receiveDate: b.paid_at ? format(new Date(b.paid_at), "dd/MM/yyyy") : "",
-        correctionAmount: 0,
-        postingDate: "",
-        os: invoiceAmt - receiptAmt,
+        correctionAmount,
+        postingDate: correctionAmount > 0 ? format(new Date(b.billing_period), "dd/MM/yyyy") : "",
+        os,
+        billingYear,
       });
     });
 
@@ -212,6 +262,14 @@ export function BillingStatementDialog() {
 
     return { scRows, sfRows, otherGroups, totals };
   }, [bills]);
+
+  // Determine payment status
+  const paymentStatus = useMemo(() => {
+    if (totals.os === 0 && totals.invoice > 0) return "LUNAS";
+    if (totals.receipts > 0 && totals.os > 0) return "BAYAR SEBAGIAN";
+    if (totals.os > 0) return "BELUM LUNAS";
+    return "";
+  }, [totals]);
 
   const handlePrint = () => {
     const printContent = printRef.current;
@@ -233,6 +291,10 @@ export function BillingStatementDialog() {
           .subtotal-row td { font-weight: bold; }
           .total-row td { font-weight: bold; }
           .type-label { font-weight: bold; }
+          .status-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; }
+          .status-lunas { background: #dcfce7; color: #166534; }
+          .status-belum { background: #fef2f2; color: #991b1b; }
+          .status-sebagian { background: #fefce8; color: #854d0e; }
         </style>
       </head><body>${printContent.innerHTML}</body></html>
     `);
@@ -257,14 +319,12 @@ export function BillingStatementDialog() {
     textAlign: "center",
   };
 
-  type StatementRow = { periode: string; invDate: string; invoiceAmount: number; receiptAmount: number; receiveDate: string; correctionAmount: number; postingDate: string; os: number };
-
   const renderRows = (rows: StatementRow[], typeLabel: string) => {
     if (rows.length === 0) return null;
-    const subInvoice = rows.reduce((s: number, r) => s + r.invoiceAmount, 0);
-    const subReceipts = rows.reduce((s: number, r) => s + r.receiptAmount, 0);
-    const subCorrection = rows.reduce((s: number, r) => s + r.correctionAmount, 0);
-    const subOs = rows.reduce((s: number, r) => s + r.os, 0);
+    const subInvoice = rows.reduce((s, r) => s + r.invoiceAmount, 0);
+    const subReceipts = rows.reduce((s, r) => s + r.receiptAmount, 0);
+    const subCorrection = rows.reduce((s, r) => s + r.correctionAmount, 0);
+    const subOs = rows.reduce((s, r) => s + r.os, 0);
 
     return (
       <Fragment>
@@ -278,21 +338,23 @@ export function BillingStatementDialog() {
             <td style={cellStyle()}>{r.periode}</td>
             <td style={cellStyle({ textAlign: "center" })}>{r.invDate}</td>
             <td style={cellStyle({ textAlign: "right" })}>{formatCurrency(r.invoiceAmount)}</td>
-            <td style={cellStyle({ textAlign: "right" })}>{r.receiptAmount > 0 ? formatCurrency(r.receiptAmount) : "0"}</td>
-            <td style={cellStyle({ textAlign: "center" })}>{r.receiveDate}</td>
-            <td style={cellStyle({ textAlign: "right" })}>{r.correctionAmount > 0 ? formatCurrency(r.correctionAmount) : "0"}</td>
-            <td style={cellStyle({ textAlign: "center" })}>{r.postingDate}</td>
-            <td style={cellStyle({ textAlign: "right" })}>{formatCurrency(r.os)}</td>
+            <td style={cellStyle({ textAlign: "right" })}>{r.receiptAmount > 0 ? formatCurrency(r.receiptAmount) : "-"}</td>
+            <td style={cellStyle({ textAlign: "center" })}>{r.receiveDate || "-"}</td>
+            <td style={cellStyle({ textAlign: "right" })}>{r.correctionAmount > 0 ? formatCurrency(r.correctionAmount) : "-"}</td>
+            <td style={cellStyle({ textAlign: "center" })}>{r.postingDate || "-"}</td>
+            <td style={cellStyle({ textAlign: "right", color: r.os > 0 ? "#dc2626" : "#16a34a", fontWeight: r.os > 0 ? "bold" : "normal" })}>
+              {formatCurrency(r.os)}
+            </td>
           </tr>
         ))}
-        <tr>
+        <tr style={{ background: "#fafafa" }}>
           <td colSpan={3} style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right" }) }}>
             Sub Total {typeLabel}
           </td>
           <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right" }) }}>{formatCurrency(subInvoice)}</td>
-          <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right" }) }}>{formatCurrency(subReceipts)}</td>
+          <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right" }) }}>{subReceipts > 0 ? formatCurrency(subReceipts) : "-"}</td>
           <td style={cellStyle({ fontWeight: "bold" })}></td>
-          <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right" }) }}>{formatCurrency(subCorrection)}</td>
+          <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right" }) }}>{subCorrection > 0 ? formatCurrency(subCorrection) : "-"}</td>
           <td style={cellStyle({ fontWeight: "bold" })}></td>
           <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right" }) }}>{formatCurrency(subOs)}</td>
         </tr>
@@ -365,96 +427,121 @@ export function BillingStatementDialog() {
                   BILLING STATEMENT
                 </div>
 
+                {/* Tenant Info */}
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "16px" }}>
                   <table className="info-table" style={{ borderCollapse: "collapse" }}>
                     <tbody>
                       <tr>
-                        <td style={{ fontWeight: "bold", border: "none", padding: "1px 4px" }}>Tenant name</td>
+                        <td style={{ fontWeight: "bold", border: "none", padding: "1px 4px", whiteSpace: "nowrap" }}>Tenant Name</td>
                         <td style={{ border: "none", padding: "1px 2px" }}>:</td>
                         <td style={{ border: "none", padding: "1px 4px" }}>{penghuniData?.full_name || "-"}</td>
                       </tr>
                       <tr>
-                        <td style={{ fontWeight: "bold", border: "none", padding: "1px 4px" }}>Address</td>
+                        <td style={{ fontWeight: "bold", border: "none", padding: "1px 4px", whiteSpace: "nowrap" }}>Address</td>
                         <td style={{ border: "none", padding: "1px 2px" }}>:</td>
                         <td style={{ border: "none", padding: "1px 4px", maxWidth: "280px" }}>{penghuniData?.address || "-"}</td>
                       </tr>
                       <tr>
-                        <td style={{ fontWeight: "bold", border: "none", padding: "1px 4px" }}>Phone</td>
+                        <td style={{ fontWeight: "bold", border: "none", padding: "1px 4px", whiteSpace: "nowrap" }}>Phone</td>
                         <td style={{ border: "none", padding: "1px 2px" }}>:</td>
-                        <td style={{ border: "none", padding: "1px 4px" }}>{penghuniData?.phone ? `- / ${penghuniData.phone}` : "-"}</td>
+                        <td style={{ border: "none", padding: "1px 4px" }}>{penghuniData?.phone || "-"}</td>
                       </tr>
                     </tbody>
                   </table>
                   <table className="info-table" style={{ borderCollapse: "collapse" }}>
                     <tbody>
                       <tr>
-                        <td style={{ fontWeight: "bold", border: "none", padding: "1px 4px" }}>Lot No.</td>
+                        <td style={{ fontWeight: "bold", border: "none", padding: "1px 4px", whiteSpace: "nowrap" }}>Area</td>
                         <td style={{ border: "none", padding: "1px 2px" }}>:</td>
-                        <td style={{ border: "none", padding: "1px 4px" }}>{selectedUnit?.unit_number || "-"}</td>
+                        <td style={{ border: "none", padding: "1px 4px" }}>{selectedUnit?.area_sqm ? `${selectedUnit.area_sqm} m²` : "-"}</td>
                       </tr>
                       <tr>
-                        <td style={{ fontWeight: "bold", border: "none", padding: "1px 4px" }}>Area</td>
+                        <td style={{ fontWeight: "bold", border: "none", padding: "1px 4px", whiteSpace: "nowrap" }}>Tower & Unit</td>
                         <td style={{ border: "none", padding: "1px 2px" }}>:</td>
-                        <td style={{ border: "none", padding: "1px 4px" }}>{selectedUnit?.area_sqm ? `${selectedUnit.area_sqm}` : "-"}&nbsp;&nbsp;M2</td>
-                      </tr>
-                      <tr>
-                        <td style={{ fontWeight: "bold", border: "none", padding: "1px 4px" }}>Tower</td>
-                        <td style={{ border: "none", padding: "1px 2px" }}>:</td>
-                        <td style={{ border: "none", padding: "1px 4px" }}>{selectedUnit ? parseTower(selectedUnit.unit_number) : "-"}</td>
+                        <td style={{ border: "none", padding: "1px 4px" }}>
+                          {selectedUnit ? `${parseTower(selectedUnit.unit_number)} - ${selectedUnit.unit_number}` : "-"}
+                        </td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
 
                 {hasData ? (
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10px" }}>
-                    <thead>
-                      <tr>
-                        <th rowSpan={2} style={thStyle}>Type</th>
-                        <th colSpan={3} style={thStyle}>Invoice</th>
-                        <th colSpan={2} style={thStyle}>Receipts</th>
-                        <th colSpan={2} style={thStyle}>Correction</th>
-                        <th rowSpan={2} style={thStyle}>O/S</th>
-                      </tr>
-                      <tr>
-                        <th style={thStyle}>Periode</th>
-                        <th style={thStyle}>Inv Date</th>
-                        <th style={thStyle}>Rp.</th>
-                        <th style={thStyle}>Rp.</th>
-                        <th style={thStyle}>Receive Date</th>
-                        <th style={thStyle}>Rp.</th>
-                        <th style={thStyle}>Posting Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {renderRows(scRows, "Service Charge")}
-                      {renderRows(sfRows, "Sinking Fund")}
-                      {[...otherGroups.entries()].map(([label, rows]) => (
-                        <Fragment key={label}>
-                          {renderRows(rows, label)}
-                        </Fragment>
-                      ))}
-                      <tr>
-                        <td colSpan={3} style={{ ...cellStyle({ fontWeight: "bold", textAlign: "center", fontSize: "11px", borderTop: "2px solid #333" }) }}>
-                          Total
-                        </td>
-                        <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right", fontSize: "11px", borderTop: "2px solid #333" }) }}>
-                          {formatCurrency(totals.invoice)}
-                        </td>
-                        <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right", fontSize: "11px", borderTop: "2px solid #333" }) }}>
-                          {formatCurrency(totals.receipts)}
-                        </td>
-                        <td style={{ ...cellStyle({ fontWeight: "bold", borderTop: "2px solid #333" }) }}></td>
-                        <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right", fontSize: "11px", borderTop: "2px solid #333" }) }}>
-                          {formatCurrency(totals.correction)}
-                        </td>
-                        <td style={{ ...cellStyle({ fontWeight: "bold", borderTop: "2px solid #333" }) }}></td>
-                        <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right", fontSize: "11px", borderTop: "2px solid #333" }) }}>
-                          {formatCurrency(totals.os)}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                  <>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "10px" }}>
+                      <thead>
+                        <tr>
+                          <th rowSpan={2} style={thStyle}>Type</th>
+                          <th colSpan={3} style={thStyle}>Invoice</th>
+                          <th colSpan={2} style={thStyle}>Receipts</th>
+                          <th colSpan={2} style={thStyle}>Correction</th>
+                          <th rowSpan={2} style={thStyle}>O/S</th>
+                        </tr>
+                        <tr>
+                          <th style={thStyle}>Periode</th>
+                          <th style={thStyle}>Inv Date</th>
+                          <th style={thStyle}>Rp.</th>
+                          <th style={thStyle}>Rp.</th>
+                          <th style={thStyle}>Receive Date</th>
+                          <th style={thStyle}>Rp.</th>
+                          <th style={thStyle}>Posting Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {renderRows(scRows, "Service Charge")}
+                        {renderRows(sfRows, "Sinking Fund")}
+                        {[...otherGroups.entries()].map(([label, rows]) => (
+                          <Fragment key={label}>
+                            {renderRows(rows, label)}
+                          </Fragment>
+                        ))}
+                        {/* Grand Total */}
+                        <tr>
+                          <td colSpan={3} style={{ ...cellStyle({ fontWeight: "bold", textAlign: "center", fontSize: "11px", borderTop: "2px solid #333" }) }}>
+                            GRAND TOTAL
+                          </td>
+                          <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right", fontSize: "11px", borderTop: "2px solid #333" }) }}>
+                            {formatCurrency(totals.invoice)}
+                          </td>
+                          <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right", fontSize: "11px", borderTop: "2px solid #333" }) }}>
+                            {totals.receipts > 0 ? formatCurrency(totals.receipts) : "-"}
+                          </td>
+                          <td style={{ ...cellStyle({ fontWeight: "bold", borderTop: "2px solid #333" }) }}></td>
+                          <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right", fontSize: "11px", borderTop: "2px solid #333" }) }}>
+                            {totals.correction > 0 ? formatCurrency(totals.correction) : "-"}
+                          </td>
+                          <td style={{ ...cellStyle({ fontWeight: "bold", borderTop: "2px solid #333" }) }}></td>
+                          <td style={{ ...cellStyle({ fontWeight: "bold", textAlign: "right", fontSize: "11px", borderTop: "2px solid #333", color: totals.os > 0 ? "#dc2626" : "#16a34a" }) }}>
+                            {formatCurrency(totals.os)}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    {/* Payment Status */}
+                    <div style={{ marginTop: "14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ fontSize: "11px" }}>
+                        <span style={{ fontWeight: "bold" }}>Status: </span>
+                        <span
+                          className="status-badge"
+                          style={{
+                            display: "inline-block",
+                            padding: "2px 10px",
+                            borderRadius: "4px",
+                            fontWeight: "bold",
+                            fontSize: "11px",
+                            background: paymentStatus === "LUNAS" ? "#dcfce7" : paymentStatus === "BAYAR SEBAGIAN" ? "#fefce8" : "#fef2f2",
+                            color: paymentStatus === "LUNAS" ? "#166534" : paymentStatus === "BAYAR SEBAGIAN" ? "#854d0e" : "#991b1b",
+                          }}
+                        >
+                          {paymentStatus}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: "10px", color: "#666" }}>
+                        *Correction: Diskon maks 25% untuk tagihan tahun 2023 ke bawah
+                      </div>
+                    </div>
+                  </>
                 ) : (
                   <p style={{ textAlign: "center", padding: "20px", color: "#999" }}>Belum ada tagihan untuk unit ini</p>
                 )}
