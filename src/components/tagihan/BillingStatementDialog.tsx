@@ -429,7 +429,7 @@ export function BillingStatementDialog() {
                     <tbody>
                       {renderRows(scRows, "Service Charge")}
                       {renderRows(sfRows, "Sinking Fund")}
-                      {Array.from(otherGroups.entries()).map(([label, rows]) => (
+                      {[...otherGroups.entries()].map(([label, rows]) => (
                         <Fragment key={label}>
                           {renderRows(rows, label)}
                         </Fragment>
