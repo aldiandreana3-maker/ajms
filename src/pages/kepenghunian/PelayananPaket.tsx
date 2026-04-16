@@ -590,6 +590,30 @@ export default function PelayananPaket() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Cleanup Old Packages Dialog */}
+        <AlertDialog open={cleanupDialogOpen} onOpenChange={setCleanupDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Hapus Paket Lama</AlertDialogTitle>
+              <AlertDialogDescription>
+                Semua paket dengan status &quot;Sudah Diambil&quot; yang lebih dari 4 bulan akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Batal</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  cleanupOldPackages.mutate();
+                  setCleanupDialogOpen(false);
+                }}
+                className="bg-destructive text-destructive-foreground"
+              >
+                Hapus Permanen
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </MainLayout>
   );
