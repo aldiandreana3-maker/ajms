@@ -41,7 +41,7 @@ import {
 import { Package, Plus, Trash2, Printer, ChevronDown, ShieldAlert } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { usePackagesPaginated, useCreatePackage, useUpdatePackageStatus, useDeletePackage, DateFilterType } from "@/hooks/usePackages";
+import { usePackagesPaginated, useCreatePackage, useUpdatePackageStatus, useDeletePackage, useCleanupOldPackages, DateFilterType } from "@/hooks/usePackages";
 import { useAuth } from "@/contexts/AuthContext";
 import { DataFilterBar } from "@/components/shared/DataFilterBar";
 import { TablePagination } from "@/components/shared/TablePagination";
@@ -97,7 +97,9 @@ export default function PelayananPaket() {
   const createPackage = useCreatePackage();
   const updateStatus = useUpdatePackageStatus();
   const deletePackage = useDeletePackage();
+  const cleanupOldPackages = useCleanupOldPackages();
   const { isSuperAdmin, role } = useAuth();
+  const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false);
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -262,6 +264,18 @@ export default function PelayananPaket() {
               <p className="text-muted-foreground">Kelola paket masuk untuk penghuni</p>
             </div>
           </div>
+          {canDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCleanupDialogOpen(true)}
+              disabled={cleanupOldPackages.isPending}
+              className="text-destructive border-destructive/50 hover:bg-destructive/10"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              {cleanupOldPackages.isPending ? "Membersihkan..." : "Hapus Paket Lama"}
+            </Button>
+          )}
           {canManage && (
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
@@ -572,6 +586,30 @@ export default function PelayananPaket() {
               <AlertDialogCancel>Batal</AlertDialogCancel>
               <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
                 Hapus
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Cleanup Old Packages Dialog */}
+        <AlertDialog open={cleanupDialogOpen} onOpenChange={setCleanupDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Hapus Paket Lama</AlertDialogTitle>
+              <AlertDialogDescription>
+                Semua paket dengan status &quot;Sudah Diambil&quot; yang lebih dari 4 bulan akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Batal</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  cleanupOldPackages.mutate();
+                  setCleanupDialogOpen(false);
+                }}
+                className="bg-destructive text-destructive-foreground"
+              >
+                Hapus Permanen
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
