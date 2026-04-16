@@ -149,7 +149,8 @@ export function BillingStatementDialog() {
 
   // Separate bills into IPL (SC+SF) and non-IPL (Air, etc.)
   const { scRows, sfRows, otherGroups, totals } = useMemo(() => {
-    if (!bills) return { scRows: [], sfRows: [], otherGroups: new Map<string, BillRow[]>(), totals: { invoice: 0, receipts: 0, correction: 0, os: 0 } };
+    type SR = { periode: string; invDate: string; invoiceAmount: number; receiptAmount: number; receiveDate: string; correctionAmount: number; postingDate: string; os: number };
+    if (!bills) return { scRows: [] as SR[], sfRows: [] as SR[], otherGroups: new Map<string, SR[]>(), totals: { invoice: 0, receipts: 0, correction: 0, os: 0 } };
 
     const iplBills = bills.filter(b => b.bill_type === "ipl");
     const nonIplBills = bills.filter(b => b.bill_type !== "ipl");
