@@ -182,7 +182,7 @@ export function BillingStatementDialog() {
     sfRows.forEach(r => { r.os = r.invoiceAmount - r.receiptAmount - r.correctionAmount; });
 
     // Group non-IPL bills by bill_type
-    const otherGroups = new Map<string, typeof scRows>();
+    const otherGroups = new Map<string, SR[]>();
     nonIplBills.forEach(b => {
       const typeLabel = getBillTypeLabel(b.bill_type);
       if (!otherGroups.has(typeLabel)) otherGroups.set(typeLabel, []);
