@@ -41,7 +41,7 @@ import {
 import { Package, Plus, Trash2, Printer, ChevronDown, ShieldAlert } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { usePackagesPaginated, useCreatePackage, useUpdatePackageStatus, useDeletePackage, DateFilterType } from "@/hooks/usePackages";
+import { usePackagesPaginated, useCreatePackage, useUpdatePackageStatus, useDeletePackage, useCleanupOldPackages, DateFilterType } from "@/hooks/usePackages";
 import { useAuth } from "@/contexts/AuthContext";
 import { DataFilterBar } from "@/components/shared/DataFilterBar";
 import { TablePagination } from "@/components/shared/TablePagination";
