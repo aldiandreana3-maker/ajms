@@ -97,7 +97,9 @@ export default function PelayananPaket() {
   const createPackage = useCreatePackage();
   const updateStatus = useUpdatePackageStatus();
   const deletePackage = useDeletePackage();
+  const cleanupOldPackages = useCleanupOldPackages();
   const { isSuperAdmin, role } = useAuth();
+  const [cleanupDialogOpen, setCleanupDialogOpen] = useState(false);
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
