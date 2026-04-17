@@ -119,39 +119,34 @@ export function TopMenu({ sidebarCollapsed, isMobile, onMobileMenuToggle }: TopM
             />
           </div>
 
-          {/* Mute toggle */}
-          {user && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={toggleMute}
-                  className="p-2 rounded-lg hover:bg-muted transition-colors"
-                  aria-label={muted ? "Aktifkan suara notifikasi" : "Matikan suara notifikasi"}
-                >
-                  {muted ? (
-                    <BellOff className="w-5 h-5 text-muted-foreground" />
-                  ) : (
-                    <Bell className="w-5 h-5 text-primary" />
-                  )}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>{muted ? "Suara notifikasi: OFF" : "Suara notifikasi: ON"}</TooltipContent>
-            </Tooltip>
-          )}
-
-          {/* Notification (inbox bell) */}
-          <button
-            onClick={() => navigate("/kepenghunian/pesan")}
-            className="relative p-2 rounded-lg hover:bg-muted transition-colors"
-            aria-label="Buka pesan"
-          >
-            <Bell className="w-5 h-5 text-muted-foreground" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full px-1">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
-            )}
-          </button>
+          {/* Unified notification bell — click to open inbox, right-click to toggle mute */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => navigate("/kepenghunian/pesan")}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  if (user) toggleMute();
+                }}
+                className="relative p-2 rounded-lg hover:bg-muted transition-colors"
+                aria-label="Buka pesan (klik kanan untuk mute/unmute)"
+              >
+                {muted ? (
+                  <BellOff className="w-5 h-5 text-muted-foreground" />
+                ) : (
+                  <Bell className="w-5 h-5 text-primary" />
+                )}
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full px-1">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              Buka pesan • Klik kanan untuk {muted ? "aktifkan" : "matikan"} suara
+            </TooltipContent>
+          </Tooltip>
 
           {/* Profile Dropdown - Only show when logged in */}
           {user ? (
