@@ -5,6 +5,7 @@ import {
   BarChart3,
   Settings,
   Bell,
+  BellOff,
   User,
   Search,
   LogOut,
@@ -16,6 +17,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBroadcastMessages } from "@/hooks/useBroadcastMessages";
+import { useNotificationMute } from "@/hooks/useRealtimeNotifications";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +48,7 @@ export function TopMenu({ sidebarCollapsed, isMobile, onMobileMenuToggle }: TopM
   const navigate = useNavigate();
   const { user, signOut, role } = useAuth();
   const { unreadCount } = useBroadcastMessages();
+  const { muted, toggleMute } = useNotificationMute();
 
   const handleLogout = async () => {
     await signOut();
@@ -115,10 +119,31 @@ export function TopMenu({ sidebarCollapsed, isMobile, onMobileMenuToggle }: TopM
             />
           </div>
 
-          {/* Notification */}
+          {/* Mute toggle */}
+          {user && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={toggleMute}
+                  className="p-2 rounded-lg hover:bg-muted transition-colors"
+                  aria-label={muted ? "Aktifkan suara notifikasi" : "Matikan suara notifikasi"}
+                >
+                  {muted ? (
+                    <BellOff className="w-5 h-5 text-muted-foreground" />
+                  ) : (
+                    <Bell className="w-5 h-5 text-primary" />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{muted ? "Suara notifikasi: OFF" : "Suara notifikasi: ON"}</TooltipContent>
+            </Tooltip>
+          )}
+
+          {/* Notification (inbox bell) */}
           <button
             onClick={() => navigate("/kepenghunian/pesan")}
             className="relative p-2 rounded-lg hover:bg-muted transition-colors"
+            aria-label="Buka pesan"
           >
             <Bell className="w-5 h-5 text-muted-foreground" />
             {unreadCount > 0 && (

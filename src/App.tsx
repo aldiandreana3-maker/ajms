@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SystemInactiveGuard } from "@/components/shared/SystemInactiveGuard";
 import { GlobalSystemGuard } from "@/components/shared/GlobalSystemGuard";
+import { NotificationsProvider } from "@/components/shared/NotificationsProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import TentangKami from "./pages/TentangKami";
@@ -81,6 +82,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <NotificationsProvider>
           <GlobalSystemGuard>
             <Routes>
               {/* Selalu accessible */}
@@ -148,6 +150,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </GlobalSystemGuard>
+          </NotificationsProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
