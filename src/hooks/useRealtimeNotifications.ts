@@ -92,28 +92,35 @@ export function useRealtimeNotifications() {
 
     const channels: any[] = [];
 
-    // 1) Broadcast messages (for everyone — only notify if targeted to me)
+    // 1) Broadcast messages — listen directly to INSERTs and notify recipients (sync sound)
     const broadcastChannel = supabase
-      .channel("notif-broadcast-messages")
+      .channel("notif-broadcast-messages-v2")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "broadcast_message_reads" },
+        { event: "INSERT", schema: "public", table: "broadcast_messages" },
         (payload) => {
           const row: any = payload.new;
-          if (!row || row.user_id !== user.id) return;
-          if (new Date(row.created_at).getTime() < startedAtRef.current - 2000) return;
-          // Fetch message title for nicer toast
-          supabase
-            .from("broadcast_messages")
-            .select("title, content")
-            .eq("id", row.message_id)
-            .maybeSingle()
-            .then(({ data }) => {
-              const title = data?.title || "Pesan baru";
-              const body = data?.content?.slice(0, 120) || "Anda menerima pesan broadcast baru.";
-              notify(`📢 ${title}`, body);
-              queryClient.invalidateQueries({ queryKey: ["broadcast-inbox"] });
-            });
+          if (!row) return;
+          // Don't notify the sender about their own message
+          if (row.sender_id === user.id) return;
+
+          // Determine if this user is targeted
+          const targetType = row.target_type || "all";
+          const targetValue: string[] = Array.isArray(row.target_value) ? row.target_value : [];
+          let isTargeted = targetType === "all";
+          if (targetType === "custom" && targetValue.includes(user.id)) isTargeted = true;
+          if ((targetType === "tower" || targetType === "unit") && targetValue.length > 0) {
+            // For tower/unit, RLS already restricts visibility — trust the event delivery
+            isTargeted = true;
+          }
+          if (!isTargeted) return;
+
+          // Play sound SYNCHRONOUSLY (no await) — required by browser autoplay policy
+          const title = row.title || "Pesan baru";
+          const body = (row.content || "").slice(0, 120) || "Anda menerima pesan broadcast baru.";
+          notify(`📢 ${title}`, body);
+          queryClient.invalidateQueries({ queryKey: ["broadcast-inbox"] });
+          queryClient.invalidateQueries({ queryKey: ["broadcast-messages"] });
         }
       )
       .subscribe();
