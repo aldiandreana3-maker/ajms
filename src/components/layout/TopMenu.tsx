@@ -5,6 +5,7 @@ import {
   BarChart3,
   Settings,
   Bell,
+  BellOff,
   User,
   Search,
   LogOut,
@@ -16,6 +17,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBroadcastMessages } from "@/hooks/useBroadcastMessages";
+import { useNotificationMute } from "@/hooks/useRealtimeNotifications";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
