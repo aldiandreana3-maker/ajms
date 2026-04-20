@@ -41,6 +41,29 @@ function isVideoUrl(url: string): boolean {
   return videoExts.some((ext) => lower.includes(ext));
 }
 
+function ThumbnailImage({ src, alt, onClick }: { src: string; alt: string; onClick: () => void }) {
+  const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
+
+  return (
+    <div className="relative w-16 h-16">
+      {!loaded && !errored && (
+        <Skeleton className="absolute inset-0 w-16 h-16 rounded" />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        onLoad={() => setLoaded(true)}
+        onError={() => setErrored(true)}
+        onClick={onClick}
+        className={`w-16 h-16 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+      />
+    </div>
+  );
+}
+
 interface PhotoActionsProps {
   photoUrl: string | null | undefined;
   label?: string;
