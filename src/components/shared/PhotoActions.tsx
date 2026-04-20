@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Eye, Download, Image, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +39,29 @@ function isVideoUrl(url: string): boolean {
   const videoExts = [".mp4", ".webm", ".ogg", ".mov", ".avi", ".mkv"];
   const lower = url.toLowerCase();
   return videoExts.some((ext) => lower.includes(ext));
+}
+
+function ThumbnailImage({ src, alt, onClick }: { src: string; alt: string; onClick: () => void }) {
+  const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
+
+  return (
+    <div className="relative w-16 h-16">
+      {!loaded && !errored && (
+        <Skeleton className="absolute inset-0 w-16 h-16 rounded" />
+      )}
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        onLoad={() => setLoaded(true)}
+        onError={() => setErrored(true)}
+        onClick={onClick}
+        className={`w-16 h-16 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
+      />
+    </div>
+  );
 }
 
 interface PhotoActionsProps {
@@ -216,6 +240,7 @@ export function PhotoCell({ photos, showThumbnail = false }: PhotoCellProps) {
       <div className="flex flex-wrap gap-1">
         {validPhotos.map((photo, index) => {
           const isVideo = isVideoUrl(photo.url!);
+          const thumbUrl = thumbnailUrls[index];
           
           if (showThumbnail) {
             return (
@@ -227,11 +252,12 @@ export function PhotoCell({ photos, showThumbnail = false }: PhotoCellProps) {
                   >
                     <span className="text-xs text-muted-foreground font-medium">▶ Video</span>
                   </div>
+                ) : !thumbUrl ? (
+                  <Skeleton className="w-16 h-16 rounded" />
                 ) : (
-                  <img
-                    src={thumbnailUrls[index] || ""}
+                  <ThumbnailImage
+                    src={thumbUrl}
                     alt={photo.label}
-                    className="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => openPreview({ url: photo.url!, label: photo.label })}
                   />
                 )}
