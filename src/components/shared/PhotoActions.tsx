@@ -217,6 +217,7 @@ export function PhotoCell({ photos, showThumbnail = false }: PhotoCellProps) {
       <div className="flex flex-wrap gap-1">
         {validPhotos.map((photo, index) => {
           const isVideo = isVideoUrl(photo.url!);
+          const thumbUrl = thumbnailUrls[index];
           
           if (showThumbnail) {
             return (
@@ -228,11 +229,12 @@ export function PhotoCell({ photos, showThumbnail = false }: PhotoCellProps) {
                   >
                     <span className="text-xs text-muted-foreground font-medium">▶ Video</span>
                   </div>
+                ) : !thumbUrl ? (
+                  <Skeleton className="w-16 h-16 rounded" />
                 ) : (
-                  <img
-                    src={thumbnailUrls[index] || ""}
+                  <ThumbnailImage
+                    src={thumbUrl}
                     alt={photo.label}
-                    className="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => openPreview({ url: photo.url!, label: photo.label })}
                   />
                 )}
