@@ -11,7 +11,7 @@ import { format } from "date-fns";
 const STORAGE_KEY = "ajms-live-chat-open";
 
 export function LiveChatWidget() {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -32,8 +32,8 @@ export function LiveChatWidget() {
     }
   }, [messages, open]);
 
-  // Hide for unlogged users and admins (admins use the dedicated page)
-  if (!user || isAdmin) return null;
+  // Hide for unlogged users only
+  if (!user) return null;
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
