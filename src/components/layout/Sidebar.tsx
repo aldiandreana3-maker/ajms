@@ -21,6 +21,7 @@ import {
   Wrench,
   ShieldCheck,
   Sparkles,
+  MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -53,6 +54,7 @@ const kepengelolaanItems = [
 
 const adminMenuItems = [
   { icon: Shield, label: "Manajemen User", path: "/manajemen-user", adminOnly: true },
+  { icon: MessageCircle, label: "Live Chat", path: "/live-chat-admin", adminOnly: true },
   { icon: Settings, label: "Aktivasi Sistem", path: "/aktivasi-sistem", adminOnly: false },
 ];
 

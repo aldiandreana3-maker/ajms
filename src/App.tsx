@@ -66,6 +66,8 @@ import Absen from "./pages/karyawan/Absen";
 import Cuti from "./pages/karyawan/Cuti";
 import Lembur from "./pages/karyawan/Lembur";
 import Izin from "./pages/karyawan/Izin";
+import LiveChatAdmin from "./pages/LiveChatAdmin";
+import { LiveChatWidget } from "./components/chat/LiveChatWidget";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -147,8 +149,10 @@ const App = () => (
               <Route path="/karyawan/cuti" element={guarded(<Cuti />)} />
               <Route path="/karyawan/lembur" element={guarded(<Lembur />)} />
               <Route path="/karyawan/izin" element={guarded(<Izin />)} />
+              <Route path="/live-chat-admin" element={guarded(<LiveChatAdmin />)} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <LiveChatWidget />
           </GlobalSystemGuard>
           </NotificationsProvider>
         </AuthProvider>
