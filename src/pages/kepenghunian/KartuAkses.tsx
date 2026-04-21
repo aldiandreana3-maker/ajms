@@ -23,6 +23,14 @@ import { exportToExcel, accessCardExportColumns } from "@/lib/exportExcel";
 import { PhotoCell } from "@/components/shared/PhotoActions";
 import { PhotoUpload } from "@/components/shared/PhotoUpload";
 import { useFileUpload } from "@/hooks/useFileUpload";
+import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
+
+const accessCardImportColumns: ImportColumn[] = [
+  { header: "Unit", key: "unit_number", required: true, example: "TA0520" },
+  { header: "Nama Penghuni", key: "penghuni_name", required: true, example: "Budi Santoso" },
+  { header: "Keterangan", key: "request_type", required: true, example: "tambah_baru" },
+  { header: "Jumlah", key: "quantity_requested", example: "2" },
+];
 
 const statusColors = {
   active: "bg-success/20 text-success border-success/30",
@@ -302,12 +310,43 @@ export default function KartuAkses() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Daftar Kartu Akses</CardTitle>
-            {canExport && filteredData.length > 0 && (
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="w-4 h-4 mr-2" />
-                Export Excel
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {canExport && (
+                <ImportExcelDialog
+                  title="Kartu Akses"
+                  templateFilename="Kartu_Akses"
+                  columns={accessCardImportColumns}
+                  onImport={async (rows) => {
+                    let success = 0, failed = 0;
+                    const errors: string[] = [];
+                    for (const [i, r] of rows.entries()) {
+                      try {
+                        const cardNumber = `AC-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+                        await createMutation.mutateAsync({
+                          card_number: cardNumber,
+                          card_type: r.request_type || "resident",
+                          penghuni_name: r.penghuni_name,
+                          unit_number: r.unit_number,
+                          request_type: r.request_type,
+                          quantity_requested: parseInt(r.quantity_requested) || 1,
+                        });
+                        success++;
+                      } catch (e: any) {
+                        failed++;
+                        errors.push(`Baris ${i + 2}: ${e.message}`);
+                      }
+                    }
+                    return { success, failed, errors };
+                  }}
+                />
+              )}
+              {canExport && filteredData.length > 0 && (
+                <Button variant="outline" size="sm" onClick={handleExport}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Excel
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <DataFilterBar

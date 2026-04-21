@@ -54,6 +54,14 @@ import {
   WorkOrder as WorkOrderType,
 } from "@/hooks/useWorkOrders";
 import { exportToExcel } from "@/lib/exportExcel";
+import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
+
+const workOrderImportColumns: ImportColumn[] = [
+  { header: "Unit", key: "unit_number", required: true, example: "TA0520" },
+  { header: "Judul", key: "title", required: true, example: "Perbaikan AC" },
+  { header: "Deskripsi", key: "description", example: "AC tidak dingin" },
+  { header: "Prioritas (low/medium/high)", key: "priority", example: "medium" },
+];
 
 const statusColors = {
   pending: "bg-warning/20 text-warning border-warning/30",
@@ -307,10 +315,36 @@ export default function WorkOrder() {
                 onDateFilterChange={handleDateFilterChange}
                 searchPlaceholder="Cari judul, unit..."
               />
-              <Button variant="outline" onClick={handleExport} className="gap-2">
-                <Download className="w-4 h-4" />
-                Export
-              </Button>
+              <div className="flex gap-2">
+                <ImportExcelDialog
+                  title="Work Order"
+                  templateFilename="Work_Order"
+                  columns={workOrderImportColumns}
+                  onImport={async (rows) => {
+                    let success = 0, failed = 0;
+                    const errors: string[] = [];
+                    for (const [i, r] of rows.entries()) {
+                      try {
+                        await createMutation.mutateAsync({
+                          unit_number: r.unit_number,
+                          title: r.title,
+                          description: r.description || undefined,
+                          priority: r.priority || "medium",
+                        });
+                        success++;
+                      } catch (e: any) {
+                        failed++;
+                        errors.push(`Baris ${i + 2}: ${e.message}`);
+                      }
+                    }
+                    return { success, failed, errors };
+                  }}
+                />
+                <Button variant="outline" onClick={handleExport} className="gap-2">
+                  <Download className="w-4 h-4" />
+                  Export
+                </Button>
+              </div>
             </div>
 
             <div className="rounded-md border overflow-x-auto">

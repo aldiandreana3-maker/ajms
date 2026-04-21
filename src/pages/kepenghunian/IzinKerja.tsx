@@ -23,6 +23,18 @@ import { exportToExcel, workPermitExportColumns } from "@/lib/exportExcel";
 import { PhotoUpload } from "@/components/shared/PhotoUpload";
 import { PhotoCell } from "@/components/shared/PhotoActions";
 import { useFileUpload } from "@/hooks/useFileUpload";
+import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
+
+const workPermitImportColumns: ImportColumn[] = [
+  { header: "Unit", key: "unit_number", required: true, example: "TA0520" },
+  { header: "Nama Penghuni", key: "penghuni_name", required: true, example: "Budi Santoso" },
+  { header: "Telepon", key: "phone", example: "08123456789" },
+  { header: "Nama Vendor", key: "vendor_name", required: true, example: "PT Renovasi Jaya" },
+  { header: "Deskripsi Pekerjaan", key: "work_description", required: true, example: "Renovasi dapur" },
+  { header: "Jumlah Pekerja", key: "worker_count", example: "3" },
+  { header: "Tanggal Mulai", key: "start_date", required: true, example: "2025-04-25" },
+  { header: "Tanggal Selesai", key: "end_date", required: true, example: "2025-04-30" },
+];
 
 const statusColors = {
   pending: "bg-warning/20 text-warning border-warning/30",
@@ -368,12 +380,44 @@ export default function IzinKerja() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Daftar Pengajuan</CardTitle>
-            {canExport && filteredData.length > 0 && (
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="w-4 h-4 mr-2" />
-                Export Excel
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {canExport && (
+                <ImportExcelDialog
+                  title="Izin Kerja"
+                  templateFilename="Izin_Kerja"
+                  columns={workPermitImportColumns}
+                  onImport={async (rows) => {
+                    let success = 0, failed = 0;
+                    const errors: string[] = [];
+                    for (const [i, r] of rows.entries()) {
+                      try {
+                        await createMutation.mutateAsync({
+                          vendor_name: r.vendor_name,
+                          work_description: r.work_description,
+                          worker_count: parseInt(r.worker_count) || 1,
+                          start_date: r.start_date,
+                          end_date: r.end_date,
+                          penghuni_name: r.penghuni_name,
+                          unit_number: r.unit_number,
+                          phone: r.phone,
+                        });
+                        success++;
+                      } catch (e: any) {
+                        failed++;
+                        errors.push(`Baris ${i + 2}: ${e.message}`);
+                      }
+                    }
+                    return { success, failed, errors };
+                  }}
+                />
+              )}
+              {canExport && filteredData.length > 0 && (
+                <Button variant="outline" size="sm" onClick={handleExport}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Excel
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <DataFilterBar
