@@ -11,7 +11,7 @@ import { format } from "date-fns";
 const STORAGE_KEY = "ajms-live-chat-open";
 
 export function LiveChatWidget() {
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
