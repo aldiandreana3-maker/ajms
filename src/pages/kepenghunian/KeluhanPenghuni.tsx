@@ -29,11 +29,11 @@ import { parseImportTimestamp } from "@/lib/parseImportTimestamp";
 
 const keluhanImportColumns: ImportColumn[] = [
   { header: "Timestamp", key: "created_at", example: "2024-05-15 10:30:00" },
-  { header: "Unit", key: "unit_number", required: true, example: "TA0520" },
-  { header: "Nama Penghuni", key: "penghuni_name", required: true, example: "Budi Santoso" },
-  { header: "Telepon", key: "phone", example: "08123456789" },
-  { header: "Subjek", key: "subject", required: true, example: "AC bocor" },
-  { header: "Deskripsi", key: "description", required: true, example: "Air menetes dari unit AC" },
+  { header: "Unit", key: "unit_number", required: true, example: "TA0520", aliases: ["No Unit", "Nomor Unit", "Tower & Unit"] },
+  { header: "Nama Penghuni", key: "penghuni_name", required: true, example: "Budi Santoso", aliases: ["Penghuni", "Nama", "Nama Pelapor"] },
+  { header: "Telepon", key: "phone", example: "08123456789", aliases: ["No Telepon", "No HP", "Nomor Telepon", "Phone"] },
+  { header: "Subjek", key: "subject", required: true, example: "AC bocor", aliases: ["Judul", "Perihal", "Subject"] },
+  { header: "Deskripsi", key: "description", required: true, example: "Air menetes dari unit AC", aliases: ["Keluhan", "Isi Keluhan", "Keterangan", "Deskripsi Keluhan"] },
 ];
 
 const statusColors = {

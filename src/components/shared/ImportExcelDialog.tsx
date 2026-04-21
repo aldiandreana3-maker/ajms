@@ -13,6 +13,7 @@ export interface ImportColumn {
   key: string; // Key to map to
   required?: boolean;
   example?: string;
+  aliases?: string[];
 }
 
 interface ImportExcelDialogProps {
@@ -65,10 +66,16 @@ export function ImportExcelDialog({ title, templateFilename, columns, onImport, 
         );
       };
 
+      const normalizeHeader = (value: string) => value.trim().toLowerCase().replace(/\s+/g, " ");
+
       const mapped = json.map((row) => {
         const out: Record<string, any> = {};
         columns.forEach((c) => {
-          let val = row[c.header];
+          const candidateHeaders = [c.header, ...(c.aliases ?? [])];
+          const matchedHeader = Object.keys(row).find((header) =>
+            candidateHeaders.some((candidate) => normalizeHeader(candidate) === normalizeHeader(header))
+          );
+          let val = matchedHeader ? row[matchedHeader] : row[c.header];
           const dateLike = isDateLikeHeader(c.header) || isDateLikeHeader(c.key);
 
           if (val instanceof Date) {
