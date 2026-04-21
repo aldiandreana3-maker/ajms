@@ -52,16 +52,51 @@ export function ImportExcelDialog({ title, templateFilename, columns, onImport, 
       const json = XLSX.utils.sheet_to_json<Record<string, any>>(ws, { defval: "" });
 
       // Map header columns -> keys
+      const isDateLikeHeader = (h: string) => {
+        const lower = h.toLowerCase();
+        return (
+          lower.includes("tanggal") ||
+          lower.includes("timestamp") ||
+          lower.includes("waktu") ||
+          lower.includes("date") ||
+          lower.includes("expire") ||
+          lower.includes("kadaluarsa") ||
+          lower.includes("berlaku")
+        );
+      };
+
       const mapped = json.map((row) => {
         const out: Record<string, any> = {};
         columns.forEach((c) => {
           let val = row[c.header];
+          const dateLike = isDateLikeHeader(c.header) || isDateLikeHeader(c.key);
+
           if (val instanceof Date) {
-            val = val.toISOString().split("T")[0];
-          } else if (typeof val === "number" && c.header.toLowerCase().includes("tanggal")) {
-            // Excel date serial
+            // Date only vs datetime — jika ada timestamp keep ISO full
+            val = dateLike && (c.header.toLowerCase().includes("timestamp") || c.header.toLowerCase().includes("waktu"))
+              ? val.toISOString()
+              : val.toISOString().split("T")[0];
+          } else if (typeof val === "number" && dateLike) {
+            // Excel date serial (termasuk pecahan untuk waktu)
             const d = XLSX.SSF.parse_date_code(val);
-            if (d) val = `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
+            if (d) {
+              const pad = (n: number) => String(n).padStart(2, "0");
+              const hasTime = (d.H || d.M || d.S) || val % 1 !== 0;
+              if (hasTime) {
+                // Bangun sebagai local time lalu jadikan ISO
+                const dt = new Date(
+                  d.y,
+                  (d.m || 1) - 1,
+                  d.d || 1,
+                  d.H || 0,
+                  d.M || 0,
+                  Math.floor(d.S || 0)
+                );
+                val = isNaN(dt.getTime()) ? null : dt.toISOString();
+              } else {
+                val = `${d.y}-${pad(d.m)}-${pad(d.d)}`;
+              }
+            }
           }
           out[c.key] = val === "" || val === undefined || val === null ? null : String(val).trim();
         });
