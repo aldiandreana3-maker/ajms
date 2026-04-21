@@ -55,8 +55,11 @@ import {
 } from "@/hooks/useWorkOrders";
 import { exportToExcel } from "@/lib/exportExcel";
 import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { parseImportTimestamp } from "@/lib/parseImportTimestamp";
 
 const workOrderImportColumns: ImportColumn[] = [
+  { header: "Timestamp", key: "created_at", example: "2024-05-15 10:30:00" },
   { header: "Unit", key: "unit_number", required: true, example: "TA0520" },
   { header: "Judul", key: "title", required: true, example: "Perbaikan AC" },
   { header: "Deskripsi", key: "description", example: "AC tidak dingin" },
@@ -325,12 +328,16 @@ export default function WorkOrder() {
                     const errors: string[] = [];
                     for (const [i, r] of rows.entries()) {
                       try {
-                        await createWorkOrder.mutateAsync({
+                        const created = await createWorkOrder.mutateAsync({
                           unit_number: r.unit_number,
                           title: r.title,
                           description: r.description || undefined,
                           priority: r.priority || "medium",
                         });
+                        const ts = parseImportTimestamp(r.created_at);
+                        if (ts && (created as any)?.id) {
+                          await supabase.from("work_orders").update({ created_at: ts }).eq("id", (created as any).id);
+                        }
                         success++;
                       } catch (e: any) {
                         failed++;

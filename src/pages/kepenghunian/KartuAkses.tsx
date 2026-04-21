@@ -24,8 +24,11 @@ import { PhotoCell } from "@/components/shared/PhotoActions";
 import { PhotoUpload } from "@/components/shared/PhotoUpload";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { parseImportTimestamp } from "@/lib/parseImportTimestamp";
 
 const accessCardImportColumns: ImportColumn[] = [
+  { header: "Timestamp", key: "created_at", example: "2024-05-15 10:30:00" },
   { header: "Unit", key: "unit_number", required: true, example: "TA0520" },
   { header: "Nama Penghuni", key: "penghuni_name", required: true, example: "Budi Santoso" },
   { header: "Keterangan", key: "request_type", required: true, example: "tambah_baru" },
@@ -322,7 +325,7 @@ export default function KartuAkses() {
                     for (const [i, r] of rows.entries()) {
                       try {
                         const cardNumber = `AC-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-                        await createMutation.mutateAsync({
+                        const created = await createMutation.mutateAsync({
                           card_number: cardNumber,
                           card_type: r.request_type || "resident",
                           penghuni_name: r.penghuni_name,
@@ -330,6 +333,10 @@ export default function KartuAkses() {
                           request_type: r.request_type,
                           quantity_requested: parseInt(r.quantity_requested) || 1,
                         });
+                        const ts = parseImportTimestamp(r.created_at);
+                        if (ts && created?.id) {
+                          await supabase.from("access_cards").update({ created_at: ts, issued_at: ts }).eq("id", created.id);
+                        }
                         success++;
                       } catch (e: any) {
                         failed++;

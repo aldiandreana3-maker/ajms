@@ -24,8 +24,11 @@ import { PhotoUpload } from "@/components/shared/PhotoUpload";
 import { PhotoCell } from "@/components/shared/PhotoActions";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { parseImportTimestamp } from "@/lib/parseImportTimestamp";
 
 const keluhanImportColumns: ImportColumn[] = [
+  { header: "Timestamp", key: "created_at", example: "2024-05-15 10:30:00" },
   { header: "Unit", key: "unit_number", required: true, example: "TA0520" },
   { header: "Nama Penghuni", key: "penghuni_name", required: true, example: "Budi Santoso" },
   { header: "Telepon", key: "phone", example: "08123456789" },
@@ -266,13 +269,17 @@ export default function KeluhanPenghuni() {
                     const errors: string[] = [];
                     for (const [i, r] of rows.entries()) {
                       try {
-                        await createMutation.mutateAsync({
+                        const created = await createMutation.mutateAsync({
                           subject: r.subject,
                           description: r.description,
                           penghuni_name: r.penghuni_name,
                           unit_number: r.unit_number,
                           phone: r.phone,
                         });
+                        const ts = parseImportTimestamp(r.created_at);
+                        if (ts && created?.id) {
+                          await supabase.from("keluhan").update({ created_at: ts }).eq("id", created.id);
+                        }
                         success++;
                       } catch (e: any) {
                         failed++;
