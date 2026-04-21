@@ -24,6 +24,18 @@ import { exportToExcel, goodsMovementExportColumns } from "@/lib/exportExcel";
 import { PhotoCell } from "@/components/shared/PhotoActions";
 import { PhotoUpload } from "@/components/shared/PhotoUpload";
 import { useFileUpload } from "@/hooks/useFileUpload";
+import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
+
+const goodsImportColumns: ImportColumn[] = [
+  { header: "Unit", key: "unit_number", required: true, example: "TA0520" },
+  { header: "Nama Penghuni", key: "penghuni_name", required: true, example: "Budi Santoso" },
+  { header: "Telepon", key: "phone", example: "08123456789" },
+  { header: "Tipe (in/out)", key: "movement_type", required: true, example: "in" },
+  { header: "Deskripsi Barang", key: "item_description", required: true, example: "Sofa baru" },
+  { header: "Jumlah", key: "quantity", example: "1" },
+  { header: "Nama Pembawa", key: "carrier_name", example: "Kurir JNE" },
+  { header: "ID Pembawa", key: "carrier_id", example: "KTP-1234567890" },
+];
 
 export default function KeluarMasukBarang() {
   const navigate = useNavigate();
@@ -373,12 +385,45 @@ export default function KeluarMasukBarang() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle>Riwayat Keluar Masuk Barang</CardTitle>
-            {canExport && filteredData.length > 0 && (
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="w-4 h-4 mr-2" />
-                Export Excel
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {canExport && (
+                <ImportExcelDialog
+                  title="Keluar Masuk Barang"
+                  templateFilename="Keluar_Masuk_Barang"
+                  columns={goodsImportColumns}
+                  onImport={async (rows) => {
+                    let success = 0, failed = 0;
+                    const errors: string[] = [];
+                    for (const [i, r] of rows.entries()) {
+                      try {
+                        const mt = (r.movement_type || "").toLowerCase();
+                        await createMutation.mutateAsync({
+                          movement_type: mt === "out" || mt === "keluar" ? "out" : "in",
+                          item_description: r.item_description,
+                          quantity: parseInt(r.quantity) || 1,
+                          carrier_name: r.carrier_name,
+                          carrier_id: r.carrier_id,
+                          penghuni_name: r.penghuni_name,
+                          unit_number: r.unit_number,
+                          phone: r.phone,
+                        });
+                        success++;
+                      } catch (e: any) {
+                        failed++;
+                        errors.push(`Baris ${i + 2}: ${e.message}`);
+                      }
+                    }
+                    return { success, failed, errors };
+                  }}
+                />
+              )}
+              {canExport && filteredData.length > 0 && (
+                <Button variant="outline" size="sm" onClick={handleExport}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Excel
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <DataFilterBar

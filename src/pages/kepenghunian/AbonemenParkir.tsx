@@ -23,6 +23,19 @@ import { exportToExcel, parkingExportColumns } from "@/lib/exportExcel";
 import { PhotoCell } from "@/components/shared/PhotoActions";
 import { PhotoUpload } from "@/components/shared/PhotoUpload";
 import { useFileUpload } from "@/hooks/useFileUpload";
+import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
+
+const parkingImportColumns: ImportColumn[] = [
+  { header: "Unit", key: "unit_number", required: true, example: "TA0520" },
+  { header: "Nama Penghuni", key: "penghuni_name", required: true, example: "Budi Santoso" },
+  { header: "Telepon", key: "phone", example: "08123456789" },
+  { header: "Status Sewa", key: "rental_status", example: "pemilik" },
+  { header: "Jenis Kendaraan", key: "vehicle_type", required: true, example: "mobil" },
+  { header: "Kartu Member", key: "member_card", example: "0000000000000000" },
+  { header: "Nomor Plat", key: "vehicle_number", required: true, example: "B 1234 ABC" },
+  { header: "Jenis Pengajuan", key: "request_type", example: "registrasi_baru" },
+  { header: "Periode", key: "period_type", example: "bulanan" },
+];
 
 export default function AbonemenParkir() {
   const navigate = useNavigate();
@@ -442,12 +455,50 @@ export default function AbonemenParkir() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Daftar Abonemen</CardTitle>
-            {canExport && filteredData.length > 0 && (
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="w-4 h-4 mr-2" />
-                Export Excel
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {canExport && (
+                <ImportExcelDialog
+                  title="Abonemen Parkir"
+                  templateFilename="Abonemen_Parkir"
+                  columns={parkingImportColumns}
+                  onImport={async (rows) => {
+                    let success = 0, failed = 0;
+                    const errors: string[] = [];
+                    const today = new Date();
+                    const endDate = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
+                    for (const [i, r] of rows.entries()) {
+                      try {
+                        await createMutation.mutateAsync({
+                          vehicle_type: r.vehicle_type || "mobil",
+                          vehicle_number: r.vehicle_number || "",
+                          start_date: today.toISOString().split("T")[0],
+                          end_date: endDate.toISOString().split("T")[0],
+                          monthly_fee: 0,
+                          penghuni_name: r.penghuni_name,
+                          unit_number: r.unit_number,
+                          phone: r.phone,
+                          member_card: r.member_card,
+                          request_type: r.request_type,
+                          period_type: r.period_type,
+                          rental_status: r.rental_status,
+                        });
+                        success++;
+                      } catch (e: any) {
+                        failed++;
+                        errors.push(`Baris ${i + 2}: ${e.message}`);
+                      }
+                    }
+                    return { success, failed, errors };
+                  }}
+                />
+              )}
+              {canExport && filteredData.length > 0 && (
+                <Button variant="outline" size="sm" onClick={handleExport}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Excel
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <DataFilterBar

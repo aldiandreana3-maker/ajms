@@ -23,6 +23,15 @@ import { exportToExcel, keluhanExportColumns } from "@/lib/exportExcel";
 import { PhotoUpload } from "@/components/shared/PhotoUpload";
 import { PhotoCell } from "@/components/shared/PhotoActions";
 import { useFileUpload } from "@/hooks/useFileUpload";
+import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
+
+const keluhanImportColumns: ImportColumn[] = [
+  { header: "Unit", key: "unit_number", required: true, example: "TA0520" },
+  { header: "Nama Penghuni", key: "penghuni_name", required: true, example: "Budi Santoso" },
+  { header: "Telepon", key: "phone", example: "08123456789" },
+  { header: "Subjek", key: "subject", required: true, example: "AC bocor" },
+  { header: "Deskripsi", key: "description", required: true, example: "Air menetes dari unit AC" },
+];
 
 const statusColors = {
   pending: "bg-warning/20 text-warning border-warning/30",
@@ -246,12 +255,41 @@ export default function KeluhanPenghuni() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Daftar Keluhan</CardTitle>
-            {canExport && filteredData.length > 0 && (
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="w-4 h-4 mr-2" />
-                Export Excel
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {canExport && (
+                <ImportExcelDialog
+                  title="Keluhan"
+                  templateFilename="Keluhan_Penghuni"
+                  columns={keluhanImportColumns}
+                  onImport={async (rows) => {
+                    let success = 0, failed = 0;
+                    const errors: string[] = [];
+                    for (const [i, r] of rows.entries()) {
+                      try {
+                        await createMutation.mutateAsync({
+                          subject: r.subject,
+                          description: r.description,
+                          penghuni_name: r.penghuni_name,
+                          unit_number: r.unit_number,
+                          phone: r.phone,
+                        });
+                        success++;
+                      } catch (e: any) {
+                        failed++;
+                        errors.push(`Baris ${i + 2}: ${e.message}`);
+                      }
+                    }
+                    return { success, failed, errors };
+                  }}
+                />
+              )}
+              {canExport && filteredData.length > 0 && (
+                <Button variant="outline" size="sm" onClick={handleExport}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Excel
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <DataFilterBar

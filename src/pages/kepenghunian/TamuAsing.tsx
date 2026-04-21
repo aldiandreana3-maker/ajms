@@ -21,6 +21,20 @@ import { format } from "date-fns";
 import { exportToExcel, foreignGuestExportColumns } from "@/lib/exportExcel";
 import { PhotoCell } from "@/components/shared/PhotoActions";
 import { PhotoUpload } from "@/components/shared/PhotoUpload";
+import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
+
+const foreignGuestImportColumns: ImportColumn[] = [
+  { header: "Nama Lengkap", key: "full_name", required: true, example: "John Doe" },
+  { header: "Unit", key: "unit_number", required: true, example: "TA0520" },
+  { header: "Tempat Lahir", key: "birth_place", required: true, example: "London" },
+  { header: "Tanggal Lahir", key: "birth_date", required: true, example: "1990-01-15" },
+  { header: "Jenis Kelamin (pria/wanita)", key: "gender", required: true, example: "pria" },
+  { header: "Kewarganegaraan", key: "nationality", required: true, example: "Inggris" },
+  { header: "No. Paspor", key: "passport_number", required: true, example: "A1234567" },
+  { header: "Paspor Kadaluarsa", key: "passport_expiry", required: true, example: "2030-12-31" },
+  { header: "Check In", key: "check_in_date", required: true, example: "2025-04-20" },
+  { header: "Check Out", key: "check_out_date", required: true, example: "2025-04-25" },
+];
 
 export default function TamuAsing() {
   const navigate = useNavigate();
@@ -326,12 +340,47 @@ export default function TamuAsing() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Daftar Tamu Asing</CardTitle>
-            {canExport && filteredData.length > 0 && (
-              <Button variant="outline" size="sm" onClick={handleExport}>
-                <Download className="w-4 h-4 mr-2" />
-                Export Excel
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {canExport && (
+                <ImportExcelDialog
+                  title="Tamu Asing"
+                  templateFilename="Tamu_Asing"
+                  columns={foreignGuestImportColumns}
+                  onImport={async (rows) => {
+                    let success = 0, failed = 0;
+                    const errors: string[] = [];
+                    for (const [i, r] of rows.entries()) {
+                      try {
+                        const g = (r.gender || "").toLowerCase() === "wanita" ? "wanita" : "pria";
+                        await createMutation.mutateAsync({
+                          full_name: r.full_name,
+                          birth_place: r.birth_place,
+                          birth_date: r.birth_date,
+                          gender: g as "pria" | "wanita",
+                          nationality: r.nationality,
+                          passport_number: r.passport_number,
+                          passport_expiry: r.passport_expiry,
+                          check_in_date: r.check_in_date,
+                          check_out_date: r.check_out_date,
+                          unit_number: r.unit_number,
+                        });
+                        success++;
+                      } catch (e: any) {
+                        failed++;
+                        errors.push(`Baris ${i + 2}: ${e.message}`);
+                      }
+                    }
+                    return { success, failed, errors };
+                  }}
+                />
+              )}
+              {canExport && filteredData.length > 0 && (
+                <Button variant="outline" size="sm" onClick={handleExport}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Export Excel
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <DataFilterBar
