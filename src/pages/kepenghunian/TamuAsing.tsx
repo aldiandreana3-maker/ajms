@@ -22,8 +22,11 @@ import { exportToExcel, foreignGuestExportColumns } from "@/lib/exportExcel";
 import { PhotoCell } from "@/components/shared/PhotoActions";
 import { PhotoUpload } from "@/components/shared/PhotoUpload";
 import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { parseImportTimestamp } from "@/lib/parseImportTimestamp";
 
 const foreignGuestImportColumns: ImportColumn[] = [
+  { header: "Timestamp", key: "created_at", example: "2024-05-15 10:30:00" },
   { header: "Nama Lengkap", key: "full_name", required: true, example: "John Doe" },
   { header: "Unit", key: "unit_number", required: true, example: "TA0520" },
   { header: "Tempat Lahir", key: "birth_place", required: true, example: "London" },
@@ -352,7 +355,7 @@ export default function TamuAsing() {
                     for (const [i, r] of rows.entries()) {
                       try {
                         const g = (r.gender || "").toLowerCase() === "wanita" ? "wanita" : "pria";
-                        await createMutation.mutateAsync({
+                        const created = await createMutation.mutateAsync({
                           full_name: r.full_name,
                           birth_place: r.birth_place,
                           birth_date: r.birth_date,
@@ -364,6 +367,10 @@ export default function TamuAsing() {
                           check_out_date: r.check_out_date,
                           unit_number: r.unit_number,
                         });
+                        const ts = parseImportTimestamp(r.created_at);
+                        if (ts && created?.id) {
+                          await supabase.from("foreign_guest_reports").update({ created_at: ts }).eq("id", created.id);
+                        }
                         success++;
                       } catch (e: any) {
                         failed++;

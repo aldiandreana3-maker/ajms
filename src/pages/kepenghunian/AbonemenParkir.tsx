@@ -24,8 +24,11 @@ import { PhotoCell } from "@/components/shared/PhotoActions";
 import { PhotoUpload } from "@/components/shared/PhotoUpload";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { parseImportTimestamp } from "@/lib/parseImportTimestamp";
 
 const parkingImportColumns: ImportColumn[] = [
+  { header: "Timestamp", key: "created_at", example: "2024-05-15 10:30:00" },
   { header: "Unit", key: "unit_number", required: true, example: "TA0520" },
   { header: "Nama Penghuni", key: "penghuni_name", required: true, example: "Budi Santoso" },
   { header: "Telepon", key: "phone", example: "08123456789" },
@@ -468,7 +471,7 @@ export default function AbonemenParkir() {
                     const endDate = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
                     for (const [i, r] of rows.entries()) {
                       try {
-                        await createMutation.mutateAsync({
+                        const created = await createMutation.mutateAsync({
                           vehicle_type: r.vehicle_type || "mobil",
                           vehicle_number: r.vehicle_number || "",
                           start_date: today.toISOString().split("T")[0],
@@ -482,6 +485,10 @@ export default function AbonemenParkir() {
                           period_type: r.period_type,
                           rental_status: r.rental_status,
                         });
+                        const ts = parseImportTimestamp(r.created_at);
+                        if (ts && created?.id) {
+                          await supabase.from("parking_subscriptions").update({ created_at: ts }).eq("id", created.id);
+                        }
                         success++;
                       } catch (e: any) {
                         failed++;
