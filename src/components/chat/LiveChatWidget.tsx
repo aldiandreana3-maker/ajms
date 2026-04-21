@@ -32,8 +32,8 @@ export function LiveChatWidget() {
     }
   }, [messages, open]);
 
-  // Hide for unlogged users and admins (admins use the dedicated page)
-  if (!user || isAdmin) return null;
+  // Hide for unlogged users only
+  if (!user) return null;
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
