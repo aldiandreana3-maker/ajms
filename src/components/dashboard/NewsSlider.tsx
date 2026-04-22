@@ -113,6 +113,8 @@ export function NewsSlider({ news }: NewsSliderProps) {
           ))}
         </div>
       )}
+
+      <NewsDetailDialog news={selected} open={open} onOpenChange={setOpen} />
     </div>
   );
 }
