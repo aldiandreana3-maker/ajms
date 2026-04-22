@@ -9,11 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Send, Plus, Trash2, Pencil, MessageSquare } from "lucide-react";
+import { Send, Plus, Trash2, Pencil, MessageSquare, Upload } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useAdminConversations, useAdminMessages, useAdminReply, useKnowledgeBase } from "@/hooks/useLiveChat";
 import { toast } from "sonner";
+import { ImportKnowledgeDialog } from "@/components/chat/ImportKnowledgeDialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 function ChatInbox() {
   const { data: conversations = [] } = useAdminConversations();
@@ -164,6 +166,8 @@ interface KbForm {
 function KnowledgeBasePanel() {
   const { data: items = [], create, update, remove } = useKnowledgeBase();
   const [open, setOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const qc = useQueryClient();
   const [form, setForm] = useState<KbForm>({ question: "", answer: "", keywords: "", is_active: true });
 
   const openNew = () => {
@@ -205,15 +209,28 @@ function KnowledgeBasePanel() {
 
   return (
     <Card className="p-4">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
         <div>
           <h3 className="font-semibold">Knowledge Base</h3>
-          <p className="text-sm text-muted-foreground">Materi jawaban untuk auto-reply</p>
+          <p className="text-sm text-muted-foreground">
+            Materi jawaban untuk auto-reply. Tambah satu per satu, tempel artikel panjang, atau upload file.
+          </p>
         </div>
-        <Button onClick={openNew}>
-          <Plus className="w-4 h-4 mr-2" /> Tambah
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="w-4 h-4 mr-2" /> Tempel / Upload Materi
+          </Button>
+          <Button onClick={openNew}>
+            <Plus className="w-4 h-4 mr-2" /> Tambah Manual
+          </Button>
+        </div>
       </div>
+
+      <ImportKnowledgeDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={() => qc.invalidateQueries({ queryKey: ["chat-kb"] })}
+      />
 
       <div className="space-y-2">
         {items.length === 0 && (
