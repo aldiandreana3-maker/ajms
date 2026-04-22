@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { Calendar, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NewsDetailDialog, type NewsDetailItem } from "./NewsDetailDialog";
 
 interface NewsItem {
   id: string | number;
@@ -8,6 +9,10 @@ interface NewsItem {
   excerpt: string;
   date: string;
   category: string;
+  content?: string;
+  image_url?: string | null;
+  published_at?: string | null;
+  scheduled_at?: string | null;
 }
 
 interface NewsSliderProps {
