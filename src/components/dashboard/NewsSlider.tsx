@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { Calendar, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { NewsDetailDialog, type NewsDetailItem } from "./NewsDetailDialog";
 
 interface NewsItem {
   id: string | number;
@@ -8,6 +9,10 @@ interface NewsItem {
   excerpt: string;
   date: string;
   category: string;
+  content?: string;
+  image_url?: string | null;
+  published_at?: string | null;
+  scheduled_at?: string | null;
 }
 
 interface NewsSliderProps {
@@ -24,6 +29,8 @@ const cardColors = [
 export function NewsSlider({ news }: NewsSliderProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [selected, setSelected] = useState<NewsDetailItem | null>(null);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -36,6 +43,21 @@ export function NewsSlider({ news }: NewsSliderProps) {
     el.addEventListener("scroll", handleScroll, { passive: true });
     return () => el.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const openDetail = (item: NewsItem) => {
+    if (!item.content) return; // skip placeholder
+    setSelected({
+      id: item.id,
+      title: item.title,
+      content: item.content,
+      image_url: item.image_url,
+      date: item.date,
+      category: item.category,
+      published_at: item.published_at,
+      scheduled_at: item.scheduled_at,
+    });
+    setOpen(true);
+  };
 
   return (
     <div className="space-y-3">
@@ -54,6 +76,7 @@ export function NewsSlider({ news }: NewsSliderProps) {
         {news.map((item, index) => (
           <article
             key={item.id}
+            onClick={() => openDetail(item)}
             className={cn(
               "flex-shrink-0 w-[280px] sm:w-[320px] lg:w-[360px] rounded-2xl p-5 bg-gradient-to-br border border-border shadow-card cursor-pointer snap-start transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5",
               cardColors[index % cardColors.length]
@@ -90,6 +113,8 @@ export function NewsSlider({ news }: NewsSliderProps) {
           ))}
         </div>
       )}
+
+      <NewsDetailDialog news={selected} open={open} onOpenChange={setOpen} />
     </div>
   );
 }

@@ -97,15 +97,19 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
   ];
 
   const formattedNews = newsData?.map((n, index) => ({
-    id: index + 1,
+    id: n.id || index + 1,
     title: n.title,
-    excerpt: n.content.substring(0, 150) + "...",
+    excerpt: n.content.substring(0, 150) + (n.content.length > 150 ? "..." : ""),
     date: new Date(n.published_at || n.created_at).toLocaleDateString("id-ID", {
       day: "numeric",
       month: "long",
       year: "numeric",
     }),
     category: "Pengumuman",
+    content: n.content,
+    image_url: n.image_url,
+    published_at: n.published_at,
+    scheduled_at: n.scheduled_at,
   })) || [];
 
   if (statsLoading || settingsLoading) {
