@@ -91,11 +91,19 @@ export function LiveChatWidget() {
             {messages.map((m) => {
               const isMine = m.message_type === "user";
               const isSystem = m.message_type === "auto_reply" || m.message_type === "system";
+              // Extract numbered suggestions from system fallback messages
+              const suggestionLines = isSystem
+                ? Array.from(m.content.matchAll(/^\s*\d+\.\s+(.+)$/gm)).map((mt) => mt[1].trim())
+                : [];
+              const hasSuggestions = suggestionLines.length > 0 && /diteruskan ke admin|yang Anda maksud/i.test(m.content);
+              const mainText = hasSuggestions
+                ? m.content.split(/\n\n/)[0]
+                : m.content;
               return (
                 <div key={m.id} className={cn("flex", isMine ? "justify-end" : "justify-start")}>
                   <div
                     className={cn(
-                      "max-w-[80%] rounded-2xl px-3 py-2 text-sm",
+                      "max-w-[85%] rounded-2xl px-3 py-2 text-sm",
                       isMine
                         ? "bg-primary text-primary-foreground rounded-br-sm"
                         : isSystem
@@ -109,7 +117,21 @@ export function LiveChatWidget() {
                         {isSystem && <Badge variant="outline" className="h-4 text-[9px] px-1">Auto</Badge>}
                       </p>
                     )}
-                    <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                    <p className="whitespace-pre-wrap break-words">{mainText}</p>
+                    {hasSuggestions && (
+                      <div className="mt-2 flex flex-col gap-1.5">
+                        {suggestionLines.map((s, i) => (
+                          <button
+                            key={i}
+                            onClick={() => sendMessage.mutate(s)}
+                            disabled={sendMessage.isPending}
+                            className="text-left text-xs px-2 py-1.5 rounded-lg bg-background hover:bg-muted border border-border transition-colors disabled:opacity-60"
+                          >
+                            💬 {s}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     <p className={cn("text-[10px] opacity-60 mt-1", isMine ? "text-right" : "")}>
                       {format(new Date(m.created_at), "HH:mm")}
                     </p>
