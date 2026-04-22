@@ -22,28 +22,36 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Load knowledge base
+    // Load active knowledge base
     const { data: kb } = await supabase
       .from("chat_knowledge_base")
-      .select("question, answer, keywords")
+      .select("id, question, answer, keywords")
       .eq("is_active", true);
 
     const lower = String(message).toLowerCase();
     let answer: string | null = null;
+    let matchedItem: any = null;
 
-    // 1) Keyword match
+    // 1) Keyword match (free, no AI)
     if (kb && kb.length) {
-      for (const item of kb) {
-        const kws: string[] = item.keywords || [];
-        if (kws.some((k) => k && lower.includes(k.toLowerCase()))) {
-          answer = item.answer;
-          break;
-        }
+      // Score-based: count matching keywords
+      const scored = kb
+        .map((it: any) => {
+          const kws: string[] = it.keywords || [];
+          const score = kws.reduce((acc, k) => (k && lower.includes(k.toLowerCase()) ? acc + 1 : acc), 0);
+          return { it, score };
+        })
+        .filter((x) => x.score > 0)
+        .sort((a, b) => b.score - a.score);
+      if (scored.length) {
+        matchedItem = scored[0].it;
+        answer = matchedItem.answer;
       }
-      // Also try matching question text
+      // Question text fallback
       if (!answer) {
         for (const item of kb) {
           if (item.question && lower.includes(item.question.toLowerCase().slice(0, 20))) {
+            matchedItem = item;
             answer = item.answer;
             break;
           }
@@ -51,14 +59,20 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 2) AI fallback (constrained to KB)
-    if (!answer && kb && kb.length) {
+    // 2) AI paraphrase from KB (constrained, no invention)
+    if (kb && kb.length) {
       const apiKey = Deno.env.get("LOVABLE_API_KEY");
       if (apiKey) {
         const kbText = kb
-          .map((i, idx) => `${idx + 1}. Q: ${i.question}\n   A: ${i.answer}`)
+          .map((i: any, idx: number) => `[${idx + 1}] Q: ${i.question}\n   A: ${i.answer}`)
           .join("\n\n");
-        const sys = `Anda adalah asisten chat yang HANYA boleh menjawab berdasarkan knowledge base berikut. Jika pertanyaan tidak relevan atau tidak ada jawabannya, balas persis: "NO_MATCH". Jangan mengarang.\n\nKnowledge base:\n${kbText}`;
+
+        // If we have a keyword match → ask AI to paraphrase that material into a friendly reply.
+        // If no match → ask AI to attempt a strict-from-KB answer; if not possible, return NO_MATCH.
+        const sys = matchedItem
+          ? `Anda adalah asisten chat yang ramah. Susun ulang materi berikut menjadi jawaban yang ringkas, sopan, dan jelas dalam Bahasa Indonesia. DILARANG menambah informasi di luar materi. Maksimal 4 kalimat.\n\nMateri:\n${matchedItem.answer}`
+          : `Anda adalah asisten chat yang HANYA boleh menjawab berdasarkan knowledge base berikut. Anda BOLEH memparafrase agar lebih ramah, tapi DILARANG menambah info di luar materi. Jika tidak ada materi yang relevan sama sekali, balas persis: "NO_MATCH".\n\nKnowledge base:\n${kbText}`;
+
         const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",
           headers: {
@@ -102,26 +116,56 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Not found → forward to admin
-    const fallback = "Pertanyaan Anda akan diteruskan ke admin.";
+    // 3) Tidak ketemu → tawarkan 2-3 saran pertanyaan terkait dari KB
+    let suggestions: string[] = [];
+    if (kb && kb.length) {
+      // Skor sederhana berdasarkan kemiripan kata (overlap token)
+      const tokens = new Set(
+        lower.replace(/[^a-z0-9\s]/gi, " ").split(/\s+/).filter((t) => t.length >= 3)
+      );
+      const scored = kb.map((it: any) => {
+        const text = `${it.question} ${(it.keywords || []).join(" ")}`.toLowerCase();
+        let score = 0;
+        tokens.forEach((t) => {
+          if (text.includes(t)) score++;
+        });
+        return { q: it.question, score };
+      });
+      suggestions = scored
+        .sort((a: any, b: any) => b.score - a.score)
+        .slice(0, 3)
+        .filter((x: any) => x.score > 0 || true) // even if zero score, show top by recency
+        .map((x: any) => x.q);
+      // Jika tidak ada token yang cocok, ambil 3 pertanyaan teratas
+      if (suggestions.every((_, idx) => scored[idx]?.score === 0)) {
+        suggestions = kb.slice(0, 3).map((it: any) => it.question);
+      }
+    }
+
+    const fallbackText = suggestions.length
+      ? `Maaf, saya belum menemukan jawaban untuk pertanyaan tersebut. Mungkin yang Anda maksud:\n\n${suggestions
+          .map((s, i) => `${i + 1}. ${s}`)
+          .join("\n")}\n\nJika bukan, pertanyaan Anda akan diteruskan ke admin.`
+      : "Pertanyaan Anda akan diteruskan ke admin.";
+
     await supabase.from("chat_messages").insert({
       conversation_id,
       sender_name: "Asisten AJMS",
       sender_role: "system",
-      content: fallback,
+      content: fallbackText,
       message_type: "system",
     });
     await supabase
       .from("chat_conversations")
       .update({
         status: "menunggu_admin",
-        last_message: fallback,
+        last_message: fallbackText,
         last_message_at: new Date().toISOString(),
         unread_admin_count: 1,
       })
       .eq("id", conversation_id);
 
-    return new Response(JSON.stringify({ matched: false }), {
+    return new Response(JSON.stringify({ matched: false, suggestions }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
