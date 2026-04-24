@@ -75,6 +75,14 @@ const services = [
     path: "/kepenghunian/pelayanan-paket",
     restrictedRoles: ["staff_tro", "admin", "super_admin"], // Only these roles can see this
   },
+  {
+    icon: Send,
+    title: "WhatsApp Blast",
+    description: "Kirim pesan WA broadcast ke banyak penghuni",
+    color: "primary",
+    path: "/kepenghunian/wa-blast",
+    restrictedRoles: ["admin", "super_admin"],
+  },
 ];
 
 const colorStyles = {
