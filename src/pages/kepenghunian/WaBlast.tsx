@@ -364,7 +364,7 @@ export default function WaBlast() {
     // Save log
     try {
       const { data: userData } = await supabase.auth.getUser();
-      await supabase.from("wa_blast_history").insert({
+      await (supabase.from("wa_blast_history") as any).insert({
         sender_id: userData.user?.id,
         sender_name: userData.user?.email,
         gateway: "fonnte",
@@ -375,8 +375,8 @@ export default function WaBlast() {
         success_count: success,
         failed_count: failed,
         cancelled_count: cancelled,
-        contacts_snapshot: order as unknown as Record<string, unknown>[],
-        results: results as unknown as Record<string, unknown>[],
+        contacts_snapshot: order,
+        results,
         status: cancelRef.current ? "cancelled" : "completed",
       });
     } catch (e) {
