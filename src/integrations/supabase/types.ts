@@ -2566,6 +2566,63 @@ export type Database = {
         }
         Relationships: []
       }
+      wa_blast_history: {
+        Row: {
+          cancelled_count: number
+          contacts_snapshot: Json | null
+          created_at: string
+          failed_count: number
+          gateway: string
+          id: string
+          media_url: string | null
+          message: string
+          results: Json | null
+          safety_mode: string | null
+          sender_id: string | null
+          sender_name: string | null
+          status: string
+          success_count: number
+          total_contacts: number
+          updated_at: string
+        }
+        Insert: {
+          cancelled_count?: number
+          contacts_snapshot?: Json | null
+          created_at?: string
+          failed_count?: number
+          gateway?: string
+          id?: string
+          media_url?: string | null
+          message: string
+          results?: Json | null
+          safety_mode?: string | null
+          sender_id?: string | null
+          sender_name?: string | null
+          status?: string
+          success_count?: number
+          total_contacts?: number
+          updated_at?: string
+        }
+        Update: {
+          cancelled_count?: number
+          contacts_snapshot?: Json | null
+          created_at?: string
+          failed_count?: number
+          gateway?: string
+          id?: string
+          media_url?: string | null
+          message?: string
+          results?: Json | null
+          safety_mode?: string | null
+          sender_id?: string | null
+          sender_name?: string | null
+          status?: string
+          success_count?: number
+          total_contacts?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       water_meters: {
         Row: {
           billing_month: string
