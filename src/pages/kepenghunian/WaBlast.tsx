@@ -354,10 +354,10 @@ export default function WaBlast() {
       setProgress(Math.round(((i + 1) / order.length) * 100));
       setCounters(readCounters());
 
-      // Random delay before next
+      // Random delay before next (anti-spam jeda)
       if (i < order.length - 1 && !cancelRef.current) {
         const d = randomBetween(safety.minDelay, safety.maxDelay);
-        await waitWithCountdown(d, `Jeda ${d} detik`, true);
+        await waitWithCountdown(d, `Jeda anti-spam ${d} detik sebelum pesan berikutnya`);
       }
     }
 
