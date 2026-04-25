@@ -58,6 +58,17 @@ export const SAFETY_CONFIGS: Record<SafetyMode, SafetyConfig> = {
     longBreakEvery: 20,
     longBreakMin: 15,
     longBreakMax: 30,
+  custom: {
+    dailyLimit: 200,
+    hourlyLimit: 60,
+    minDelay: 5,
+    maxDelay: 10,
+    cooldownEvery: 10,
+    cooldownMin: 60,
+    cooldownMax: 60,
+    longBreakEvery: 50,
+    longBreakMin: 10,
+    longBreakMax: 10,
   },
 };
 
