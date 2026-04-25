@@ -223,21 +223,27 @@ export default function WaBlast() {
     }
     setUploadingMedia(true);
     try {
-      const path = `wa-blast/${Date.now()}-${file.name}`;
+      // Sanitasi nama file: hapus karakter non-alfanumerik agar URL aman
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = `${Date.now()}-${safeName}`;
       const { error } = await supabase.storage
-        .from("kepenghunian-files")
-        .upload(path, file, { upsert: false });
+        .from("wa-blast-media")
+        .upload(path, file, {
+          upsert: false,
+          contentType: file.type || "application/octet-stream",
+        });
       if (error) throw error;
-      const { data: signed } = await supabase.storage
-        .from("kepenghunian-files")
-        .createSignedUrl(path, 60 * 60 * 24);
-      if (!signed?.signedUrl) throw new Error("Gagal membuat URL");
-      setMediaUrl(signed.signedUrl);
-      setMediaName(file.name);
+      const { data: pub } = supabase.storage
+        .from("wa-blast-media")
+        .getPublicUrl(path);
+      if (!pub?.publicUrl) throw new Error("Gagal membuat URL publik");
+      setMediaUrl(pub.publicUrl);
+      setMediaName(safeName);
       toast.success("Media berhasil diupload");
     } catch (err) {
-      console.error(err);
-      toast.error("Gagal upload media");
+      console.error("Upload media error:", err);
+      const msg = err instanceof Error ? err.message : "Gagal upload media";
+      toast.error(msg);
     } finally {
       setUploadingMedia(false);
     }
