@@ -105,6 +105,12 @@ export default function WaBlast() {
   const [shuffle, setShuffle] = useState(true);
   const [counters, setCounters] = useState(readCounters());
 
+  // Custom mode inputs (user-defined)
+  const [customDelay, setCustomDelay] = useState(5); // detik per pesan
+  const [customCooldownEvery, setCustomCooldownEvery] = useState(10); // setiap N pesan
+  const [customCooldownSec, setCustomCooldownSec] = useState(60); // jeda X detik
+  const [customDailyLimit, setCustomDailyLimit] = useState(500);
+
   // ---- State: Sending ----
   const [sending, setSending] = useState(false);
   const [statuses, setStatuses] = useState<ContactStatus[]>([]);
@@ -113,7 +119,21 @@ export default function WaBlast() {
   const [waitCountdown, setWaitCountdown] = useState(0);
   const cancelRef = useRef(false);
 
-  const safety = SAFETY_CONFIGS[safetyMode];
+  // Build effective safety config (apply custom overrides if mode=custom)
+  const safety = useMemo(() => {
+    const base = SAFETY_CONFIGS[safetyMode];
+    if (safetyMode !== "custom") return base;
+    return {
+      ...base,
+      minDelay: customDelay,
+      maxDelay: customDelay,
+      cooldownEvery: customCooldownEvery,
+      cooldownMin: customCooldownSec,
+      cooldownMax: customCooldownSec,
+      dailyLimit: customDailyLimit,
+      hourlyLimit: Math.min(customDailyLimit, 100),
+    };
+  }, [safetyMode, customDelay, customCooldownEvery, customCooldownSec, customDailyLimit]);
   const risk = useMemo(
     () => analyzeSpamRisk(message),
     [message],
