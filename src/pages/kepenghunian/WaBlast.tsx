@@ -105,6 +105,12 @@ export default function WaBlast() {
   const [shuffle, setShuffle] = useState(true);
   const [counters, setCounters] = useState(readCounters());
 
+  // Custom mode inputs (user-defined)
+  const [customDelay, setCustomDelay] = useState(5); // detik per pesan
+  const [customCooldownEvery, setCustomCooldownEvery] = useState(10); // setiap N pesan
+  const [customCooldownSec, setCustomCooldownSec] = useState(60); // jeda X detik
+  const [customDailyLimit, setCustomDailyLimit] = useState(500);
+
   // ---- State: Sending ----
   const [sending, setSending] = useState(false);
   const [statuses, setStatuses] = useState<ContactStatus[]>([]);
@@ -113,7 +119,21 @@ export default function WaBlast() {
   const [waitCountdown, setWaitCountdown] = useState(0);
   const cancelRef = useRef(false);
 
-  const safety = SAFETY_CONFIGS[safetyMode];
+  // Build effective safety config (apply custom overrides if mode=custom)
+  const safety = useMemo(() => {
+    const base = SAFETY_CONFIGS[safetyMode];
+    if (safetyMode !== "custom") return base;
+    return {
+      ...base,
+      minDelay: customDelay,
+      maxDelay: customDelay,
+      cooldownEvery: customCooldownEvery,
+      cooldownMin: customCooldownSec,
+      cooldownMax: customCooldownSec,
+      dailyLimit: customDailyLimit,
+      hourlyLimit: Math.min(customDailyLimit, 100),
+    };
+  }, [safetyMode, customDelay, customCooldownEvery, customCooldownSec, customDailyLimit]);
   const risk = useMemo(
     () => analyzeSpamRisk(message),
     [message],
@@ -744,13 +764,88 @@ export default function WaBlast() {
                   <SelectItem value="normal">⚡ Normal (80/hari)</SelectItem>
                   <SelectItem value="safe">🛡️ Safe (50/hari) — direkomendasikan</SelectItem>
                   <SelectItem value="ultra">🔒 Ultra Safe (30/hari)</SelectItem>
+                  <SelectItem value="custom">⚙️ Custom — atur sendiri</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Jeda {safety.minDelay}-{safety.maxDelay}s, cool-down setiap{" "}
+                Jeda {safety.minDelay}-{safety.maxDelay}s, cool-down {safety.cooldownMin}s setiap{" "}
                 {safety.cooldownEvery} pesan
               </p>
             </div>
+
+            {safetyMode === "custom" && (
+              <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">
+                <p className="text-xs font-semibold text-foreground">Atur jeda manual:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs">Jeda per pesan (detik)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={customDelay}
+                      onChange={(e) => setCustomDelay(Math.max(1, Number(e.target.value) || 1))}
+                      disabled={sending}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Limit harian</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={customDailyLimit}
+                      onChange={(e) => setCustomDailyLimit(Math.max(1, Number(e.target.value) || 1))}
+                      disabled={sending}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Setiap berapa pesan</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={customCooldownEvery}
+                      onChange={(e) => setCustomCooldownEvery(Math.max(1, Number(e.target.value) || 1))}
+                      disabled={sending}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Cooldown (detik)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={customCooldownSec}
+                      onChange={(e) => setCustomCooldownSec(Math.max(1, Number(e.target.value) || 1))}
+                      disabled={sending}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Contoh: jeda 5 detik tiap pesan, lalu jeda 60 detik setiap 10 pesan.
+                </p>
+              </div>
+            )}
+
+            {/* Rekomendasi untuk volume besar */}
+            {contacts.length >= 500 && (
+              <div className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs space-y-2">
+                <div className="flex items-center gap-2 font-semibold text-warning">
+                  <AlertTriangle className="w-4 h-4" />
+                  Rekomendasi Keamanan ({contacts.length} kontak)
+                </div>
+                <ul className="list-disc list-inside text-foreground/80 space-y-1">
+                  <li><b>JANGAN</b> kirim 2000+ kontak dari 1 nomor dalam 1 hari — risiko banned permanen sangat tinggi.</li>
+                  <li>WhatsApp Business API resmi: maks ~1000/hari per nomor baru, ~10.000/hari nomor terverifikasi tier tinggi.</li>
+                  <li>Fonnte (unofficial): aman maks <b>300–500 pesan/hari per device</b>. Lebih dari itu sangat berisiko.</li>
+                  <li><b>Pakai 4–5 device Fonnte</b> bergantian: bagi kontak ke beberapa hari.</li>
+                  <li>Jeda minimum aman: <b>30–60 detik per pesan</b>, cooldown 2 menit setiap 20 pesan.</li>
+                  <li>Sebar selama 6–8 jam (jangan rapatkan), hindari jam 22:00–07:00.</li>
+                  <li>Pakai personalisasi {"{nama}"} + spintax wajib agar pesan tidak identik.</li>
+                  <li>Hangatkan nomor baru: hari 1 = 50 pesan, hari 2 = 100, naik bertahap.</li>
+                </ul>
+                <p className="text-foreground/70 pt-1 border-t border-warning/30">
+                  💡 Untuk 2000 kontak: bagi 4 hari × 500/hari, atau 2 hari × 1000 dengan 4 device.
+                </p>
+              </div>
+            )}
 
             <div className="flex items-center justify-between">
               <Label htmlFor="shuffle" className="text-sm">
