@@ -11,6 +11,7 @@ import {
   Ticket,
   Megaphone,
   Bell,
+  Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -84,15 +85,26 @@ const services = [
     color: "bg-primary",
     path: "/ambil-antrian",
   },
+  {
+    icon: Send,
+    title: "WA Blast",
+    color: "bg-success",
+    path: "/kepenghunian/wa-blast",
+    restrictedRoles: ["admin", "super_admin", "master_dev"],
+  },
 ];
 
 export function ServiceGrid() {
   const navigate = useNavigate();
-  const { role, isSuperAdmin } = useAuth();
+  const { role, isSuperAdmin, isMasterDev, isAdmin } = useAuth();
 
   const filteredServices = services.filter((service) => {
     if (!service.restrictedRoles) return true;
-    if (isSuperAdmin) return true;
+    if (isMasterDev || isSuperAdmin) return true;
+    const adminRestricted = service.restrictedRoles.every((r) =>
+      ["admin", "super_admin", "master_dev"].includes(r)
+    );
+    if (adminRestricted && isAdmin) return true;
     return service.restrictedRoles.includes(role || "");
   });
 
