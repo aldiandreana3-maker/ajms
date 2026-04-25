@@ -11,6 +11,7 @@ import {
   Ticket,
   Megaphone,
   Bell,
+  Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
