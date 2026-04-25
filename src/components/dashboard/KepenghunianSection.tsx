@@ -106,12 +106,17 @@ const colorStyles = {
 
 export function KepenghunianSection({ onBack }: KepenghunianSectionProps) {
   const navigate = useNavigate();
-  const { role, isSuperAdmin } = useAuth();
+  const { role, isSuperAdmin, isMasterDev, isAdmin } = useAuth();
 
   // Filter services based on user role
   const filteredServices = services.filter((service) => {
     if (!service.restrictedRoles) return true;
-    if (isSuperAdmin) return true;
+    if (isMasterDev || isSuperAdmin) return true;
+    // For services restricted to admin-level roles, allow any admin
+    const adminRestricted = service.restrictedRoles.every((r) =>
+      ["admin", "super_admin", "master_dev"].includes(r)
+    );
+    if (adminRestricted && isAdmin) return true;
     return service.restrictedRoles.includes(role || "");
   });
 
