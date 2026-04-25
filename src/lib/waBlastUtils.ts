@@ -58,6 +58,7 @@ export const SAFETY_CONFIGS: Record<SafetyMode, SafetyConfig> = {
     longBreakEvery: 20,
     longBreakMin: 15,
     longBreakMax: 30,
+  },
   custom: {
     dailyLimit: 200,
     hourlyLimit: 60,
