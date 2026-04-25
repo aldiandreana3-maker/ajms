@@ -7,7 +7,7 @@ export interface WaContact {
   phone: string; // normalized: 62xxx
 }
 
-export type SafetyMode = "normal" | "safe" | "ultra";
+export type SafetyMode = "normal" | "safe" | "ultra" | "custom";
 
 export interface SafetyConfig {
   dailyLimit: number;
