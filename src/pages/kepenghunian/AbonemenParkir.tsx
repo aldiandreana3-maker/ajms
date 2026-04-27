@@ -458,7 +458,22 @@ export default function AbonemenParkir() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Daftar Abonemen</CardTitle>
-            <div className="flex gap-2">
+             <div className="flex gap-2">
+              {canExport && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                >
+                  <a
+                    href="/templates/Template_Import_Abonemen_Parkir.xlsx"
+                    download
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Template Import
+                  </a>
+                </Button>
+              )}
               {canExport && (
                 <ImportExcelDialog
                   title="Abonemen Parkir"
