@@ -569,28 +569,101 @@ export default function AbonemenParkir() {
             </div>
           </CardHeader>
           <CardContent>
-            {reminderInfo && (
-              <Alert className="mb-4 border-warning bg-warning/10">
-                <BellRing className="h-4 w-4 text-warning" />
-                <AlertTitle className="text-warning-foreground">
-                  {reminderInfo.expired.length > 0
-                    ? `Ada ${reminderInfo.expired.length} abonemen parkir yang sudah habis masa aktifnya!`
-                    : `Pengingat Perpanjangan Abonemen Parkir (${reminderInfo.expiringList.length} akan habis)`}
-                </AlertTitle>
-                <AlertDescription>
-                  Masa abonemen parkir akan segera berakhir. Silakan lakukan perpanjangan dengan menekan tombol{" "}
-                  <strong>Perpanjang</strong> pada baris terkait.
-                  {reminderInfo.expired.length > 0 && (
-                    <ul className="mt-2 list-disc list-inside text-sm">
-                      {reminderInfo.expired.slice(0, 5).map((s) => (
-                        <li key={s.id}>
-                          {s.unit_number || s.units?.unit_number || "-"} • {s.vehicle_number} • Habis: {format(new Date(s.end_date), "dd/MM/yyyy")}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </AlertDescription>
-              </Alert>
+            {reminderRows.length > 0 && (
+              <Card className="mb-4 border-warning/50 bg-warning/5">
+                <CardHeader className="pb-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <CardTitle className="text-base flex items-center gap-2 text-warning-foreground">
+                      <BellRing className="h-4 w-4 text-warning" />
+                      Notifikasi Perpanjangan Abonemen Parkir
+                      <Badge variant="secondary" className="ml-1">{reminderRows.length}</Badge>
+                      {expiredCount > 0 && (
+                        <Badge variant="destructive">{expiredCount} expired</Badge>
+                      )}
+                    </CardTitle>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Input
+                        value={notifSearch}
+                        onChange={(e) => setNotifSearch(e.target.value)}
+                        placeholder="Cari unit / plat / nama..."
+                        className="h-9 w-full sm:w-56"
+                      />
+                      <Select value={notifFilter} onValueChange={(v: any) => setNotifFilter(v)}>
+                        <SelectTrigger className="h-9 w-full sm:w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Semua</SelectItem>
+                          <SelectItem value="expired">Sudah Habis</SelectItem>
+                          <SelectItem value="soon">Akan Habis</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="max-h-64 overflow-y-auto rounded-md border">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-background z-10">
+                        <TableRow>
+                          <TableHead className="h-9">Unit</TableHead>
+                          <TableHead className="h-9">Nama</TableHead>
+                          <TableHead className="h-9">Plat</TableHead>
+                          <TableHead className="h-9">Berakhir</TableHead>
+                          <TableHead className="h-9">Status</TableHead>
+                          {canCancelExtension && <TableHead className="h-9 text-right">Aksi</TableHead>}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredNotifRows.map(({ sub, diffDays, expired }) => (
+                          <TableRow key={sub.id}>
+                            <TableCell className="py-2">{sub.unit_number || sub.units?.unit_number || "-"}</TableCell>
+                            <TableCell className="py-2">{sub.penghuni_name || "-"}</TableCell>
+                            <TableCell className="py-2 font-mono text-xs">{sub.vehicle_number}</TableCell>
+                            <TableCell className="py-2 whitespace-nowrap text-xs">
+                              {format(new Date(sub.end_date), "dd/MM/yyyy")}
+                            </TableCell>
+                            <TableCell className="py-2">
+                              <Badge variant={expired ? "destructive" : "secondary"} className="text-xs">
+                                {expired ? `Habis ${Math.abs(diffDays)} hari lalu` : diffDays === 0 ? "Habis hari ini" : `${diffDays} hari lagi`}
+                              </Badge>
+                            </TableCell>
+                            {canCancelExtension && (
+                              <TableCell className="py-2 text-right">
+                                <Select
+                                  disabled={cancelExtendMutation.isPending}
+                                  onValueChange={(v) => {
+                                    const months = parseInt(v, 10);
+                                    if (window.confirm(`Batalkan perpanjangan ${months} bulan untuk plat ${sub.vehicle_number}?`)) {
+                                      cancelExtendMutation.mutate({ id: sub.id, months, currentEndDate: sub.end_date });
+                                    }
+                                  }}
+                                >
+                                  <SelectTrigger className="h-7 w-[130px] text-xs ml-auto">
+                                    <SelectValue placeholder="Batalkan..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="1">Batal -1 Bulan</SelectItem>
+                                    <SelectItem value="2">Batal -2 Bulan</SelectItem>
+                                    <SelectItem value="3">Batal -3 Bulan</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                            )}
+                          </TableRow>
+                        ))}
+                        {filteredNotifRows.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={canCancelExtension ? 6 : 5} className="text-center text-muted-foreground py-4 text-sm">
+                              Tidak ada notifikasi yang sesuai filter.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
             )}
             <DataFilterBar
               searchValue={searchValue}
