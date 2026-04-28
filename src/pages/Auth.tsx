@@ -216,13 +216,13 @@ export default function Auth() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-accent/10 p-4">
       <Card className="w-full max-w-md shadow-2xl border-border/50">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 bg-primary rounded-xl flex items-center justify-center">
-            <Building2 className="w-8 h-8 text-primary-foreground" />
+          <div className="mx-auto w-16 h-16 rounded-xl overflow-hidden">
+            <img src={logoTjms} alt="TJMS" className="w-full h-full object-contain" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold text-foreground">AJMS</CardTitle>
+            <CardTitle className="text-2xl font-bold text-foreground">TJMS</CardTitle>
             <CardDescription className="text-muted-foreground">
-              Sistem Manajemen Apartemen
+              The Jarrdin Management System
             </CardDescription>
           </div>
         </CardHeader>
