@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useParkingSubscriptions, useCreateParkingSubscription, useExtendParkingSubscription, useDeleteParkingSubscription, useUpdateParkingVerification } from "@/hooks/useParkingSubscriptions";
+import { useParkingSubscriptions, useCreateParkingSubscription, useExtendParkingSubscription, useDeleteParkingSubscription, useUpdateParkingVerification, useCancelExtensionParkingSubscription } from "@/hooks/useParkingSubscriptions";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
@@ -43,12 +43,13 @@ const parkingImportColumns: ImportColumn[] = [
 
 export default function AbonemenParkir() {
   const navigate = useNavigate();
-  const { getFeaturePermission, isAuthenticated, isAdmin, isSuperAdmin } = usePermissions();
+  const { getFeaturePermission, isAuthenticated, isAdmin, isSuperAdmin, isMasterDev, userId } = usePermissions();
   const { role } = useAuth();
   const permission = getFeaturePermission("abonemen-parkir");
   const { data: subscriptions, isLoading } = useParkingSubscriptions();
   const createMutation = useCreateParkingSubscription();
   const extendMutation = useExtendParkingSubscription();
+  const cancelExtendMutation = useCancelExtensionParkingSubscription();
   const deleteMutation = useDeleteParkingSubscription();
   const updateVerificationMutation = useUpdateParkingVerification();
   const { uploadFile, uploading } = useFileUpload({ folder: "parking" });
@@ -56,11 +57,19 @@ export default function AbonemenParkir() {
   const canDelete = isAdmin || isSuperAdmin;
   // Akses verifikasi untuk staff_tro, staff_finance, admin, dan super_admin
   const canVerify = isAdmin || isSuperAdmin || role === "staff_tro" || role === "staff_finance";
+  // Hak membatalkan perpanjangan: Master Dev, Super Admin, Admin
+  const canCancelExtension = isAdmin || isSuperAdmin || isMasterDev;
+  // Lihat semua data notifikasi: Master Dev, Super Admin, Admin
+  const canSeeAllNotifications = isAdmin || isSuperAdmin || isMasterDev;
 
   const [searchValue, setSearchValue] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // State khusus untuk panel notifikasi
+  const [notifSearch, setNotifSearch] = useState("");
+  const [notifFilter, setNotifFilter] = useState<"all" | "expired" | "soon">("all");
 
   const handleSearchChange = (value: string) => {
     setSearchValue(value);
@@ -148,38 +157,55 @@ export default function AbonemenParkir() {
   const paginatedData = usePagination(filteredData, itemsPerPage, currentPage);
 
   // ===== Notifikasi Pengingat Perpanjangan Abonemen Parkir =====
-  // Tampilkan jika user memiliki abonemen yang akan habis (tgl 1, 3, 5) atau sudah habis
-  const reminderInfo = useMemo(() => {
-    if (!subscriptions || subscriptions.length === 0) return null;
+  // - Penghuni/Agent: hanya melihat abonemen miliknya (created_by = userId atau penghuni terkait)
+  // - Master Dev / Super Admin / Admin: melihat semua data
+  const reminderRows = useMemo(() => {
+    if (!subscriptions || subscriptions.length === 0) return [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const day = today.getDate();
-    const isReminderDay = day === 1 || day === 3 || day === 5;
 
-    // Untuk role penghuni/agent: filter hanya abonemen miliknya (created_by atau penghuni_id mengarah ke user)
-    // Untuk staff/admin: tampilkan semua yang akan/sudah expired
-    const expiringList = subscriptions.filter((s) => {
-      if (!s.end_date) return false;
-      const end = new Date(s.end_date);
-      end.setHours(0, 0, 0, 0);
-      const diffDays = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      // Sudah habis ATAU akan habis dalam <= 7 hari
-      return diffDays <= 7;
-    });
+    // Filter berdasarkan kepemilikan untuk non-admin
+    let scoped = subscriptions;
+    if (!canSeeAllNotifications) {
+      if (!userId) return [];
+      scoped = subscriptions.filter((s: any) => s.created_by === userId);
+    }
 
-    if (expiringList.length === 0) return null;
+    return scoped
+      .filter((s) => {
+        if (!s.end_date) return false;
+        const end = new Date(s.end_date);
+        end.setHours(0, 0, 0, 0);
+        const diffDays = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        return diffDays <= 7; // expired atau akan habis ≤ 7 hari
+      })
+      .map((s) => {
+        const end = new Date(s.end_date);
+        end.setHours(0, 0, 0, 0);
+        const diffDays = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        return { sub: s, diffDays, expired: diffDays < 0 };
+      })
+      .sort((a, b) => a.diffDays - b.diffDays);
+  }, [subscriptions, canSeeAllNotifications, userId]);
 
-    const expired = expiringList.filter((s) => {
-      const end = new Date(s.end_date);
-      end.setHours(0, 0, 0, 0);
-      return end.getTime() < today.getTime();
-    });
+  const filteredNotifRows = useMemo(() => {
+    let rows = reminderRows;
+    if (notifFilter === "expired") rows = rows.filter((r) => r.expired);
+    else if (notifFilter === "soon") rows = rows.filter((r) => !r.expired);
+    if (notifSearch.trim()) {
+      const q = notifSearch.toLowerCase();
+      rows = rows.filter(
+        (r) =>
+          r.sub.vehicle_number?.toLowerCase().includes(q) ||
+          r.sub.unit_number?.toLowerCase().includes(q) ||
+          r.sub.units?.unit_number?.toLowerCase().includes(q) ||
+          r.sub.penghuni_name?.toLowerCase().includes(q)
+      );
+    }
+    return rows;
+  }, [reminderRows, notifFilter, notifSearch]);
 
-    // Selalu tampilkan jika ada yang sudah expired; jika belum expired, hanya pada tgl reminder
-    if (expired.length === 0 && !isReminderDay) return null;
-
-    return { expiringList, expired, isReminderDay };
-  }, [subscriptions]);
+  const expiredCount = reminderRows.filter((r) => r.expired).length;
 
   const handleExport = () => {
     if (!filteredData.length) return;
@@ -543,28 +569,101 @@ export default function AbonemenParkir() {
             </div>
           </CardHeader>
           <CardContent>
-            {reminderInfo && (
-              <Alert className="mb-4 border-warning bg-warning/10">
-                <BellRing className="h-4 w-4 text-warning" />
-                <AlertTitle className="text-warning-foreground">
-                  {reminderInfo.expired.length > 0
-                    ? `Ada ${reminderInfo.expired.length} abonemen parkir yang sudah habis masa aktifnya!`
-                    : `Pengingat Perpanjangan Abonemen Parkir (${reminderInfo.expiringList.length} akan habis)`}
-                </AlertTitle>
-                <AlertDescription>
-                  Masa abonemen parkir akan segera berakhir. Silakan lakukan perpanjangan dengan menekan tombol{" "}
-                  <strong>Perpanjang</strong> pada baris terkait.
-                  {reminderInfo.expired.length > 0 && (
-                    <ul className="mt-2 list-disc list-inside text-sm">
-                      {reminderInfo.expired.slice(0, 5).map((s) => (
-                        <li key={s.id}>
-                          {s.unit_number || s.units?.unit_number || "-"} • {s.vehicle_number} • Habis: {format(new Date(s.end_date), "dd/MM/yyyy")}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </AlertDescription>
-              </Alert>
+            {reminderRows.length > 0 && (
+              <Card className="mb-4 border-warning/50 bg-warning/5">
+                <CardHeader className="pb-3">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <CardTitle className="text-base flex items-center gap-2 text-warning-foreground">
+                      <BellRing className="h-4 w-4 text-warning" />
+                      Notifikasi Perpanjangan Abonemen Parkir
+                      <Badge variant="secondary" className="ml-1">{reminderRows.length}</Badge>
+                      {expiredCount > 0 && (
+                        <Badge variant="destructive">{expiredCount} expired</Badge>
+                      )}
+                    </CardTitle>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Input
+                        value={notifSearch}
+                        onChange={(e) => setNotifSearch(e.target.value)}
+                        placeholder="Cari unit / plat / nama..."
+                        className="h-9 w-full sm:w-56"
+                      />
+                      <Select value={notifFilter} onValueChange={(v: any) => setNotifFilter(v)}>
+                        <SelectTrigger className="h-9 w-full sm:w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Semua</SelectItem>
+                          <SelectItem value="expired">Sudah Habis</SelectItem>
+                          <SelectItem value="soon">Akan Habis</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="max-h-64 overflow-y-auto rounded-md border">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-background z-10">
+                        <TableRow>
+                          <TableHead className="h-9">Unit</TableHead>
+                          <TableHead className="h-9">Nama</TableHead>
+                          <TableHead className="h-9">Plat</TableHead>
+                          <TableHead className="h-9">Berakhir</TableHead>
+                          <TableHead className="h-9">Status</TableHead>
+                          {canCancelExtension && <TableHead className="h-9 text-right">Aksi</TableHead>}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredNotifRows.map(({ sub, diffDays, expired }) => (
+                          <TableRow key={sub.id}>
+                            <TableCell className="py-2">{sub.unit_number || sub.units?.unit_number || "-"}</TableCell>
+                            <TableCell className="py-2">{sub.penghuni_name || "-"}</TableCell>
+                            <TableCell className="py-2 font-mono text-xs">{sub.vehicle_number}</TableCell>
+                            <TableCell className="py-2 whitespace-nowrap text-xs">
+                              {format(new Date(sub.end_date), "dd/MM/yyyy")}
+                            </TableCell>
+                            <TableCell className="py-2">
+                              <Badge variant={expired ? "destructive" : "secondary"} className="text-xs">
+                                {expired ? `Habis ${Math.abs(diffDays)} hari lalu` : diffDays === 0 ? "Habis hari ini" : `${diffDays} hari lagi`}
+                              </Badge>
+                            </TableCell>
+                            {canCancelExtension && (
+                              <TableCell className="py-2 text-right">
+                                <Select
+                                  disabled={cancelExtendMutation.isPending}
+                                  onValueChange={(v) => {
+                                    const months = parseInt(v, 10);
+                                    if (window.confirm(`Batalkan perpanjangan ${months} bulan untuk plat ${sub.vehicle_number}?`)) {
+                                      cancelExtendMutation.mutate({ id: sub.id, months, currentEndDate: sub.end_date });
+                                    }
+                                  }}
+                                >
+                                  <SelectTrigger className="h-7 w-[130px] text-xs ml-auto">
+                                    <SelectValue placeholder="Batalkan..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="1">Batal -1 Bulan</SelectItem>
+                                    <SelectItem value="2">Batal -2 Bulan</SelectItem>
+                                    <SelectItem value="3">Batal -3 Bulan</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </TableCell>
+                            )}
+                          </TableRow>
+                        ))}
+                        {filteredNotifRows.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={canCancelExtension ? 6 : 5} className="text-center text-muted-foreground py-4 text-sm">
+                              Tidak ada notifikasi yang sesuai filter.
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
             )}
             <DataFilterBar
               searchValue={searchValue}
