@@ -543,6 +543,29 @@ export default function AbonemenParkir() {
             </div>
           </CardHeader>
           <CardContent>
+            {reminderInfo && (
+              <Alert className="mb-4 border-warning bg-warning/10">
+                <BellRing className="h-4 w-4 text-warning" />
+                <AlertTitle className="text-warning-foreground">
+                  {reminderInfo.expired.length > 0
+                    ? `Ada ${reminderInfo.expired.length} abonemen parkir yang sudah habis masa aktifnya!`
+                    : `Pengingat Perpanjangan Abonemen Parkir (${reminderInfo.expiringList.length} akan habis)`}
+                </AlertTitle>
+                <AlertDescription>
+                  Masa abonemen parkir akan segera berakhir. Silakan lakukan perpanjangan dengan menekan tombol{" "}
+                  <strong>Perpanjang</strong> pada baris terkait.
+                  {reminderInfo.expired.length > 0 && (
+                    <ul className="mt-2 list-disc list-inside text-sm">
+                      {reminderInfo.expired.slice(0, 5).map((s) => (
+                        <li key={s.id}>
+                          {s.unit_number || s.units?.unit_number || "-"} • {s.vehicle_number} • Habis: {format(new Date(s.end_date), "dd/MM/yyyy")}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
             <DataFilterBar
               searchValue={searchValue}
               onSearchChange={handleSearchChange}
