@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useParkingSubscriptions, useCreateParkingSubscription, useExtendParkingSubscription, useDeleteParkingSubscription, useUpdateParkingVerification } from "@/hooks/useParkingSubscriptions";
+import { useParkingSubscriptions, useCreateParkingSubscription, useExtendParkingSubscription, useDeleteParkingSubscription, useUpdateParkingVerification, useCancelExtensionParkingSubscription } from "@/hooks/useParkingSubscriptions";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
