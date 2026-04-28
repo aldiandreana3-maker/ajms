@@ -38,7 +38,7 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: settings, isLoading: settingsLoading } = useDashboardSettings();
   const { data: newsData, isLoading: newsLoading } = usePublishedNews();
-  const { user, isSuperAdmin } = useAuth();
+  const { user, isSuperAdmin, isLimitedAccess } = useAuth();
   const navigate = useNavigate();
 
   const [editDialog, setEditDialog] = useState<EditDialogState>({
