@@ -593,7 +593,8 @@ export default function AbonemenParkir() {
                       <TableHead>Pengajuan</TableHead>
                       <TableHead>Periode</TableHead>
                       <TableHead>Foto</TableHead>
-                      <TableHead>Verifikasi</TableHead>
+                      <TableHead>Berakhir</TableHead>
+                      <TableHead>Perpanjang</TableHead>
                       <TableHead>Kwitansi</TableHead>
                       {isSuperAdmin && <TableHead>Aksi</TableHead>}
                     </TableRow>
