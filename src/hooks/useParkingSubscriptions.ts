@@ -166,6 +166,36 @@ export function useExtendParkingSubscription() {
   });
 }
 
+export function useCancelExtensionParkingSubscription() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, months, currentEndDate }: { id: string; months: number; currentEndDate: string }) => {
+      // Kurangi masa aktif sesuai jumlah bulan perpanjangan yang dibatalkan
+      const base = new Date(currentEndDate);
+      base.setMonth(base.getMonth() - months);
+      const newEndStr = base.toISOString().split("T")[0];
+
+      const { data, error } = await supabase
+        .from("parking_subscriptions")
+        .update({ end_date: newEndStr })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["parking-subscriptions"] });
+      toast.success(`Perpanjangan ${variables.months} bulan berhasil dibatalkan`);
+    },
+    onError: (error) => {
+      toast.error("Gagal membatalkan perpanjangan: " + error.message);
+    },
+  });
+}
+
 export function useUpdateParkingVerification() {
   const queryClient = useQueryClient();
 
