@@ -1,5 +1,6 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import logoTjms from "@/assets/logo-tjms.png";
 import {
   LayoutDashboard,
   Users,
@@ -91,18 +92,16 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
         {!collapsed && (
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-sidebar-primary flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-sidebar-primary-foreground" />
-            </div>
+            <img src={logoTjms} alt="TJMS" className="w-10 h-10 rounded-lg object-contain" />
             <div>
-              <h1 className="text-lg font-bold text-sidebar-foreground">AJMS</h1>
-              <p className="text-xs text-sidebar-foreground/60">Property Management</p>
+              <h1 className="text-lg font-bold text-sidebar-foreground">TJMS</h1>
+              <p className="text-xs text-sidebar-foreground/60">The Jarrdin Management System</p>
             </div>
           </div>
         )}
         {collapsed && (
-          <div className="w-10 h-10 rounded-lg bg-sidebar-primary flex items-center justify-center mx-auto">
-            <Building2 className="w-6 h-6 text-sidebar-primary-foreground" />
+          <div className="w-10 h-10 mx-auto">
+            <img src={logoTjms} alt="TJMS" className="w-10 h-10 rounded-lg object-contain" />
           </div>
         )}
       </div>
