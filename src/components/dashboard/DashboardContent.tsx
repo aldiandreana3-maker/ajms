@@ -136,21 +136,21 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
       {/* Storage Warning for Super Admin */}
       <StorageWarning />
 
-      {/* Stats Grid - RED Category (Super Admin Editable) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {redCategoryStats.map((stat, index) => (
-          <StatCard 
-            key={stat.title} 
-            title={stat.title}
-            value={stat.value}
-            icon={stat.icon}
-            variant={stat.variant}
-            delay={index * 100}
-            canEdit={isSuperAdmin}
-            onEdit={() => handleEditStat(stat.settingKey, stat.title)}
-          />
-        ))}
-      </div>
+      {/* Stats Grid - RED Category (hidden for penghuni/agent) */}
+      {!isLimitedAccess && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {redCategoryStats.map((stat, index) => (
+            <StatCard 
+              key={stat.title} 
+              title={stat.title}
+              value={stat.value}
+              icon={stat.icon}
+              variant={stat.variant}
+              delay={index * 100}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Stats Grid - BLUE Category (User Data) - Clickable */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
