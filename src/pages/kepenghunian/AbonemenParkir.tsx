@@ -157,38 +157,55 @@ export default function AbonemenParkir() {
   const paginatedData = usePagination(filteredData, itemsPerPage, currentPage);
 
   // ===== Notifikasi Pengingat Perpanjangan Abonemen Parkir =====
-  // Tampilkan jika user memiliki abonemen yang akan habis (tgl 1, 3, 5) atau sudah habis
-  const reminderInfo = useMemo(() => {
-    if (!subscriptions || subscriptions.length === 0) return null;
+  // - Penghuni/Agent: hanya melihat abonemen miliknya (created_by = userId atau penghuni terkait)
+  // - Master Dev / Super Admin / Admin: melihat semua data
+  const reminderRows = useMemo(() => {
+    if (!subscriptions || subscriptions.length === 0) return [];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const day = today.getDate();
-    const isReminderDay = day === 1 || day === 3 || day === 5;
 
-    // Untuk role penghuni/agent: filter hanya abonemen miliknya (created_by atau penghuni_id mengarah ke user)
-    // Untuk staff/admin: tampilkan semua yang akan/sudah expired
-    const expiringList = subscriptions.filter((s) => {
-      if (!s.end_date) return false;
-      const end = new Date(s.end_date);
-      end.setHours(0, 0, 0, 0);
-      const diffDays = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      // Sudah habis ATAU akan habis dalam <= 7 hari
-      return diffDays <= 7;
-    });
+    // Filter berdasarkan kepemilikan untuk non-admin
+    let scoped = subscriptions;
+    if (!canSeeAllNotifications) {
+      if (!userId) return [];
+      scoped = subscriptions.filter((s: any) => s.created_by === userId);
+    }
 
-    if (expiringList.length === 0) return null;
+    return scoped
+      .filter((s) => {
+        if (!s.end_date) return false;
+        const end = new Date(s.end_date);
+        end.setHours(0, 0, 0, 0);
+        const diffDays = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        return diffDays <= 7; // expired atau akan habis ≤ 7 hari
+      })
+      .map((s) => {
+        const end = new Date(s.end_date);
+        end.setHours(0, 0, 0, 0);
+        const diffDays = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        return { sub: s, diffDays, expired: diffDays < 0 };
+      })
+      .sort((a, b) => a.diffDays - b.diffDays);
+  }, [subscriptions, canSeeAllNotifications, userId]);
 
-    const expired = expiringList.filter((s) => {
-      const end = new Date(s.end_date);
-      end.setHours(0, 0, 0, 0);
-      return end.getTime() < today.getTime();
-    });
+  const filteredNotifRows = useMemo(() => {
+    let rows = reminderRows;
+    if (notifFilter === "expired") rows = rows.filter((r) => r.expired);
+    else if (notifFilter === "soon") rows = rows.filter((r) => !r.expired);
+    if (notifSearch.trim()) {
+      const q = notifSearch.toLowerCase();
+      rows = rows.filter(
+        (r) =>
+          r.sub.vehicle_number?.toLowerCase().includes(q) ||
+          r.sub.unit_number?.toLowerCase().includes(q) ||
+          r.sub.units?.unit_number?.toLowerCase().includes(q) ||
+          r.sub.penghuni_name?.toLowerCase().includes(q)
+      );
+    }
+    return rows;
+  }, [reminderRows, notifFilter, notifSearch]);
 
-    // Selalu tampilkan jika ada yang sudah expired; jika belum expired, hanya pada tgl reminder
-    if (expired.length === 0 && !isReminderDay) return null;
-
-    return { expiringList, expired, isReminderDay };
-  }, [subscriptions]);
+  const expiredCount = reminderRows.filter((r) => r.expired).length;
 
   const handleExport = () => {
     if (!filteredData.length) return;
