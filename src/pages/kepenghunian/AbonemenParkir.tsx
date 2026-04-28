@@ -43,12 +43,13 @@ const parkingImportColumns: ImportColumn[] = [
 
 export default function AbonemenParkir() {
   const navigate = useNavigate();
-  const { getFeaturePermission, isAuthenticated, isAdmin, isSuperAdmin } = usePermissions();
+  const { getFeaturePermission, isAuthenticated, isAdmin, isSuperAdmin, isMasterDev, userId } = usePermissions();
   const { role } = useAuth();
   const permission = getFeaturePermission("abonemen-parkir");
   const { data: subscriptions, isLoading } = useParkingSubscriptions();
   const createMutation = useCreateParkingSubscription();
   const extendMutation = useExtendParkingSubscription();
+  const cancelExtendMutation = useCancelExtensionParkingSubscription();
   const deleteMutation = useDeleteParkingSubscription();
   const updateVerificationMutation = useUpdateParkingVerification();
   const { uploadFile, uploading } = useFileUpload({ folder: "parking" });
@@ -56,11 +57,19 @@ export default function AbonemenParkir() {
   const canDelete = isAdmin || isSuperAdmin;
   // Akses verifikasi untuk staff_tro, staff_finance, admin, dan super_admin
   const canVerify = isAdmin || isSuperAdmin || role === "staff_tro" || role === "staff_finance";
+  // Hak membatalkan perpanjangan: Master Dev, Super Admin, Admin
+  const canCancelExtension = isAdmin || isSuperAdmin || isMasterDev;
+  // Lihat semua data notifikasi: Master Dev, Super Admin, Admin
+  const canSeeAllNotifications = isAdmin || isSuperAdmin || isMasterDev;
 
   const [searchValue, setSearchValue] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterType>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // State khusus untuk panel notifikasi
+  const [notifSearch, setNotifSearch] = useState("");
+  const [notifFilter, setNotifFilter] = useState<"all" | "expired" | "soon">("all");
 
   const handleSearchChange = (value: string) => {
     setSearchValue(value);
