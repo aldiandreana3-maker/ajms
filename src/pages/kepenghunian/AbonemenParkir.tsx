@@ -16,7 +16,8 @@ import { TablePagination, usePagination } from "@/components/shared/TablePaginat
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/contexts/AuthContext";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Car, Plus, Loader2, Info, ArrowLeft, Download, Trash2, Check, X, FileText, Printer } from "lucide-react";
+import { Car, Plus, Loader2, Info, ArrowLeft, Download, Trash2, Check, X, FileText, Printer, AlertTriangle, BellRing } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, parkingExportColumns } from "@/lib/exportExcel";
@@ -145,6 +146,40 @@ export default function AbonemenParkir() {
   }, [subscriptions, searchValue, dateFilter]);
 
   const paginatedData = usePagination(filteredData, itemsPerPage, currentPage);
+
+  // ===== Notifikasi Pengingat Perpanjangan Abonemen Parkir =====
+  // Tampilkan jika user memiliki abonemen yang akan habis (tgl 1, 3, 5) atau sudah habis
+  const reminderInfo = useMemo(() => {
+    if (!subscriptions || subscriptions.length === 0) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const day = today.getDate();
+    const isReminderDay = day === 1 || day === 3 || day === 5;
+
+    // Untuk role penghuni/agent: filter hanya abonemen miliknya (created_by atau penghuni_id mengarah ke user)
+    // Untuk staff/admin: tampilkan semua yang akan/sudah expired
+    const expiringList = subscriptions.filter((s) => {
+      if (!s.end_date) return false;
+      const end = new Date(s.end_date);
+      end.setHours(0, 0, 0, 0);
+      const diffDays = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      // Sudah habis ATAU akan habis dalam <= 7 hari
+      return diffDays <= 7;
+    });
+
+    if (expiringList.length === 0) return null;
+
+    const expired = expiringList.filter((s) => {
+      const end = new Date(s.end_date);
+      end.setHours(0, 0, 0, 0);
+      return end.getTime() < today.getTime();
+    });
+
+    // Selalu tampilkan jika ada yang sudah expired; jika belum expired, hanya pada tgl reminder
+    if (expired.length === 0 && !isReminderDay) return null;
+
+    return { expiringList, expired, isReminderDay };
+  }, [subscriptions]);
 
   const handleExport = () => {
     if (!filteredData.length) return;
@@ -508,6 +543,29 @@ export default function AbonemenParkir() {
             </div>
           </CardHeader>
           <CardContent>
+            {reminderInfo && (
+              <Alert className="mb-4 border-warning bg-warning/10">
+                <BellRing className="h-4 w-4 text-warning" />
+                <AlertTitle className="text-warning-foreground">
+                  {reminderInfo.expired.length > 0
+                    ? `Ada ${reminderInfo.expired.length} abonemen parkir yang sudah habis masa aktifnya!`
+                    : `Pengingat Perpanjangan Abonemen Parkir (${reminderInfo.expiringList.length} akan habis)`}
+                </AlertTitle>
+                <AlertDescription>
+                  Masa abonemen parkir akan segera berakhir. Silakan lakukan perpanjangan dengan menekan tombol{" "}
+                  <strong>Perpanjang</strong> pada baris terkait.
+                  {reminderInfo.expired.length > 0 && (
+                    <ul className="mt-2 list-disc list-inside text-sm">
+                      {reminderInfo.expired.slice(0, 5).map((s) => (
+                        <li key={s.id}>
+                          {s.unit_number || s.units?.unit_number || "-"} • {s.vehicle_number} • Habis: {format(new Date(s.end_date), "dd/MM/yyyy")}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
             <DataFilterBar
               searchValue={searchValue}
               onSearchChange={handleSearchChange}
@@ -535,7 +593,8 @@ export default function AbonemenParkir() {
                       <TableHead>Pengajuan</TableHead>
                       <TableHead>Periode</TableHead>
                       <TableHead>Foto</TableHead>
-                      <TableHead>Verifikasi</TableHead>
+                      <TableHead>Berakhir</TableHead>
+                      <TableHead>Perpanjang</TableHead>
                       <TableHead>Kwitansi</TableHead>
                       {isSuperAdmin && <TableHead>Aksi</TableHead>}
                     </TableRow>
@@ -571,33 +630,48 @@ export default function AbonemenParkir() {
                             ]}
                           />
                         </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {(() => {
+                            if (!sub.end_date) return "-";
+                            const end = new Date(sub.end_date);
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            const diff = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                            const expired = diff < 0;
+                            const soon = diff >= 0 && diff <= 7;
+                            return (
+                              <div className="flex flex-col">
+                                <span>{format(end, "dd/MM/yyyy")}</span>
+                                <span className={`text-xs ${expired ? "text-destructive" : soon ? "text-warning" : "text-muted-foreground"}`}>
+                                  {expired ? `Habis ${Math.abs(diff)} hari lalu` : diff === 0 ? "Habis hari ini" : `${diff} hari lagi`}
+                                </span>
+                              </div>
+                            );
+                          })()}
+                        </TableCell>
                         <TableCell>
                           {canVerify ? (
-                            <button
-                              onClick={() => {
-                                const newStatus = sub.verification_status === "terverifikasi" ? "proses" : "terverifikasi";
-                                updateVerificationMutation.mutate({ id: sub.id, verification_status: newStatus });
+                            <Select
+                              disabled={extendMutation.isPending}
+                              onValueChange={(v) => {
+                                const months = parseInt(v, 10);
+                                extendMutation.mutate({ id: sub.id, months, currentEndDate: sub.end_date });
                               }}
-                              disabled={updateVerificationMutation.isPending}
-                              className={`w-5 h-5 border-2 rounded flex items-center justify-center transition-colors ${
-                                sub.verification_status === "terverifikasi"
-                                  ? "bg-success border-success text-white"
-                                  : "border-muted-foreground hover:border-success"
-                              }`}
-                              title={sub.verification_status === "terverifikasi" ? "Sudah diperpanjang" : "Klik untuk tandai sudah diperpanjang"}
                             >
-                              {sub.verification_status === "terverifikasi" && (
-                                <Check className="w-3 h-3" />
-                              )}
-                            </button>
+                              <SelectTrigger className="w-[150px] h-8 text-xs">
+                                <SelectValue placeholder="Perpanjang..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="1">Perpanjang 1 Bulan</SelectItem>
+                                <SelectItem value="2">Perpanjang 2 Bulan</SelectItem>
+                                <SelectItem value="3">Perpanjang 3 Bulan</SelectItem>
+                              </SelectContent>
+                            </Select>
                           ) : (
-                            sub.verification_status === "terverifikasi" ? (
-                              <div className="w-5 h-5 border-2 rounded bg-success border-success text-white flex items-center justify-center">
-                                <Check className="w-3 h-3" />
-                              </div>
-                            ) : (
-                              <div className="w-5 h-5 border-2 rounded border-muted-foreground" />
-                            )
+                            <Badge variant={sub.verification_status === "terverifikasi" ? "default" : "secondary"}
+                              className={sub.verification_status === "terverifikasi" ? "bg-success" : ""}>
+                              {sub.verification_status === "terverifikasi" ? "Aktif" : "Menunggu"}
+                            </Badge>
                           )}
                         </TableCell>
                         <TableCell>
@@ -642,7 +716,7 @@ export default function AbonemenParkir() {
                     ))}
                     {filteredData.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={isSuperAdmin ? 14 : 13} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={isSuperAdmin ? 15 : 14} className="text-center text-muted-foreground py-8">
                           {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada abonemen parkir"}
                         </TableCell>
                       </TableRow>

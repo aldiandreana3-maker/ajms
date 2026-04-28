@@ -136,10 +136,19 @@ export function useExtendParkingSubscription() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, end_date }: { id: string; end_date: string }) => {
+    mutationFn: async ({ id, months, currentEndDate }: { id: string; months: number; currentEndDate?: string | null }) => {
+      // Hitung tanggal akhir baru: dari end_date saat ini (jika masih aktif) atau dari hari ini (jika sudah lewat)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const baseDate = currentEndDate ? new Date(currentEndDate) : today;
+      const startFrom = baseDate >= today ? baseDate : today;
+      const newEnd = new Date(startFrom);
+      newEnd.setMonth(newEnd.getMonth() + months);
+      const newEndStr = newEnd.toISOString().split("T")[0];
+
       const { data, error } = await supabase
         .from("parking_subscriptions")
-        .update({ end_date, is_active: true })
+        .update({ end_date: newEndStr, is_active: true, verification_status: "terverifikasi" })
         .eq("id", id)
         .select()
         .single();
@@ -147,9 +156,9 @@ export function useExtendParkingSubscription() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["parking-subscriptions"] });
-      toast.success("Abonemen berhasil diperpanjang");
+      toast.success(`Abonemen berhasil diperpanjang ${variables.months} bulan`);
     },
     onError: (error) => {
       toast.error("Gagal memperpanjang abonemen: " + error.message);
