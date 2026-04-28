@@ -63,25 +63,25 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
     });
   };
 
-  // RED category stats (from dashboard_settings - Super Admin editable)
+  // RED category stats (auto from actual data)
   const redCategoryStats = [
     { 
       title: "Total Unit", 
-      value: getSettingValue("total_units").toString(), 
+      value: (stats?.totalUnits || 0).toString(), 
       icon: Building2, 
       variant: "primary" as const,
       settingKey: "total_units",
     },
     { 
       title: "Penghuni Aktif", 
-      value: getSettingValue("penghuni_aktif").toString(), 
+      value: (stats?.activePenghuni || 0).toString(), 
       icon: Users, 
       variant: "accent" as const,
       settingKey: "penghuni_aktif",
     },
     { 
       title: "Daftar Komersil", 
-      value: getSettingValue("data_komersil").toString(), 
+      value: (stats?.commercialTenants || 0).toString(), 
       icon: Store, 
       variant: "info" as const,
       settingKey: "data_komersil",
