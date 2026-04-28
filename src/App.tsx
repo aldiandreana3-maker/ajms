@@ -61,6 +61,7 @@ import LaporanInspeksi from "./pages/kepengelolaan/LaporanInspeksi";
 import LaporanKerja from "./pages/kepengelolaan/LaporanKerja";
 import AksesUnit from "./pages/kepengelolaan/AksesUnit";
 import DataSepeda from "./pages/kepengelolaan/DataSepeda";
+import DataKomersil from "./pages/kepengelolaan/DataKomersil";
 import AktivasiSistem from "./pages/AktivasiSistem";
 import AmbilAntrian from "./pages/AmbilAntrian";
 import Absen from "./pages/karyawan/Absen";
