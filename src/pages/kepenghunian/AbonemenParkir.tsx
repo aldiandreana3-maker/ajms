@@ -630,33 +630,48 @@ export default function AbonemenParkir() {
                             ]}
                           />
                         </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {(() => {
+                            if (!sub.end_date) return "-";
+                            const end = new Date(sub.end_date);
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            const diff = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                            const expired = diff < 0;
+                            const soon = diff >= 0 && diff <= 7;
+                            return (
+                              <div className="flex flex-col">
+                                <span>{format(end, "dd/MM/yyyy")}</span>
+                                <span className={`text-xs ${expired ? "text-destructive" : soon ? "text-warning" : "text-muted-foreground"}`}>
+                                  {expired ? `Habis ${Math.abs(diff)} hari lalu` : diff === 0 ? "Habis hari ini" : `${diff} hari lagi`}
+                                </span>
+                              </div>
+                            );
+                          })()}
+                        </TableCell>
                         <TableCell>
                           {canVerify ? (
-                            <button
-                              onClick={() => {
-                                const newStatus = sub.verification_status === "terverifikasi" ? "proses" : "terverifikasi";
-                                updateVerificationMutation.mutate({ id: sub.id, verification_status: newStatus });
+                            <Select
+                              disabled={extendMutation.isPending}
+                              onValueChange={(v) => {
+                                const months = parseInt(v, 10);
+                                extendMutation.mutate({ id: sub.id, months, currentEndDate: sub.end_date });
                               }}
-                              disabled={updateVerificationMutation.isPending}
-                              className={`w-5 h-5 border-2 rounded flex items-center justify-center transition-colors ${
-                                sub.verification_status === "terverifikasi"
-                                  ? "bg-success border-success text-white"
-                                  : "border-muted-foreground hover:border-success"
-                              }`}
-                              title={sub.verification_status === "terverifikasi" ? "Sudah diperpanjang" : "Klik untuk tandai sudah diperpanjang"}
                             >
-                              {sub.verification_status === "terverifikasi" && (
-                                <Check className="w-3 h-3" />
-                              )}
-                            </button>
+                              <SelectTrigger className="w-[150px] h-8 text-xs">
+                                <SelectValue placeholder="Perpanjang..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="1">Perpanjang 1 Bulan</SelectItem>
+                                <SelectItem value="2">Perpanjang 2 Bulan</SelectItem>
+                                <SelectItem value="3">Perpanjang 3 Bulan</SelectItem>
+                              </SelectContent>
+                            </Select>
                           ) : (
-                            sub.verification_status === "terverifikasi" ? (
-                              <div className="w-5 h-5 border-2 rounded bg-success border-success text-white flex items-center justify-center">
-                                <Check className="w-3 h-3" />
-                              </div>
-                            ) : (
-                              <div className="w-5 h-5 border-2 rounded border-muted-foreground" />
-                            )
+                            <Badge variant={sub.verification_status === "terverifikasi" ? "default" : "secondary"}
+                              className={sub.verification_status === "terverifikasi" ? "bg-success" : ""}>
+                              {sub.verification_status === "terverifikasi" ? "Aktif" : "Menunggu"}
+                            </Badge>
                           )}
                         </TableCell>
                         <TableCell>
