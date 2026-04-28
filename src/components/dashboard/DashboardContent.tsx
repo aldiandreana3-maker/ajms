@@ -38,7 +38,7 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: settings, isLoading: settingsLoading } = useDashboardSettings();
   const { data: newsData, isLoading: newsLoading } = usePublishedNews();
-  const { user, isSuperAdmin } = useAuth();
+  const { user, isSuperAdmin, isLimitedAccess } = useAuth();
   const navigate = useNavigate();
 
   const [editDialog, setEditDialog] = useState<EditDialogState>({
@@ -63,25 +63,25 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
     });
   };
 
-  // RED category stats (from dashboard_settings - Super Admin editable)
+  // RED category stats (auto from actual data)
   const redCategoryStats = [
     { 
       title: "Total Unit", 
-      value: getSettingValue("total_units").toString(), 
+      value: (stats?.totalUnits || 0).toString(), 
       icon: Building2, 
       variant: "primary" as const,
       settingKey: "total_units",
     },
     { 
       title: "Penghuni Aktif", 
-      value: getSettingValue("penghuni_aktif").toString(), 
+      value: (stats?.activePenghuni || 0).toString(), 
       icon: Users, 
       variant: "accent" as const,
       settingKey: "penghuni_aktif",
     },
     { 
       title: "Daftar Komersil", 
-      value: getSettingValue("data_komersil").toString(), 
+      value: (stats?.commercialTenants || 0).toString(), 
       icon: Store, 
       variant: "info" as const,
       settingKey: "data_komersil",
@@ -136,21 +136,21 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
       {/* Storage Warning for Super Admin */}
       <StorageWarning />
 
-      {/* Stats Grid - RED Category (Super Admin Editable) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {redCategoryStats.map((stat, index) => (
-          <StatCard 
-            key={stat.title} 
-            title={stat.title}
-            value={stat.value}
-            icon={stat.icon}
-            variant={stat.variant}
-            delay={index * 100}
-            canEdit={isSuperAdmin}
-            onEdit={() => handleEditStat(stat.settingKey, stat.title)}
-          />
-        ))}
-      </div>
+      {/* Stats Grid - RED Category (hidden for penghuni/agent) */}
+      {!isLimitedAccess && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {redCategoryStats.map((stat, index) => (
+            <StatCard 
+              key={stat.title} 
+              title={stat.title}
+              value={stat.value}
+              icon={stat.icon}
+              variant={stat.variant}
+              delay={index * 100}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Stats Grid - BLUE Category (User Data) - Clickable */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
