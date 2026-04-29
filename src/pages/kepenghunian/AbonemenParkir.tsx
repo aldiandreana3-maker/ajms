@@ -475,22 +475,18 @@ export default function AbonemenParkir() {
                   required={isNewRegistration}
                 />
 
-                {isNewRegistration && (
-                  <>
-                    <PhotoUpload
-                      label="Foto STNK"
-                      value={form.stnk_photo}
-                      onChange={(file) => setForm({ ...form, stnk_photo: file })}
-                      required
-                    />
-                    <PhotoUpload
-                      label="Perjanjian Sewa"
-                      value={form.rental_agreement}
-                      onChange={(file) => setForm({ ...form, rental_agreement: file })}
-                      required
-                    />
-                  </>
-                )}
+                <PhotoUpload
+                  label={`Foto STNK${isNewRegistration ? " *" : ""}`}
+                  value={form.stnk_photo}
+                  onChange={(file) => setForm({ ...form, stnk_photo: file })}
+                  required={isNewRegistration}
+                />
+                <PhotoUpload
+                  label={`Perjanjian Sewa${isNewRegistration ? " *" : ""}`}
+                  value={form.rental_agreement}
+                  onChange={(file) => setForm({ ...form, rental_agreement: file })}
+                  required={isNewRegistration}
+                />
 
                 <PhotoUpload
                   label="Bukti Pembayaran"
