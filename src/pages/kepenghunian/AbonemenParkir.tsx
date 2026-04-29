@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useParkingSubscriptions, useCreateParkingSubscription, useExtendParkingSubscription, useDeleteParkingSubscription, useUpdateParkingVerification, useCancelExtensionParkingSubscription } from "@/hooks/useParkingSubscriptions";
+import { useParkingSubscriptions, useCreateParkingSubscription, useExtendParkingSubscription, useDeleteParkingSubscription, useUpdateParkingVerification, useCancelExtensionParkingSubscription, useUpdateParkingMeta } from "@/hooks/useParkingSubscriptions";
+import { Textarea } from "@/components/ui/textarea";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
@@ -23,6 +24,7 @@ import { format } from "date-fns";
 import { exportToExcel, parkingExportColumns } from "@/lib/exportExcel";
 import { PhotoCell } from "@/components/shared/PhotoActions";
 import { PhotoUpload } from "@/components/shared/PhotoUpload";
+import { NotesCell, ReceiptPhotoCell } from "@/components/shared/ParkingInlineCells";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,6 +54,7 @@ export default function AbonemenParkir() {
   const cancelExtendMutation = useCancelExtensionParkingSubscription();
   const deleteMutation = useDeleteParkingSubscription();
   const updateVerificationMutation = useUpdateParkingVerification();
+  const updateMetaMutation = useUpdateParkingMeta();
   const { uploadFile, uploading } = useFileUpload({ folder: "parking" });
   const canExport = isAdmin || isSuperAdmin;
   const canDelete = isAdmin || isSuperAdmin;
@@ -690,7 +693,8 @@ export default function AbonemenParkir() {
                       <TableHead>Foto</TableHead>
                       <TableHead>Berakhir</TableHead>
                       <TableHead>Perpanjang</TableHead>
-                      <TableHead>Kwitansi</TableHead>
+                      <TableHead className="min-w-[200px]">Catatan</TableHead>
+                      <TableHead>Foto Kwitansi</TableHead>
                       {isSuperAdmin && <TableHead>Aksi</TableHead>}
                     </TableRow>
                   </TableHeader>
@@ -770,14 +774,24 @@ export default function AbonemenParkir() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setReceiptDialog({ open: true, data: sub })}
-                            title="Lihat Kwitansi"
-                          >
-                            <FileText className="w-4 h-4" />
-                          </Button>
+                          <NotesCell
+                            id={sub.id}
+                            value={sub.admin_notes}
+                            canEdit={canVerify}
+                            onSave={(notes) => updateMetaMutation.mutate({ id: sub.id, admin_notes: notes })}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <ReceiptPhotoCell
+                            id={sub.id}
+                            url={sub.receipt_photo_url}
+                            canEdit={canVerify}
+                            onUpload={async (file) => {
+                              const path = await uploadFile(file);
+                              if (path) updateMetaMutation.mutate({ id: sub.id, receipt_photo_url: path });
+                            }}
+                            onClear={() => updateMetaMutation.mutate({ id: sub.id, receipt_photo_url: null })}
+                          />
                         </TableCell>
                         {isSuperAdmin && (
                           <TableCell>
@@ -811,7 +825,7 @@ export default function AbonemenParkir() {
                     ))}
                     {filteredData.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={isSuperAdmin ? 15 : 14} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={isSuperAdmin ? 16 : 15} className="text-center text-muted-foreground py-8">
                           {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada abonemen parkir"}
                         </TableCell>
                       </TableRow>

@@ -2066,6 +2066,7 @@ export type Database = {
       }
       parking_subscriptions: {
         Row: {
+          admin_notes: string | null
           agent_name: string | null
           created_at: string | null
           created_by: string | null
@@ -2080,6 +2081,7 @@ export type Database = {
           penghuni_name: string | null
           period_type: string | null
           phone: string | null
+          receipt_photo_url: string | null
           rental_agreement_url: string | null
           rental_status: string | null
           request_type: string | null
@@ -2095,6 +2097,7 @@ export type Database = {
           verification_status: string | null
         }
         Insert: {
+          admin_notes?: string | null
           agent_name?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -2109,6 +2112,7 @@ export type Database = {
           penghuni_name?: string | null
           period_type?: string | null
           phone?: string | null
+          receipt_photo_url?: string | null
           rental_agreement_url?: string | null
           rental_status?: string | null
           request_type?: string | null
@@ -2124,6 +2128,7 @@ export type Database = {
           verification_status?: string | null
         }
         Update: {
+          admin_notes?: string | null
           agent_name?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -2138,6 +2143,7 @@ export type Database = {
           penghuni_name?: string | null
           period_type?: string | null
           phone?: string | null
+          receipt_photo_url?: string | null
           rental_agreement_url?: string | null
           rental_status?: string | null
           request_type?: string | null

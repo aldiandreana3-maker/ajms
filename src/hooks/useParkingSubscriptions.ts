@@ -29,6 +29,8 @@ interface ParkingSubscription {
   stnk_photo_url: string | null;
   rental_agreement_url: string | null;
   payment_proof_url: string | null;
+  receipt_photo_url: string | null;
+  admin_notes: string | null;
   penghuni?: { full_name: string } | null;
   units?: { unit_number: string } | null;
 }
@@ -218,6 +220,24 @@ export function useUpdateParkingVerification() {
     onError: (error) => {
       toast.error("Gagal memperbarui status: " + error.message);
     },
+  });
+}
+
+export function useUpdateParkingMeta() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, admin_notes, receipt_photo_url }: { id: string; admin_notes?: string | null; receipt_photo_url?: string | null }) => {
+      const payload: Record<string, unknown> = {};
+      if (admin_notes !== undefined) payload.admin_notes = admin_notes;
+      if (receipt_photo_url !== undefined) payload.receipt_photo_url = receipt_photo_url;
+      const { error } = await supabase.from("parking_subscriptions").update(payload).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["parking-subscriptions"] });
+      toast.success("Data berhasil diperbarui");
+    },
+    onError: (error) => toast.error("Gagal memperbarui: " + error.message),
   });
 }
 
