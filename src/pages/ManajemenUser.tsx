@@ -327,9 +327,23 @@ export default function ManajemenUser() {
                             <Switch
                               checked={u.is_active}
                               onCheckedChange={() => handleToggleStatus(u.id, u.is_active)}
-                              disabled={u.id === currentUser?.id || updateStatusMutation.isPending || (!isMasterDev && (u.role === "super_admin" || u.role === "master_dev"))}
+                              disabled={!canManageAccount || u.id === currentUser?.id || updateStatusMutation.isPending || (!isMasterDev && (u.role === "super_admin" || u.role === "master_dev"))}
                             />
                           </div>
+
+                          {/* Delete User Button - master_dev & super_admin only */}
+                          {canManageAccount && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => setDeleteUser({ id: u.id, email: u.email })}
+                              disabled={u.id === currentUser?.id || (!isMasterDev && (u.role === "super_admin" || u.role === "master_dev"))}
+                            >
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Hapus
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
