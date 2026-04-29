@@ -773,14 +773,24 @@ export default function AbonemenParkir() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setReceiptDialog({ open: true, data: sub })}
-                            title="Lihat Kwitansi"
-                          >
-                            <FileText className="w-4 h-4" />
-                          </Button>
+                          <NotesCell
+                            id={sub.id}
+                            value={sub.admin_notes}
+                            canEdit={canVerify}
+                            onSave={(notes) => updateMetaMutation.mutate({ id: sub.id, admin_notes: notes })}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <ReceiptPhotoCell
+                            id={sub.id}
+                            url={sub.receipt_photo_url}
+                            canEdit={canVerify}
+                            onUpload={async (file) => {
+                              const path = await uploadFile(file);
+                              if (path) updateMetaMutation.mutate({ id: sub.id, receipt_photo_url: path });
+                            }}
+                            onClear={() => updateMetaMutation.mutate({ id: sub.id, receipt_photo_url: null })}
+                          />
                         </TableCell>
                         {isSuperAdmin && (
                           <TableCell>
