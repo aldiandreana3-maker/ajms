@@ -12,7 +12,9 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useUsers, useUpdateUserRole, useUpdateUserStatus } from "@/hooks/useUserManagement";
 import { useAuth } from "@/contexts/AuthContext";
-import { Users, Loader2, Shield, UserCheck, UserX, KeyRound, Copy, Check } from "lucide-react";
+import { Users, Loader2, Shield, UserCheck, UserX, KeyRound, Copy, Check, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -95,6 +97,10 @@ export default function ManajemenUser() {
   const [newPassword, setNewPassword] = useState("");
   const [isResetting, setIsResetting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [deleteUser, setDeleteUser] = useState<{ id: string; email: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const queryClient = useQueryClient();
+  const canManageAccount = isMasterDev || isSuperAdmin; // delete + toggle status
   const visibleUsers = users?.filter((u) => isMasterDev || !isHiddenMasterAccount(u.email, u.role)) ?? [];
 
   const handleUpdateRole = async () => {
@@ -149,6 +155,29 @@ export default function ManajemenUser() {
     setResetPasswordUser(null);
     setNewPassword("");
     setCopied(false);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deleteUser) return;
+    setIsDeleting(true);
+    try {
+      const response = await supabase.functions.invoke("delete-user-account", {
+        body: { userId: deleteUser.id },
+      });
+      if (response.error || (response.data && response.data.error)) {
+        const msg = response.data?.error || response.error?.message || "Gagal menghapus user";
+        toast.error(msg);
+      } else {
+        toast.success("User berhasil dihapus");
+        queryClient.invalidateQueries({ queryKey: ["users"] });
+        setDeleteUser(null);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Gagal menghapus user");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   if (!isAdmin) {
@@ -298,9 +327,23 @@ export default function ManajemenUser() {
                             <Switch
                               checked={u.is_active}
                               onCheckedChange={() => handleToggleStatus(u.id, u.is_active)}
-                              disabled={u.id === currentUser?.id || updateStatusMutation.isPending || (!isMasterDev && (u.role === "super_admin" || u.role === "master_dev"))}
+                              disabled={!canManageAccount || u.id === currentUser?.id || updateStatusMutation.isPending || (!isMasterDev && (u.role === "super_admin" || u.role === "master_dev"))}
                             />
                           </div>
+
+                          {/* Delete User Button - master_dev & super_admin only */}
+                          {canManageAccount && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => setDeleteUser({ id: u.id, email: u.email })}
+                              disabled={u.id === currentUser?.id || (!isMasterDev && (u.role === "super_admin" || u.role === "master_dev"))}
+                            >
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Hapus
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -374,6 +417,29 @@ export default function ManajemenUser() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Delete User Confirmation */}
+        <AlertDialog open={!!deleteUser} onOpenChange={(open) => !open && !isDeleting && setDeleteUser(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Hapus Akun User?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Akun <span className="font-semibold">{deleteUser?.email}</span> akan dihapus permanen beserta akses login. Tindakan ini tidak bisa dibatalkan.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Batal</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => { e.preventDefault(); handleDeleteUser(); }}
+                disabled={isDeleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                Hapus
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </MainLayout>
   );
