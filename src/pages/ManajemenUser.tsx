@@ -97,6 +97,10 @@ export default function ManajemenUser() {
   const [newPassword, setNewPassword] = useState("");
   const [isResetting, setIsResetting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [deleteUser, setDeleteUser] = useState<{ id: string; email: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const queryClient = useQueryClient();
+  const canManageAccount = isMasterDev || isSuperAdmin; // delete + toggle status
   const visibleUsers = users?.filter((u) => isMasterDev || !isHiddenMasterAccount(u.email, u.role)) ?? [];
 
   const handleUpdateRole = async () => {
