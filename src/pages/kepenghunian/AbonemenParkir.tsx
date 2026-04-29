@@ -53,6 +53,7 @@ export default function AbonemenParkir() {
   const cancelExtendMutation = useCancelExtensionParkingSubscription();
   const deleteMutation = useDeleteParkingSubscription();
   const updateVerificationMutation = useUpdateParkingVerification();
+  const updateMetaMutation = useUpdateParkingMeta();
   const { uploadFile, uploading } = useFileUpload({ folder: "parking" });
   const canExport = isAdmin || isSuperAdmin;
   const canDelete = isAdmin || isSuperAdmin;
