@@ -157,6 +157,29 @@ export default function ManajemenUser() {
     setCopied(false);
   };
 
+  const handleDeleteUser = async () => {
+    if (!deleteUser) return;
+    setIsDeleting(true);
+    try {
+      const response = await supabase.functions.invoke("delete-user-account", {
+        body: { userId: deleteUser.id },
+      });
+      if (response.error || (response.data && response.data.error)) {
+        const msg = response.data?.error || response.error?.message || "Gagal menghapus user";
+        toast.error(msg);
+      } else {
+        toast.success("User berhasil dihapus");
+        queryClient.invalidateQueries({ queryKey: ["users"] });
+        setDeleteUser(null);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Gagal menghapus user");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (!isAdmin) {
     return (
       <MainLayout>
