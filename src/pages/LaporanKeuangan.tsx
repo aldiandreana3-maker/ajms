@@ -20,7 +20,7 @@ import { Label } from "@/components/ui/label";
 import { useFinancialReport } from "@/hooks/useFinancialReport";
 
 const LaporanKeuangan = () => {
-  const { isSuperAdmin } = useAuth();
+  const { isSuperAdmin, isLimitedAccess } = useAuth();
   const { data: financialData, isLoading } = useFinancialReport();
 
   const income = financialData?.totalIncome || 0;
@@ -118,7 +118,8 @@ const LaporanKeuangan = () => {
           </div>
         </div>
 
-        {/* Summary Cards */}
+        {/* Summary Cards - hidden for penghuni/agent */}
+        {!isLimitedAccess && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {financialSummary.map((item, index) => (
             <div
@@ -155,6 +156,7 @@ const LaporanKeuangan = () => {
             </div>
           ))}
         </div>
+        )}
 
         {/* Reports List */}
         <div className="bg-card rounded-xl border border-border shadow-card">
