@@ -417,6 +417,29 @@ export default function ManajemenUser() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Delete User Confirmation */}
+        <AlertDialog open={!!deleteUser} onOpenChange={(open) => !open && !isDeleting && setDeleteUser(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Hapus Akun User?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Akun <span className="font-semibold">{deleteUser?.email}</span> akan dihapus permanen beserta akses login. Tindakan ini tidak bisa dibatalkan.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeleting}>Batal</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={(e) => { e.preventDefault(); handleDeleteUser(); }}
+                disabled={isDeleting}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isDeleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                Hapus
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </MainLayout>
   );
