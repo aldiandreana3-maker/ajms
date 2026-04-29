@@ -24,6 +24,7 @@ import { format } from "date-fns";
 import { exportToExcel, parkingExportColumns } from "@/lib/exportExcel";
 import { PhotoCell } from "@/components/shared/PhotoActions";
 import { PhotoUpload } from "@/components/shared/PhotoUpload";
+import { NotesCell, ReceiptPhotoCell } from "@/components/shared/ParkingInlineCells";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
 import { supabase } from "@/integrations/supabase/client";
