@@ -330,10 +330,10 @@ export default function KeluhanPenghuni() {
                         <TableCell>{format(new Date(k.created_at), "dd/MM/yyyy")}</TableCell>
                         <TableCell>{k.penghuni_name || k.penghuni?.full_name || "-"}</TableCell>
                         <TableCell>{k.unit_number || k.units?.unit_number || "-"}</TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{k.subject}</p>
-                            <p className="text-sm text-muted-foreground line-clamp-1">{k.description}</p>
+                        <TableCell className="max-w-[320px]">
+                          <div className="space-y-1">
+                            <p className="font-medium whitespace-normal break-words line-clamp-2">{k.subject}</p>
+                            <p className="text-sm text-muted-foreground whitespace-normal break-words line-clamp-3">{k.description}</p>
                           </div>
                         </TableCell>
                         <TableCell>
