@@ -162,14 +162,10 @@ export default function KeluhanPenghuni() {
         })
         .eq("id", editingId);
       if (error) throw error;
-      const { toast } = await import("sonner");
       toast.success("Keluhan berhasil diperbarui");
       setEditingId(null);
-      // refresh
-      const { useQueryClient } = await import("@tanstack/react-query");
-      window.dispatchEvent(new Event("focus"));
+      queryClient.invalidateQueries({ queryKey: ["keluhan"] });
     } catch (e: any) {
-      const { toast } = await import("sonner");
       toast.error("Gagal menyimpan: " + e.message);
     } finally {
       setEditSaving(false);
