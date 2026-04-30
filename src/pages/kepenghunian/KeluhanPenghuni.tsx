@@ -33,7 +33,7 @@ const keluhanImportColumns: ImportColumn[] = [
   { header: "Nama Penghuni", key: "penghuni_name", required: true, example: "Budi Santoso", aliases: ["Penghuni", "Nama", "Nama Pelapor"] },
   { header: "Telepon", key: "phone", example: "08123456789", aliases: ["No Telepon", "No HP", "Nomor Telepon", "Phone"] },
   { header: "Subjek", key: "subject", required: true, example: "AC bocor", aliases: ["Judul", "Perihal", "Subject"] },
-  { header: "Deskripsi", key: "description", required: true, example: "Air menetes dari unit AC", aliases: ["Keluhan", "Isi Keluhan", "Keterangan", "Deskripsi Keluhan"] },
+  { header: "Deskripsi", key: "description", example: "Air menetes dari unit AC", aliases: ["Keluhan", "Isi Keluhan", "Keterangan", "Deskripsi Keluhan"] },
 ];
 
 const statusColors = {
@@ -271,7 +271,7 @@ export default function KeluhanPenghuni() {
                       try {
                         const created = await createMutation.mutateAsync({
                           subject: r.subject,
-                          description: r.description,
+                          description: r.description || "-",
                           penghuni_name: r.penghuni_name,
                           unit_number: r.unit_number,
                           phone: r.phone,
