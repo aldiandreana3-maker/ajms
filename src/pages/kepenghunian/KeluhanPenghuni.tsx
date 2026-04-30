@@ -16,7 +16,7 @@ import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared
 import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { MessageSquareWarning, Plus, Loader2, ArrowLeft, Download, Trash2 } from "lucide-react";
+import { MessageSquareWarning, Plus, Loader2, ArrowLeft, Download, Trash2, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, keluhanExportColumns } from "@/lib/exportExcel";
@@ -110,6 +110,68 @@ export default function KeluhanPenghuni() {
   const [selectedKeluhan, setSelectedKeluhan] = useState<string | null>(null);
   const [newStatus, setNewStatus] = useState<"pending" | "proses" | "selesai">("pending");
   const [response, setResponse] = useState("");
+
+  // Edit dialog state (admin only)
+  const canEdit = isAdmin || isSuperAdmin;
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    penghuni_name: "",
+    unit_number: "",
+    phone: "",
+    subject: "",
+    description: "",
+    photo_url: "",
+  });
+  const [editMediaFile, setEditMediaFile] = useState<File | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+
+  const openEdit = (k: any) => {
+    setEditingId(k.id);
+    setEditForm({
+      penghuni_name: k.penghuni_name || k.penghuni?.full_name || "",
+      unit_number: k.unit_number || k.units?.unit_number || "",
+      phone: k.phone || "",
+      subject: k.subject || "",
+      description: k.description || "",
+      photo_url: k.photo_url || "",
+    });
+    setEditMediaFile(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingId) return;
+    setEditSaving(true);
+    try {
+      let photo_url = editForm.photo_url || null;
+      if (editMediaFile) {
+        const path = await uploadFile(editMediaFile);
+        if (path) photo_url = path;
+      }
+      const { error } = await supabase
+        .from("keluhan")
+        .update({
+          penghuni_name: editForm.penghuni_name || null,
+          unit_number: editForm.unit_number || null,
+          phone: editForm.phone || null,
+          subject: editForm.subject,
+          description: editForm.description || "-",
+          photo_url,
+        })
+        .eq("id", editingId);
+      if (error) throw error;
+      const { toast } = await import("sonner");
+      toast.success("Keluhan berhasil diperbarui");
+      setEditingId(null);
+      // refresh
+      const { useQueryClient } = await import("@tanstack/react-query");
+      window.dispatchEvent(new Event("focus"));
+    } catch (e: any) {
+      const { toast } = await import("sonner");
+      toast.error("Gagal menyimpan: " + e.message);
+    } finally {
+      setEditSaving(false);
+    }
+  };
 
   const [form, setForm] = useState({
     penghuni_name: "",
