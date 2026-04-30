@@ -10,13 +10,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useKeluhan, useCreateKeluhan, useUpdateKeluhanStatus, useDeleteKeluhan } from "@/hooks/useKeluhan";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { LoginPromptButton } from "@/components/shared/LoginPromptButton";
 import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared/DataFilterBar";
 import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { MessageSquareWarning, Plus, Loader2, ArrowLeft, Download, Trash2 } from "lucide-react";
+import { MessageSquareWarning, Plus, Loader2, ArrowLeft, Download, Trash2, Pencil } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, keluhanExportColumns } from "@/lib/exportExcel";
@@ -50,6 +52,7 @@ export default function KeluhanPenghuni() {
   const createMutation = useCreateKeluhan();
   const updateStatusMutation = useUpdateKeluhanStatus();
   const deleteMutation = useDeleteKeluhan();
+  const queryClient = useQueryClient();
   const { uploadFile, uploading } = useFileUpload({ folder: "keluhan" });
   const canExport = isAdmin || isSuperAdmin;
   const canDelete = isAdmin || isSuperAdmin;
@@ -110,6 +113,64 @@ export default function KeluhanPenghuni() {
   const [selectedKeluhan, setSelectedKeluhan] = useState<string | null>(null);
   const [newStatus, setNewStatus] = useState<"pending" | "proses" | "selesai">("pending");
   const [response, setResponse] = useState("");
+
+  // Edit dialog state (admin only)
+  const canEdit = isAdmin || isSuperAdmin;
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    penghuni_name: "",
+    unit_number: "",
+    phone: "",
+    subject: "",
+    description: "",
+    photo_url: "",
+  });
+  const [editMediaFile, setEditMediaFile] = useState<File | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+
+  const openEdit = (k: any) => {
+    setEditingId(k.id);
+    setEditForm({
+      penghuni_name: k.penghuni_name || k.penghuni?.full_name || "",
+      unit_number: k.unit_number || k.units?.unit_number || "",
+      phone: k.phone || "",
+      subject: k.subject || "",
+      description: k.description || "",
+      photo_url: k.photo_url || "",
+    });
+    setEditMediaFile(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingId) return;
+    setEditSaving(true);
+    try {
+      let photo_url = editForm.photo_url || null;
+      if (editMediaFile) {
+        const path = await uploadFile(editMediaFile);
+        if (path) photo_url = path;
+      }
+      const { error } = await supabase
+        .from("keluhan")
+        .update({
+          penghuni_name: editForm.penghuni_name || null,
+          unit_number: editForm.unit_number || null,
+          phone: editForm.phone || null,
+          subject: editForm.subject,
+          description: editForm.description || "-",
+          photo_url,
+        })
+        .eq("id", editingId);
+      if (error) throw error;
+      toast.success("Keluhan berhasil diperbarui");
+      setEditingId(null);
+      queryClient.invalidateQueries({ queryKey: ["keluhan"] });
+    } catch (e: any) {
+      toast.error("Gagal menyimpan: " + e.message);
+    } finally {
+      setEditSaving(false);
+    }
+  };
 
   const [form, setForm] = useState({
     penghuni_name: "",
@@ -398,6 +459,11 @@ export default function KeluhanPenghuni() {
                               </div>
                             </DialogContent>
                           </Dialog>
+                          {canEdit && (
+                            <Button variant="outline" size="sm" onClick={() => openEdit(k)}>
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                          )}
                           {canDelete && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
@@ -449,6 +515,79 @@ export default function KeluhanPenghuni() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Dialog (Admin only) */}
+      <Dialog open={!!editingId} onOpenChange={(open) => !open && setEditingId(null)}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Keluhan</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nama Penghuni</Label>
+              <Input
+                value={editForm.penghuni_name}
+                onChange={(e) => setEditForm({ ...editForm, penghuni_name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Nomor Unit</Label>
+              <Input
+                value={editForm.unit_number}
+                onChange={(e) => setEditForm({ ...editForm, unit_number: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Nomor Telepon</Label>
+              <Input
+                value={editForm.phone}
+                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Subjek</Label>
+              <Input
+                value={editForm.subject}
+                onChange={(e) => setEditForm({ ...editForm, subject: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Deskripsi</Label>
+              <Textarea
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                rows={4}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Foto / Video</Label>
+              {editForm.photo_url && !editMediaFile && (
+                <p className="text-xs text-muted-foreground truncate">Saat ini: {editForm.photo_url.split("/").pop()}</p>
+              )}
+              <PhotoUpload
+                label="Upload Foto/Video Baru"
+                value={editMediaFile}
+                onChange={(file) => setEditMediaFile(file)}
+                accept="image/*,video/*"
+              />
+              {editForm.photo_url && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditForm({ ...editForm, photo_url: "" })}
+                >
+                  Hapus media saat ini
+                </Button>
+              )}
+            </div>
+            <Button onClick={handleSaveEdit} disabled={editSaving || uploading} className="w-full">
+              {(editSaving || uploading) ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Simpan Perubahan
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }

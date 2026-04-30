@@ -9,6 +9,18 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
 const STORAGE_KEY = "ajms-live-chat-open";
+const POS_KEY = "ajms-live-chat-pos";
+
+type Pos = { x: number; y: number };
+
+function clampPos(p: Pos, w: number, h: number): Pos {
+  const maxX = Math.max(0, window.innerWidth - w - 8);
+  const maxY = Math.max(0, window.innerHeight - h - 8);
+  return {
+    x: Math.min(Math.max(8, p.x), maxX),
+    y: Math.min(Math.max(8, p.y), maxY),
+  };
+}
 
 export function LiveChatWidget() {
   const { user } = useAuth();
@@ -16,6 +28,19 @@ export function LiveChatWidget() {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const { conversation, messages, sendMessage } = useLiveChat();
+
+  // Draggable position (bottom-right default)
+  const BTN_SIZE = 56;
+  const PANEL_W = 360;
+  const PANEL_H = 520;
+  const [pos, setPos] = useState<Pos>(() => {
+    try {
+      const saved = localStorage.getItem(POS_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return { x: window.innerWidth - BTN_SIZE - 20, y: window.innerHeight - BTN_SIZE - 20 };
+  });
+  const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number; moved: boolean } | null>(null);
 
   useEffect(() => {
     const saved = sessionStorage.getItem(STORAGE_KEY);
@@ -31,6 +56,49 @@ export function LiveChatWidget() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, open]);
+
+  // Reclamp on resize
+  useEffect(() => {
+    const onResize = () => {
+      const size = open ? { w: PANEL_W, h: PANEL_H } : { w: BTN_SIZE, h: BTN_SIZE };
+      setPos((p) => clampPos(p, size.w, size.h));
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [open]);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    const target = e.currentTarget as HTMLElement;
+    target.setPointerCapture(e.pointerId);
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      origX: pos.x,
+      origY: pos.y,
+      moved: false,
+    };
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) d.moved = true;
+    const size = open ? { w: PANEL_W, h: PANEL_H } : { w: BTN_SIZE, h: BTN_SIZE };
+    setPos(clampPos({ x: d.origX + dx, y: d.origY + dy }, size.w, size.h));
+  };
+
+  const handlePointerUp = (e: React.PointerEvent, onClick?: () => void) => {
+    const target = e.currentTarget as HTMLElement;
+    try { target.releasePointerCapture(e.pointerId); } catch {}
+    const d = dragRef.current;
+    dragRef.current = null;
+    if (d) {
+      try { localStorage.setItem(POS_KEY, JSON.stringify(pos)); } catch {}
+      if (!d.moved && onClick) onClick();
+    }
+  };
 
   // Hide for unlogged users only
   if (!user) return null;
@@ -52,30 +120,53 @@ export function LiveChatWidget() {
 
   return (
     <>
-      {/* Floating button */}
+      {/* Floating draggable button */}
       {!open && (
         <button
-          onClick={() => setOpen(true)}
-          className="fixed bottom-5 right-5 z-[100] h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:scale-105 transition-transform flex items-center justify-center"
-          aria-label="Buka live chat"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={(e) => handlePointerUp(e, () => setOpen(true))}
+          style={{ left: pos.x, top: pos.y, touchAction: "none" }}
+          className="fixed z-[100] h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:scale-105 transition-transform flex items-center justify-center cursor-grab active:cursor-grabbing"
+          aria-label="Buka live chat (geser untuk pindah)"
+          title="Geser untuk pindahkan"
         >
           <MessageCircle className="w-6 h-6" />
         </button>
       )}
 
-      {/* Chat panel */}
+      {/* Chat panel — draggable by header */}
       {open && (
-        <div className="fixed bottom-5 right-5 z-[100] w-[360px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-2rem)] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 bg-primary text-primary-foreground">
+        <div
+          style={{ left: pos.x, top: pos.y }}
+          className="fixed z-[100] w-[360px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-2rem)] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+        >
+          <div
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={(e) => handlePointerUp(e)}
+            style={{ touchAction: "none" }}
+            className="flex items-center justify-between px-4 py-3 bg-primary text-primary-foreground cursor-grab active:cursor-grabbing select-none"
+          >
             <div>
               <p className="font-semibold text-sm">Live Chat AJMS</p>
               <p className="text-xs opacity-90">{statusLabel(conversation?.status)}</p>
             </div>
             <div className="flex gap-1">
-              <button onClick={() => setOpen(false)} className="p-1 hover:bg-white/10 rounded" aria-label="Minimize">
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => setOpen(false)}
+                className="p-1 hover:bg-white/10 rounded"
+                aria-label="Minimize"
+              >
                 <Minus className="w-4 h-4" />
               </button>
-              <button onClick={() => setOpen(false)} className="p-1 hover:bg-white/10 rounded" aria-label="Tutup">
+              <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => setOpen(false)}
+                className="p-1 hover:bg-white/10 rounded"
+                aria-label="Tutup"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -91,7 +182,6 @@ export function LiveChatWidget() {
             {messages.map((m) => {
               const isMine = m.message_type === "user";
               const isSystem = m.message_type === "auto_reply" || m.message_type === "system";
-              // Extract numbered suggestions from system fallback messages
               const suggestionLines = isSystem
                 ? Array.from(m.content.matchAll(/^\s*\d+\.\s+(.+)$/gm)).map((mt) => mt[1].trim())
                 : [];
