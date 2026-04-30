@@ -52,6 +52,7 @@ export default function KeluhanPenghuni() {
   const createMutation = useCreateKeluhan();
   const updateStatusMutation = useUpdateKeluhanStatus();
   const deleteMutation = useDeleteKeluhan();
+  const queryClient = useQueryClient();
   const { uploadFile, uploading } = useFileUpload({ folder: "keluhan" });
   const canExport = isAdmin || isSuperAdmin;
   const canDelete = isAdmin || isSuperAdmin;
