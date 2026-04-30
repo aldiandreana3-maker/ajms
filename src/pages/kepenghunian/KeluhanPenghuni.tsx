@@ -515,6 +515,79 @@ export default function KeluhanPenghuni() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Dialog (Admin only) */}
+      <Dialog open={!!editingId} onOpenChange={(open) => !open && setEditingId(null)}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Keluhan</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nama Penghuni</Label>
+              <Input
+                value={editForm.penghuni_name}
+                onChange={(e) => setEditForm({ ...editForm, penghuni_name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Nomor Unit</Label>
+              <Input
+                value={editForm.unit_number}
+                onChange={(e) => setEditForm({ ...editForm, unit_number: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Nomor Telepon</Label>
+              <Input
+                value={editForm.phone}
+                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Subjek</Label>
+              <Input
+                value={editForm.subject}
+                onChange={(e) => setEditForm({ ...editForm, subject: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Deskripsi</Label>
+              <Textarea
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                rows={4}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Foto / Video</Label>
+              {editForm.photo_url && !editMediaFile && (
+                <p className="text-xs text-muted-foreground truncate">Saat ini: {editForm.photo_url.split("/").pop()}</p>
+              )}
+              <PhotoUpload
+                label="Upload Foto/Video Baru"
+                value={editMediaFile}
+                onChange={(file) => setEditMediaFile(file)}
+                accept="image/*,video/*"
+              />
+              {editForm.photo_url && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditForm({ ...editForm, photo_url: "" })}
+                >
+                  Hapus media saat ini
+                </Button>
+              )}
+            </div>
+            <Button onClick={handleSaveEdit} disabled={editSaving || uploading} className="w-full">
+              {(editSaving || uploading) ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Simpan Perubahan
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
