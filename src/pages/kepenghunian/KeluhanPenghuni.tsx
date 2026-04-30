@@ -459,6 +459,11 @@ export default function KeluhanPenghuni() {
                               </div>
                             </DialogContent>
                           </Dialog>
+                          {canEdit && (
+                            <Button variant="outline" size="sm" onClick={() => openEdit(k)}>
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                          )}
                           {canDelete && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
