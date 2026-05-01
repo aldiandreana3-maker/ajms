@@ -60,8 +60,8 @@ export default function AbonemenParkir() {
   const canDelete = isAdmin || isSuperAdmin;
   // Akses verifikasi untuk staff_tro, staff_finance, admin, dan super_admin
   const canVerify = isAdmin || isSuperAdmin || role === "staff_tro" || role === "staff_finance";
-  // Hak membatalkan perpanjangan: Master Dev, Super Admin, Admin
-  const canCancelExtension = isAdmin || isSuperAdmin || isMasterDev;
+  // Hak membatalkan perpanjangan: Master Dev, Super Admin, Admin, Staff Finance
+  const canCancelExtension = isAdmin || isSuperAdmin || isMasterDev || role === "staff_finance";
   // Lihat semua data notifikasi: Master Dev, Super Admin, Admin
   const canSeeAllNotifications = isAdmin || isSuperAdmin || isMasterDev;
 
