@@ -744,7 +744,13 @@ export default function AbonemenParkir() {
                           })()}
                         </TableCell>
                         <TableCell>
-                          {canVerify ? (
+                          {canVerify ? (() => {
+                            // Deteksi sudah diperpanjang: end_date melebihi periode awal (start_date + 1 bulan)
+                            const baseEnd = new Date(sub.start_date);
+                            baseEnd.setMonth(baseEnd.getMonth() + 1);
+                            const currEnd = new Date(sub.end_date);
+                            const isExtended = currEnd.getTime() > baseEnd.getTime();
+                            return (
                             <Select
                               disabled={extendMutation.isPending || cancelExtendMutation.isPending}
                               onValueChange={(v) => {
@@ -758,8 +764,14 @@ export default function AbonemenParkir() {
                                 }
                               }}
                             >
-                              <SelectTrigger className="w-[150px] h-8 text-xs">
-                                <SelectValue placeholder="Perpanjang..." />
+                              <SelectTrigger
+                                className={`w-[160px] h-8 text-xs font-medium border-2 ${
+                                  isExtended
+                                    ? "bg-success/10 border-success text-success hover:bg-success/20"
+                                    : "bg-destructive/10 border-destructive text-destructive hover:bg-destructive/20"
+                                }`}
+                              >
+                                <SelectValue placeholder={isExtended ? "Sudah Diperpanjang" : "Belum Diperpanjang"} />
                               </SelectTrigger>
                               <SelectContent>
                                 {canCancelExtension && (
