@@ -745,39 +745,33 @@ export default function AbonemenParkir() {
                         </TableCell>
                         <TableCell>
                           {canVerify ? (
-                            <div className="flex items-center gap-1">
-                              <Select
-                                disabled={extendMutation.isPending || cancelExtendMutation.isPending}
-                                onValueChange={(v) => {
+                            <Select
+                              disabled={extendMutation.isPending || cancelExtendMutation.isPending}
+                              onValueChange={(v) => {
+                                if (v === "cancel") {
+                                  if (!canCancelExtension) return;
+                                  if (!confirm("Batalkan perpanjangan untuk abonemen ini? Masa aktif akan kembali ke periode awal.")) return;
+                                  cancelExtendMutation.mutate({ id: sub.id, startDate: sub.start_date });
+                                } else {
                                   const months = parseInt(v, 10);
                                   extendMutation.mutate({ id: sub.id, months, currentEndDate: sub.end_date });
-                                }}
-                              >
-                                <SelectTrigger className="w-[150px] h-8 text-xs">
-                                  <SelectValue placeholder="Perpanjang..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="1">Perpanjang 1 Bulan</SelectItem>
-                                  <SelectItem value="2">Perpanjang 2 Bulan</SelectItem>
-                                  <SelectItem value="3">Perpanjang 3 Bulan</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              {canCancelExtension && (
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  className="h-8 text-xs whitespace-nowrap"
-                                  disabled={cancelExtendMutation.isPending}
-                                  onClick={() => {
-                                    if (confirm("Batalkan perpanjangan untuk abonemen ini? Masa aktif akan kembali ke periode awal.")) {
-                                      cancelExtendMutation.mutate({ id: sub.id, startDate: sub.start_date });
-                                    }
-                                  }}
-                                >
-                                  Batalkan Perpanjangan
-                                </Button>
-                              )}
-                            </div>
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="w-[150px] h-8 text-xs">
+                                <SelectValue placeholder="Perpanjang..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {canCancelExtension && (
+                                  <SelectItem value="cancel" className="text-destructive font-medium">
+                                    Batalkan Perpanjangan
+                                  </SelectItem>
+                                )}
+                                <SelectItem value="1">Perpanjang 1 Bulan</SelectItem>
+                                <SelectItem value="2">Perpanjang 2 Bulan</SelectItem>
+                                <SelectItem value="3">Perpanjang 3 Bulan</SelectItem>
+                              </SelectContent>
+                            </Select>
                           ) : (
                             <Badge variant={sub.verification_status === "terverifikasi" ? "default" : "secondary"}
                               className={sub.verification_status === "terverifikasi" ? "bg-success" : ""}>
