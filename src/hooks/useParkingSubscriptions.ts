@@ -172,10 +172,10 @@ export function useCancelExtensionParkingSubscription() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, months, currentEndDate }: { id: string; months: number; currentEndDate: string }) => {
-      // Kurangi masa aktif sesuai jumlah bulan perpanjangan yang dibatalkan
-      const base = new Date(currentEndDate);
-      base.setMonth(base.getMonth() - months);
+    mutationFn: async ({ id, startDate }: { id: string; startDate: string }) => {
+      // Reset masa aktif kembali ke periode awal (start_date + 1 bulan), membatalkan semua perpanjangan
+      const base = new Date(startDate);
+      base.setMonth(base.getMonth() + 1);
       const newEndStr = base.toISOString().split("T")[0];
 
       const { data, error } = await supabase
@@ -188,9 +188,9 @@ export function useCancelExtensionParkingSubscription() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["parking-subscriptions"] });
-      toast.success(`Perpanjangan ${variables.months} bulan berhasil dibatalkan`);
+      toast.success("Perpanjangan berhasil dibatalkan");
     },
     onError: (error) => {
       toast.error("Gagal membatalkan perpanjangan: " + error.message);
