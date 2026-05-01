@@ -60,8 +60,8 @@ export default function AbonemenParkir() {
   const canDelete = isAdmin || isSuperAdmin;
   // Akses verifikasi untuk staff_tro, staff_finance, admin, dan super_admin
   const canVerify = isAdmin || isSuperAdmin || role === "staff_tro" || role === "staff_finance";
-  // Hak membatalkan perpanjangan: Master Dev, Super Admin, Admin
-  const canCancelExtension = isAdmin || isSuperAdmin || isMasterDev;
+  // Hak membatalkan perpanjangan: Master Dev, Super Admin, Admin, Staff Finance
+  const canCancelExtension = isAdmin || isSuperAdmin || isMasterDev || role === "staff_finance";
   // Lihat semua data notifikasi: Master Dev, Super Admin, Admin
   const canSeeAllNotifications = isAdmin || isSuperAdmin || isMasterDev;
 
@@ -751,19 +751,33 @@ export default function AbonemenParkir() {
                         <TableCell>
                           {canVerify ? (
                             <Select
-                              disabled={extendMutation.isPending}
+                              disabled={extendMutation.isPending || cancelExtendMutation.isPending}
                               onValueChange={(v) => {
-                                const months = parseInt(v, 10);
-                                extendMutation.mutate({ id: sub.id, months, currentEndDate: sub.end_date });
+                                if (v.startsWith("cancel-")) {
+                                  if (!canCancelExtension) return;
+                                  const months = parseInt(v.replace("cancel-", ""), 10);
+                                  if (!confirm(`Batalkan perpanjangan ${months} bulan untuk abonemen ini?`)) return;
+                                  cancelExtendMutation.mutate({ id: sub.id, months, currentEndDate: sub.end_date });
+                                } else {
+                                  const months = parseInt(v, 10);
+                                  extendMutation.mutate({ id: sub.id, months, currentEndDate: sub.end_date });
+                                }
                               }}
                             >
-                              <SelectTrigger className="w-[150px] h-8 text-xs">
+                              <SelectTrigger className="w-[170px] h-8 text-xs">
                                 <SelectValue placeholder="Perpanjang..." />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="1">Perpanjang 1 Bulan</SelectItem>
                                 <SelectItem value="2">Perpanjang 2 Bulan</SelectItem>
                                 <SelectItem value="3">Perpanjang 3 Bulan</SelectItem>
+                                {canCancelExtension && (
+                                  <>
+                                    <SelectItem value="cancel-1" className="text-destructive">Batalkan Perpanjangan 1 Bulan</SelectItem>
+                                    <SelectItem value="cancel-2" className="text-destructive">Batalkan Perpanjangan 2 Bulan</SelectItem>
+                                    <SelectItem value="cancel-3" className="text-destructive">Batalkan Perpanjangan 3 Bulan</SelectItem>
+                                  </>
+                                )}
                               </SelectContent>
                             </Select>
                           ) : (
