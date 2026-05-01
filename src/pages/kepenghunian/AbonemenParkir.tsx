@@ -629,24 +629,19 @@ export default function AbonemenParkir() {
                             </TableCell>
                             {canCancelExtension && (
                               <TableCell className="py-2 text-right">
-                                <Select
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  className="h-7 text-xs"
                                   disabled={cancelExtendMutation.isPending}
-                                  onValueChange={(v) => {
-                                    const months = parseInt(v, 10);
-                                    if (window.confirm(`Batalkan perpanjangan ${months} bulan untuk plat ${sub.vehicle_number}?`)) {
-                                      cancelExtendMutation.mutate({ id: sub.id, months, currentEndDate: sub.end_date });
+                                  onClick={() => {
+                                    if (window.confirm(`Batalkan perpanjangan untuk plat ${sub.vehicle_number}?`)) {
+                                      cancelExtendMutation.mutate({ id: sub.id, startDate: sub.start_date });
                                     }
                                   }}
                                 >
-                                  <SelectTrigger className="h-7 w-[130px] text-xs ml-auto">
-                                    <SelectValue placeholder="Batalkan..." />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="1">Batal -1 Bulan</SelectItem>
-                                    <SelectItem value="2">Batal -2 Bulan</SelectItem>
-                                    <SelectItem value="3">Batal -3 Bulan</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                                  Batalkan Perpanjangan
+                                </Button>
                               </TableCell>
                             )}
                           </TableRow>
