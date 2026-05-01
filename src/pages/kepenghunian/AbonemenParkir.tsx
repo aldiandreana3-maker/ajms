@@ -784,7 +784,8 @@ export default function AbonemenParkir() {
                                 <SelectItem value="3">Perpanjang 3 Bulan</SelectItem>
                               </SelectContent>
                             </Select>
-                          ) : (
+                            );
+                          })() : (
                             <Badge variant={sub.verification_status === "terverifikasi" ? "default" : "secondary"}
                               className={sub.verification_status === "terverifikasi" ? "bg-success" : ""}>
                               {sub.verification_status === "terverifikasi" ? "Aktif" : "Menunggu"}
