@@ -758,6 +758,15 @@ export default function AbonemenParkir() {
                                   if (!canCancelExtension) return;
                                   if (!confirm("Batalkan perpanjangan untuk abonemen ini? Masa aktif akan kembali ke periode awal.")) return;
                                   cancelExtendMutation.mutate({ id: sub.id, startDate: sub.start_date });
+                                } else if (v === "manual_days") {
+                                  const input = prompt("Masukkan jumlah HARI perpanjangan (parkir harian):", "1");
+                                  if (!input) return;
+                                  const days = parseInt(input, 10);
+                                  if (!Number.isFinite(days) || days <= 0) {
+                                    alert("Jumlah hari tidak valid");
+                                    return;
+                                  }
+                                  extendMutation.mutate({ id: sub.id, days, currentEndDate: sub.end_date });
                                 } else {
                                   const months = parseInt(v, 10);
                                   extendMutation.mutate({ id: sub.id, months, currentEndDate: sub.end_date });
@@ -779,9 +788,12 @@ export default function AbonemenParkir() {
                                     Batalkan Perpanjangan
                                   </SelectItem>
                                 )}
-                                <SelectItem value="1">Perpanjang 1 Bulan</SelectItem>
-                                <SelectItem value="2">Perpanjang 2 Bulan</SelectItem>
-                                <SelectItem value="3">Perpanjang 3 Bulan</SelectItem>
+                                <SelectItem value="manual_days" className="font-medium text-primary">
+                                  Perpanjang Manual (Hari)…
+                                </SelectItem>
+                                <SelectItem value="1">Perpanjang 1 Bulan (s/d tgl 5)</SelectItem>
+                                <SelectItem value="2">Perpanjang 2 Bulan (s/d tgl 5)</SelectItem>
+                                <SelectItem value="3">Perpanjang 3 Bulan (s/d tgl 5)</SelectItem>
                               </SelectContent>
                             </Select>
                             );
