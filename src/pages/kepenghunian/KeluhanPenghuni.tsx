@@ -380,6 +380,7 @@ export default function KeluhanPenghuni() {
                       <TableHead>Penghuni</TableHead>
                       <TableHead>Unit</TableHead>
                       <TableHead>Subjek</TableHead>
+                      <TableHead>Telepon</TableHead>
                       <TableHead>Foto</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Aksi</TableHead>
@@ -397,6 +398,7 @@ export default function KeluhanPenghuni() {
                             <p className="text-sm text-muted-foreground whitespace-normal break-words line-clamp-3">{k.description}</p>
                           </div>
                         </TableCell>
+                        <TableCell className="whitespace-nowrap font-mono text-sm">{k.phone || "-"}</TableCell>
                         <TableCell>
                           <PhotoCell
                             photos={[

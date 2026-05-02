@@ -143,31 +143,37 @@ export function useExtendParkingSubscription() {
       months,
       days,
       currentEndDate,
+      customEndDate,
     }: {
       id: string;
       months?: number;
       days?: number;
       currentEndDate?: string | null;
+      customEndDate?: string;
     }) => {
-      // Patokan: tanggal 5 setiap bulan adalah jatuh tempo siklus parkir
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const baseDate = currentEndDate ? new Date(currentEndDate) : today;
-      const startFrom = baseDate >= today ? baseDate : today;
-      const newEnd = new Date(startFrom);
+      let newEndStr: string;
 
-      if (days && days > 0) {
-        // Perpanjangan harian: tambah jumlah hari dari tanggal akhir saat ini
-        newEnd.setDate(newEnd.getDate() + days);
-      } else if (months && months > 0) {
-        // Perpanjangan bulanan: tambah bulan, lalu set ke tanggal 5 bulan tujuan
-        newEnd.setMonth(newEnd.getMonth() + months);
-        newEnd.setDate(5);
+      if (customEndDate) {
+        // Tanggal akhir di-set langsung (sudah dihitung di UI dengan patokan tanggal 5)
+        newEndStr = customEndDate;
       } else {
-        throw new Error("Masukkan jumlah hari atau bulan perpanjangan");
-      }
+        // Patokan: tanggal 5 setiap bulan adalah jatuh tempo siklus parkir
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const baseDate = currentEndDate ? new Date(currentEndDate) : today;
+        const startFrom = baseDate >= today ? baseDate : today;
+        const newEnd = new Date(startFrom);
 
-      const newEndStr = newEnd.toISOString().split("T")[0];
+        if (days && days > 0) {
+          newEnd.setDate(newEnd.getDate() + days);
+        } else if (months && months > 0) {
+          newEnd.setMonth(newEnd.getMonth() + months);
+          newEnd.setDate(5);
+        } else {
+          throw new Error("Masukkan jumlah hari atau bulan perpanjangan");
+        }
+        newEndStr = newEnd.toISOString().split("T")[0];
+      }
 
       const { data, error } = await supabase
         .from("parking_subscriptions")
@@ -181,7 +187,9 @@ export function useExtendParkingSubscription() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["parking-subscriptions"] });
-      const label = variables.days
+      const label = variables.customEndDate
+        ? `s/d ${variables.customEndDate} (jatuh tempo tgl 5)`
+        : variables.days
         ? `${variables.days} hari`
         : `${variables.months} bulan (jatuh tempo tgl 5)`;
       toast.success(`Abonemen berhasil diperpanjang ${label}`);
