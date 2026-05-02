@@ -187,7 +187,9 @@ export function useExtendParkingSubscription() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["parking-subscriptions"] });
-      const label = variables.days
+      const label = variables.customEndDate
+        ? `s/d ${variables.customEndDate} (jatuh tempo tgl 5)`
+        : variables.days
         ? `${variables.days} hari`
         : `${variables.months} bulan (jatuh tempo tgl 5)`;
       toast.success(`Abonemen berhasil diperpanjang ${label}`);
