@@ -138,14 +138,35 @@ export function useExtendParkingSubscription() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, months, currentEndDate }: { id: string; months: number; currentEndDate?: string | null }) => {
-      // Hitung tanggal akhir baru: dari end_date saat ini (jika masih aktif) atau dari hari ini (jika sudah lewat)
+    mutationFn: async ({
+      id,
+      months,
+      days,
+      currentEndDate,
+    }: {
+      id: string;
+      months?: number;
+      days?: number;
+      currentEndDate?: string | null;
+    }) => {
+      // Patokan: tanggal 5 setiap bulan adalah jatuh tempo siklus parkir
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const baseDate = currentEndDate ? new Date(currentEndDate) : today;
       const startFrom = baseDate >= today ? baseDate : today;
       const newEnd = new Date(startFrom);
-      newEnd.setMonth(newEnd.getMonth() + months);
+
+      if (days && days > 0) {
+        // Perpanjangan harian: tambah jumlah hari dari tanggal akhir saat ini
+        newEnd.setDate(newEnd.getDate() + days);
+      } else if (months && months > 0) {
+        // Perpanjangan bulanan: tambah bulan, lalu set ke tanggal 5 bulan tujuan
+        newEnd.setMonth(newEnd.getMonth() + months);
+        newEnd.setDate(5);
+      } else {
+        throw new Error("Masukkan jumlah hari atau bulan perpanjangan");
+      }
+
       const newEndStr = newEnd.toISOString().split("T")[0];
 
       const { data, error } = await supabase
@@ -160,7 +181,10 @@ export function useExtendParkingSubscription() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["parking-subscriptions"] });
-      toast.success(`Abonemen berhasil diperpanjang ${variables.months} bulan`);
+      const label = variables.days
+        ? `${variables.days} hari`
+        : `${variables.months} bulan (jatuh tempo tgl 5)`;
+      toast.success(`Abonemen berhasil diperpanjang ${label}`);
     },
     onError: (error) => {
       toast.error("Gagal memperpanjang abonemen: " + error.message);
