@@ -1,0 +1,1 @@
+ALTER TABLE public.parking_subscriptions ALTER COLUMN end_date DROP NOT NULL;
