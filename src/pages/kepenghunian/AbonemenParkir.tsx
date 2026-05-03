@@ -725,19 +725,20 @@ export default function AbonemenParkir() {
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-sm">
                           {(() => {
-                            if (!sub.end_date) return "-";
-                            const end = new Date(sub.end_date);
                             const today = new Date();
                             today.setHours(0, 0, 0, 0);
-                            const diff = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                            const expired = diff < 0;
-                            const soon = diff >= 0 && diff <= 7;
+                            const end = sub.end_date ? new Date(sub.end_date) : null;
+                            const diff = end
+                              ? Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                              : 0;
+                            const expired = end ? diff < 0 : false;
+                            const soon = end ? diff >= 0 && diff <= 7 : false;
                             const handleEditDays = () => {
                               if (!canVerify) return;
-                              const input = prompt(
-                                `Masa berakhir saat ini: ${format(end, "dd/MM/yyyy")} (${diff} hari lagi)\n\nMasukkan jumlah HARI dari hari ini.\nJatuh tempo akan otomatis disesuaikan ke tanggal 5 berikutnya.`,
-                                String(diff > 0 ? diff : 30),
-                              );
+                              const promptMsg = end
+                                ? `Masa berakhir saat ini: ${format(end, "dd/MM/yyyy")} (${diff} hari lagi)\n\nMasukkan jumlah HARI dari hari ini.\nJatuh tempo akan otomatis disesuaikan ke tanggal 5 berikutnya.`
+                                : `Belum ada tanggal berakhir.\n\nMasukkan jumlah HARI dari hari ini.\nJatuh tempo akan otomatis disesuaikan ke tanggal 5 berikutnya.`;
+                              const input = prompt(promptMsg, String(end && diff > 0 ? diff : 30));
                               if (!input) return;
                               const days = parseInt(input, 10);
                               if (!Number.isFinite(days) || days <= 0) {
@@ -749,7 +750,6 @@ export default function AbonemenParkir() {
                               target.setHours(0, 0, 0, 0);
                               target.setDate(target.getDate() + days);
                               if (target.getDate() > 5) {
-                                // Pindah ke bulan depan tanggal 5
                                 target.setMonth(target.getMonth() + 1);
                               }
                               target.setDate(5);
@@ -760,14 +760,16 @@ export default function AbonemenParkir() {
                               <div
                                 className={`flex flex-col ${canVerify ? "cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1" : ""}`}
                                 onClick={handleEditDays}
-                                title={canVerify ? "Klik untuk ubah jumlah hari (otomatis jatuh tempo tgl 5)" : ""}
+                                title={canVerify ? "Klik untuk set/ubah jumlah hari (otomatis jatuh tempo tgl 5)" : ""}
                               >
                                 <span className={canVerify ? "underline decoration-dotted underline-offset-2" : ""}>
-                                  {format(end, "dd/MM/yyyy")}
+                                  {end ? format(end, "dd/MM/yyyy") : "-"}
                                 </span>
-                                <span className={`text-xs ${expired ? "text-destructive" : soon ? "text-warning" : "text-muted-foreground"}`}>
-                                  {expired ? `Habis ${Math.abs(diff)} hari lalu` : diff === 0 ? "Habis hari ini" : `${diff} hari lagi`}
-                                </span>
+                                {end && (
+                                  <span className={`text-xs ${expired ? "text-destructive" : soon ? "text-warning" : "text-muted-foreground"}`}>
+                                    {expired ? `Habis ${Math.abs(diff)} hari lalu` : diff === 0 ? "Habis hari ini" : `${diff} hari lagi`}
+                                  </span>
+                                )}
                               </div>
                             );
                           })()}
