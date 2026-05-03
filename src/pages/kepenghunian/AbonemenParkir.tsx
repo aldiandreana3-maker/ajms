@@ -776,11 +776,8 @@ export default function AbonemenParkir() {
                         </TableCell>
                         <TableCell>
                           {canVerify ? (() => {
-                            // Deteksi sudah diperpanjang: end_date melebihi periode awal (start_date + 1 bulan)
-                            const baseEnd = new Date(sub.start_date);
-                            baseEnd.setMonth(baseEnd.getMonth() + 1);
-                            const currEnd = new Date(sub.end_date);
-                            const isExtended = currEnd.getTime() > baseEnd.getTime();
+                            // Sudah diperpanjang jika end_date sudah terisi (admin telah set tanggal berakhir)
+                            const isExtended = !!sub.end_date;
                             return (
                             <Select
                               disabled={extendMutation.isPending || cancelExtendMutation.isPending}
