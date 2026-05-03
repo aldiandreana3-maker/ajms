@@ -3,7 +3,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
-type AppRole = "master_dev" | "super_admin" | "admin" | "staff" | "agent" | "penghuni" | "staff_tro" | "staff_finance" | "staff_hrd_ga" | "staff_engineering" | "staff_outsourcing_cleaning" | "staff_outsourcing_security" | "staff_outsourcing_parkir";
+type AppRole = "master_dev" | "super_admin" | "admin" | "staff" | "agent" | "penghuni" | "staff_tro" | "staff_finance" | "staff_hrd_ga" | "staff_engineering" | "staff_building_service" | "staff_outsourcing_cleaning" | "staff_outsourcing_security" | "staff_outsourcing_parkir";
 
 interface AuthContextType {
   user: User | null;
@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAgent = role === "agent";
   const isPenghuni = role === "penghuni";
   const isLimitedAccess = role === "penghuni" || role === "agent";
-  const isStaff = role === "staff" || role === "staff_tro" || role === "staff_finance" || role === "staff_hrd_ga" || role === "staff_engineering" || role === "staff_outsourcing_cleaning" || role === "staff_outsourcing_security" || role === "staff_outsourcing_parkir" || isAdmin;
+  const isStaff = role === "staff" || role === "staff_tro" || role === "staff_finance" || role === "staff_hrd_ga" || role === "staff_engineering" || role === "staff_building_service" || role === "staff_outsourcing_cleaning" || role === "staff_outsourcing_security" || role === "staff_outsourcing_parkir" || isAdmin;
 
   return (
     <AuthContext.Provider
