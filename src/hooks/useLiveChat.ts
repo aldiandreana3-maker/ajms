@@ -148,10 +148,12 @@ export function useLiveChat() {
 }
 
 /** Admin hooks */
-export function useAdminConversations() {
+export function useAdminConversations(opts?: { enabled?: boolean }) {
+  const enabled = opts?.enabled ?? true;
   const qc = useQueryClient();
   const query = useQuery({
     queryKey: ["admin-chat-conversations"],
+    enabled,
     queryFn: async () => {
       const { data } = await supabase
         .from("chat_conversations")
