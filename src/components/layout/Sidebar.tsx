@@ -81,7 +81,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
   // Live Chat unread badge for admins
   const canSeeAdminChat = isAdmin;
-  const { data: convs = [] } = useAdminConversations();
+  const { data: convs = [] } = useAdminConversations({ enabled: canSeeAdminChat });
   const chatUnread = canSeeAdminChat
     ? convs.reduce((sum, c) => sum + (c.unread_admin_count || 0), 0)
     : 0;
