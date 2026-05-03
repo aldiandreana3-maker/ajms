@@ -11,7 +11,7 @@ interface ParkingSubscription {
   vehicle_brand: string | null;
   vehicle_color: string | null;
   start_date: string;
-  end_date: string;
+  end_date: string | null;
   monthly_fee: number;
   is_active: boolean;
   created_at: string;
@@ -41,7 +41,7 @@ interface CreateParkingInput {
   vehicle_brand?: string;
   vehicle_color?: string;
   start_date: string;
-  end_date: string;
+  end_date?: string | null;
   monthly_fee?: number;
   penghuni_name?: string;
   unit_number?: string;
@@ -204,15 +204,12 @@ export function useCancelExtensionParkingSubscription() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, startDate }: { id: string; startDate: string }) => {
-      // Reset masa aktif kembali ke periode awal (start_date + 1 bulan), membatalkan semua perpanjangan
-      const base = new Date(startDate);
-      base.setMonth(base.getMonth() + 1);
-      const newEndStr = base.toISOString().split("T")[0];
-
+    mutationFn: async ({ id }: { id: string; startDate?: string }) => {
+      // Reset masa berakhir ke kosong (null), membatalkan semua perpanjangan.
+      // Kolom 'Berakhir' akan kembali tampil kosong sampai admin memperpanjang lagi.
       const { data, error } = await supabase
         .from("parking_subscriptions")
-        .update({ end_date: newEndStr })
+        .update({ end_date: null })
         .eq("id", id)
         .select()
         .single();

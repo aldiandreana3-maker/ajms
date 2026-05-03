@@ -258,9 +258,6 @@ export default function AbonemenParkir() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const today = new Date();
-    const endDate = form.period_type === "harian" 
-      ? new Date(today.getTime() + 24 * 60 * 60 * 1000)
-      : new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
 
     // Upload photos
     let ktpUrl: string | undefined;
@@ -289,7 +286,9 @@ export default function AbonemenParkir() {
       vehicle_type: form.vehicle_type,
       vehicle_number: form.vehicle_number,
       start_date: today.toISOString().split("T")[0],
-      end_date: endDate.toISOString().split("T")[0],
+      // Tanggal berakhir kosong saat pendaftaran pertama;
+      // baru terisi setelah admin memperpanjang (harian / bulanan s/d tgl 5).
+      end_date: null,
       monthly_fee: 0,
       penghuni_name: form.penghuni_name,
       unit_number: form.unit_number,
@@ -528,14 +527,14 @@ export default function AbonemenParkir() {
                     let success = 0, failed = 0;
                     const errors: string[] = [];
                     const today = new Date();
-                    const endDate = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
                     for (const [i, r] of rows.entries()) {
                       try {
                         const created = await createMutation.mutateAsync({
                           vehicle_type: r.vehicle_type || "mobil",
                           vehicle_number: r.vehicle_number || "",
                           start_date: today.toISOString().split("T")[0],
-                          end_date: endDate.toISOString().split("T")[0],
+                          // Berakhir kosong saat pendaftaran; akan diisi oleh admin
+                          end_date: null,
                           monthly_fee: 0,
                           penghuni_name: r.penghuni_name,
                           unit_number: r.unit_number,
@@ -726,19 +725,20 @@ export default function AbonemenParkir() {
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-sm">
                           {(() => {
-                            if (!sub.end_date) return "-";
-                            const end = new Date(sub.end_date);
                             const today = new Date();
                             today.setHours(0, 0, 0, 0);
-                            const diff = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                            const expired = diff < 0;
-                            const soon = diff >= 0 && diff <= 7;
+                            const end = sub.end_date ? new Date(sub.end_date) : null;
+                            const diff = end
+                              ? Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                              : 0;
+                            const expired = end ? diff < 0 : false;
+                            const soon = end ? diff >= 0 && diff <= 7 : false;
                             const handleEditDays = () => {
                               if (!canVerify) return;
-                              const input = prompt(
-                                `Masa berakhir saat ini: ${format(end, "dd/MM/yyyy")} (${diff} hari lagi)\n\nMasukkan jumlah HARI dari hari ini.\nJatuh tempo akan otomatis disesuaikan ke tanggal 5 berikutnya.`,
-                                String(diff > 0 ? diff : 30),
-                              );
+                              const promptMsg = end
+                                ? `Masa berakhir saat ini: ${format(end, "dd/MM/yyyy")} (${diff} hari lagi)\n\nMasukkan jumlah HARI dari hari ini.\nJatuh tempo akan otomatis disesuaikan ke tanggal 5 berikutnya.`
+                                : `Belum ada tanggal berakhir.\n\nMasukkan jumlah HARI dari hari ini.\nJatuh tempo akan otomatis disesuaikan ke tanggal 5 berikutnya.`;
+                              const input = prompt(promptMsg, String(end && diff > 0 ? diff : 30));
                               if (!input) return;
                               const days = parseInt(input, 10);
                               if (!Number.isFinite(days) || days <= 0) {
@@ -750,7 +750,6 @@ export default function AbonemenParkir() {
                               target.setHours(0, 0, 0, 0);
                               target.setDate(target.getDate() + days);
                               if (target.getDate() > 5) {
-                                // Pindah ke bulan depan tanggal 5
                                 target.setMonth(target.getMonth() + 1);
                               }
                               target.setDate(5);
@@ -761,25 +760,24 @@ export default function AbonemenParkir() {
                               <div
                                 className={`flex flex-col ${canVerify ? "cursor-pointer hover:bg-muted/50 rounded px-1 -mx-1" : ""}`}
                                 onClick={handleEditDays}
-                                title={canVerify ? "Klik untuk ubah jumlah hari (otomatis jatuh tempo tgl 5)" : ""}
+                                title={canVerify ? "Klik untuk set/ubah jumlah hari (otomatis jatuh tempo tgl 5)" : ""}
                               >
                                 <span className={canVerify ? "underline decoration-dotted underline-offset-2" : ""}>
-                                  {format(end, "dd/MM/yyyy")}
+                                  {end ? format(end, "dd/MM/yyyy") : "-"}
                                 </span>
-                                <span className={`text-xs ${expired ? "text-destructive" : soon ? "text-warning" : "text-muted-foreground"}`}>
-                                  {expired ? `Habis ${Math.abs(diff)} hari lalu` : diff === 0 ? "Habis hari ini" : `${diff} hari lagi`}
-                                </span>
+                                {end && (
+                                  <span className={`text-xs ${expired ? "text-destructive" : soon ? "text-warning" : "text-muted-foreground"}`}>
+                                    {expired ? `Habis ${Math.abs(diff)} hari lalu` : diff === 0 ? "Habis hari ini" : `${diff} hari lagi`}
+                                  </span>
+                                )}
                               </div>
                             );
                           })()}
                         </TableCell>
                         <TableCell>
                           {canVerify ? (() => {
-                            // Deteksi sudah diperpanjang: end_date melebihi periode awal (start_date + 1 bulan)
-                            const baseEnd = new Date(sub.start_date);
-                            baseEnd.setMonth(baseEnd.getMonth() + 1);
-                            const currEnd = new Date(sub.end_date);
-                            const isExtended = currEnd.getTime() > baseEnd.getTime();
+                            // Sudah diperpanjang jika end_date sudah terisi (admin telah set tanggal berakhir)
+                            const isExtended = !!sub.end_date;
                             return (
                             <Select
                               disabled={extendMutation.isPending || cancelExtendMutation.isPending}

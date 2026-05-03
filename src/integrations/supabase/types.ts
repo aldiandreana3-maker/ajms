@@ -2070,7 +2070,7 @@ export type Database = {
           agent_name: string | null
           created_at: string | null
           created_by: string | null
-          end_date: string
+          end_date: string | null
           id: string
           is_active: boolean | null
           ktp_photo_url: string | null
@@ -2101,7 +2101,7 @@ export type Database = {
           agent_name?: string | null
           created_at?: string | null
           created_by?: string | null
-          end_date: string
+          end_date?: string | null
           id?: string
           is_active?: boolean | null
           ktp_photo_url?: string | null
@@ -2132,7 +2132,7 @@ export type Database = {
           agent_name?: string | null
           created_at?: string | null
           created_by?: string | null
-          end_date?: string
+          end_date?: string | null
           id?: string
           is_active?: boolean | null
           ktp_photo_url?: string | null
