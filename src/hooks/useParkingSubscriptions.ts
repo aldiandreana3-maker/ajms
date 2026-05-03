@@ -41,7 +41,7 @@ interface CreateParkingInput {
   vehicle_brand?: string;
   vehicle_color?: string;
   start_date: string;
-  end_date: string;
+  end_date?: string | null;
   monthly_fee?: number;
   penghuni_name?: string;
   unit_number?: string;
