@@ -23,9 +23,11 @@ import {
   ShieldCheck,
   Sparkles,
   MessageCircle,
+  HardHat,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdminConversations } from "@/hooks/useLiveChat";
 import {
   Collapsible,
   CollapsibleContent,
@@ -48,6 +50,7 @@ const kepengelolaanItems = [
   { icon: Headphones, label: "Tenant Relation Office", path: "/kepengelolaan/tro" },
   { icon: Wallet, label: "Finance", path: "/kepengelolaan/finance" },
   { icon: UserCog, label: "HRD & GA", path: "/kepengelolaan/hrd-ga" },
+  { icon: HardHat, label: "Building Service", path: "/kepengelolaan/building-service" },
   { icon: Wrench, label: "Engineering", path: "/kepengelolaan/engineering" },
   { icon: ShieldCheck, label: "Security", path: "/kepengelolaan/security" },
   { icon: Sparkles, label: "House Keeping", path: "/kepengelolaan/housekeeping" },
@@ -55,7 +58,7 @@ const kepengelolaanItems = [
 
 const adminMenuItems = [
   { icon: Shield, label: "Manajemen User", path: "/manajemen-user", adminOnly: true },
-  { icon: MessageCircle, label: "Live Chat", path: "/live-chat-admin", adminOnly: true },
+  { icon: MessageCircle, label: "Live Chat", path: "/live-chat-admin", adminOnly: true, badgeKey: "chat" as const },
   { icon: Settings, label: "Aktivasi Sistem", path: "/aktivasi-sistem", adminOnly: false },
 ];
 
@@ -75,6 +78,13 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   // Hide kepengelolaan from penghuni and agent, except Finance
   const canAccessKepengelolaan = (isSuperAdmin || isAdmin) && !isLimitedAccess;
   const canAccessFinance = !!user; // All logged-in users can access Finance
+
+  // Live Chat unread badge for admins
+  const canSeeAdminChat = isAdmin;
+  const { data: convs = [] } = useAdminConversations({ enabled: canSeeAdminChat });
+  const chatUnread = canSeeAdminChat
+    ? convs.reduce((sum, c) => sum + (c.unread_admin_count || 0), 0)
+    : 0;
 
   const handleLogout = async () => {
     await signOut();
@@ -231,20 +241,35 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             )}
             {adminMenuItems.filter((item) => !item.adminOnly || isAdmin).map((item) => {
               const isActive = location.pathname === item.path;
+              const showBadge = (item as any).badgeKey === "chat" && chatUnread > 0;
               return (
                 <NavLink
                   key={item.path}
                   to={item.path}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group",
+                    "relative flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group",
                     isActive
                       ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
                       : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                   )}
                 >
-                  <item.icon className={cn("w-5 h-5 flex-shrink-0", collapsed && "mx-auto")} />
+                  <span className={cn("relative", collapsed && "mx-auto")}>
+                    <item.icon className="w-5 h-5 flex-shrink-0" />
+                    {showBadge && collapsed && (
+                      <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center shadow">
+                        {chatUnread > 99 ? "99+" : chatUnread}
+                      </span>
+                    )}
+                  </span>
                   {!collapsed && (
-                    <span className="font-medium text-sm truncate">{item.label}</span>
+                    <>
+                      <span className="font-medium text-sm truncate flex-1">{item.label}</span>
+                      {showBadge && (
+                        <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center shadow">
+                          {chatUnread > 99 ? "99+" : chatUnread}
+                        </span>
+                      )}
+                    </>
                   )}
                 </NavLink>
               );

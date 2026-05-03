@@ -19,7 +19,7 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type AppRole = "master_dev" | "super_admin" | "admin" | "staff" | "agent" | "penghuni" | "staff_tro" | "staff_finance" | "staff_hrd_ga" | "staff_engineering" | "staff_outsourcing_cleaning" | "staff_outsourcing_security" | "staff_outsourcing_parkir";
+type AppRole = "master_dev" | "super_admin" | "admin" | "staff" | "agent" | "penghuni" | "staff_tro" | "staff_finance" | "staff_hrd_ga" | "staff_engineering" | "staff_building_service" | "staff_outsourcing_cleaning" | "staff_outsourcing_security" | "staff_outsourcing_parkir";
 
 const roleLabels: Record<string, string> = {
   master_dev: "Master Development",
@@ -32,6 +32,7 @@ const roleLabels: Record<string, string> = {
   staff_finance: "Staff Finance",
   staff_hrd_ga: "Staff HRD/GA",
   staff_engineering: "Staff Engineering",
+  staff_building_service: "Staff Building Service",
   staff_outsourcing_cleaning: "Staff Outsourcing Cleaning",
   staff_outsourcing_security: "Staff Outsourcing Security",
   staff_outsourcing_parkir: "Staff Outsourcing Parkir",
@@ -48,6 +49,7 @@ const roleColors: Record<string, string> = {
   staff_finance: "bg-emerald-500/20 text-emerald-600 border-emerald-500/30",
   staff_hrd_ga: "bg-violet-500/20 text-violet-600 border-violet-500/30",
   staff_engineering: "bg-orange-500/20 text-orange-600 border-orange-500/30",
+  staff_building_service: "bg-yellow-500/20 text-yellow-700 border-yellow-500/30",
   staff_outsourcing_cleaning: "bg-teal-500/20 text-teal-600 border-teal-500/30",
   staff_outsourcing_security: "bg-rose-500/20 text-rose-600 border-rose-500/30",
   staff_outsourcing_parkir: "bg-amber-500/20 text-amber-600 border-amber-500/30",
@@ -69,6 +71,7 @@ const getSelectableRoles = (isMasterDev: boolean) => {
     { value: "staff_finance", label: "Staff Finance" },
     { value: "staff_hrd_ga", label: "Staff HRD/GA" },
     { value: "staff_engineering", label: "Staff Engineering" },
+    { value: "staff_building_service", label: "Staff Building Service" },
     { value: "staff_outsourcing_cleaning", label: "Staff Outsourcing Cleaning" },
     { value: "staff_outsourcing_security", label: "Staff Outsourcing Security" },
     { value: "staff_outsourcing_parkir", label: "Staff Outsourcing Parkir" },

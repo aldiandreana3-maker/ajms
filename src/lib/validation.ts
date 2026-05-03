@@ -45,7 +45,7 @@ export const CreateForeignGuestSchema = z.object({
 // Role management validation
 const APP_ROLES = [
   "master_dev", "super_admin", "admin", "staff", "agent", "penghuni",
-  "staff_tro", "staff_finance", "staff_hrd_ga", "staff_engineering",
+  "staff_tro", "staff_finance", "staff_hrd_ga", "staff_engineering", "staff_building_service",
   "staff_outsourcing_cleaning", "staff_outsourcing_security", "staff_outsourcing_parkir",
 ] as const;
 

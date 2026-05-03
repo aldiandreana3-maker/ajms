@@ -34,7 +34,7 @@ export function useLiveChat() {
   const qc = useQueryClient();
   const [conversation, setConversation] = useState<ChatConversation | null>(null);
 
-  // Get or create conversation
+  // Get or create conversation (one per user)
   useEffect(() => {
     if (!user) {
       setConversation(null);
@@ -45,7 +45,7 @@ export function useLiveChat() {
         .from("chat_conversations")
         .select("*")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
+        .order("created_at", { ascending: true })
         .limit(1)
         .maybeSingle();
       if (existing) {
@@ -57,17 +57,21 @@ export function useLiveChat() {
         .select("full_name, email")
         .eq("id", user.id)
         .maybeSingle();
-      const { data: created } = await supabase
+      const { data: created, error } = await supabase
         .from("chat_conversations")
-        .insert({
-          user_id: user.id,
-          user_name: profile?.full_name || user.email,
-          user_email: profile?.email || user.email,
-          status: "auto_reply",
-        })
+        .upsert(
+          {
+            user_id: user.id,
+            user_name: profile?.full_name || user.email,
+            user_email: profile?.email || user.email,
+            status: "auto_reply",
+          },
+          { onConflict: "user_id" }
+        )
         .select()
         .single();
       if (created) setConversation(created as ChatConversation);
+      else if (error) console.error("create conv error", error);
     })();
   }, [user]);
 
@@ -144,10 +148,12 @@ export function useLiveChat() {
 }
 
 /** Admin hooks */
-export function useAdminConversations() {
+export function useAdminConversations(opts?: { enabled?: boolean }) {
+  const enabled = opts?.enabled ?? true;
   const qc = useQueryClient();
   const query = useQuery({
     queryKey: ["admin-chat-conversations"],
+    enabled,
     queryFn: async () => {
       const { data } = await supabase
         .from("chat_conversations")

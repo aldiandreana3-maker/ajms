@@ -29,6 +29,20 @@ function ChatInbox() {
     if (!activeId && conversations.length) setActiveId(conversations[0].id);
   }, [conversations, activeId]);
 
+  // Mark active conversation as read for admin
+  useEffect(() => {
+    if (!activeId) return;
+    const active = conversations.find((c) => c.id === activeId);
+    if (active && active.unread_admin_count > 0) {
+      import("@/integrations/supabase/client").then(({ supabase }) => {
+        supabase
+          .from("chat_conversations")
+          .update({ unread_admin_count: 0 })
+          .eq("id", activeId);
+      });
+    }
+  }, [activeId, conversations]);
+
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);

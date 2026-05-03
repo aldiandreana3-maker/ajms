@@ -42,7 +42,7 @@ export default function LaporanInspeksi() {
   const { isSuperAdmin, isAdmin, isStaff, isLimitedAccess, user, role } = useAuth();
   const canAccess = (isSuperAdmin || isAdmin || isStaff) && !isLimitedAccess;
   const isTRO = isSuperAdmin || isAdmin || role === "staff_tro";
-  const isEngineering = role === "staff_engineering";
+  const isEngineering = role === "staff_engineering" || role === "staff_building_service";
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
