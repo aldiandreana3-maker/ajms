@@ -258,9 +258,6 @@ export default function AbonemenParkir() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const today = new Date();
-    const endDate = form.period_type === "harian" 
-      ? new Date(today.getTime() + 24 * 60 * 60 * 1000)
-      : new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
 
     // Upload photos
     let ktpUrl: string | undefined;
@@ -289,7 +286,9 @@ export default function AbonemenParkir() {
       vehicle_type: form.vehicle_type,
       vehicle_number: form.vehicle_number,
       start_date: today.toISOString().split("T")[0],
-      end_date: endDate.toISOString().split("T")[0],
+      // Tanggal berakhir kosong saat pendaftaran pertama;
+      // baru terisi setelah admin memperpanjang (harian / bulanan s/d tgl 5).
+      end_date: null,
       monthly_fee: 0,
       penghuni_name: form.penghuni_name,
       unit_number: form.unit_number,
