@@ -54,6 +54,7 @@ import RekapKaryawan from "./pages/kepengelolaan/RekapKaryawan";
 import SlipGaji from "./pages/kepengelolaan/SlipGaji";
 import DataKaryawan from "./pages/kepengelolaan/DataKaryawan";
 import Engineering from "./pages/kepengelolaan/Engineering";
+import BuildingService from "./pages/kepengelolaan/BuildingService";
 import MeteranAir from "./pages/kepengelolaan/MeteranAir";
 import Security from "./pages/kepengelolaan/Security";
 import HouseKeeping from "./pages/kepengelolaan/HouseKeeping";
