@@ -527,14 +527,14 @@ export default function AbonemenParkir() {
                     let success = 0, failed = 0;
                     const errors: string[] = [];
                     const today = new Date();
-                    const endDate = new Date(today.getFullYear(), today.getMonth() + 1, today.getDate());
                     for (const [i, r] of rows.entries()) {
                       try {
                         const created = await createMutation.mutateAsync({
                           vehicle_type: r.vehicle_type || "mobil",
                           vehicle_number: r.vehicle_number || "",
                           start_date: today.toISOString().split("T")[0],
-                          end_date: endDate.toISOString().split("T")[0],
+                          // Berakhir kosong saat pendaftaran; akan diisi oleh admin
+                          end_date: null,
                           monthly_fee: 0,
                           penghuni_name: r.penghuni_name,
                           unit_number: r.unit_number,
