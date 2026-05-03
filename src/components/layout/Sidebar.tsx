@@ -241,20 +241,35 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             )}
             {adminMenuItems.filter((item) => !item.adminOnly || isAdmin).map((item) => {
               const isActive = location.pathname === item.path;
+              const showBadge = (item as any).badgeKey === "chat" && chatUnread > 0;
               return (
                 <NavLink
                   key={item.path}
                   to={item.path}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group",
+                    "relative flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group",
                     isActive
                       ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
                       : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                   )}
                 >
-                  <item.icon className={cn("w-5 h-5 flex-shrink-0", collapsed && "mx-auto")} />
+                  <span className={cn("relative", collapsed && "mx-auto")}>
+                    <item.icon className="w-5 h-5 flex-shrink-0" />
+                    {showBadge && collapsed && (
+                      <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center shadow">
+                        {chatUnread > 99 ? "99+" : chatUnread}
+                      </span>
+                    )}
+                  </span>
                   {!collapsed && (
-                    <span className="font-medium text-sm truncate">{item.label}</span>
+                    <>
+                      <span className="font-medium text-sm truncate flex-1">{item.label}</span>
+                      {showBadge && (
+                        <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center shadow">
+                          {chatUnread > 99 ? "99+" : chatUnread}
+                        </span>
+                      )}
+                    </>
                   )}
                 </NavLink>
               );
