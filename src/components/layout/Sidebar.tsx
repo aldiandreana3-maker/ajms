@@ -79,6 +79,13 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const canAccessKepengelolaan = (isSuperAdmin || isAdmin) && !isLimitedAccess;
   const canAccessFinance = !!user; // All logged-in users can access Finance
 
+  // Live Chat unread badge for admins
+  const canSeeAdminChat = isAdmin;
+  const { data: convs = [] } = useAdminConversations();
+  const chatUnread = canSeeAdminChat
+    ? convs.reduce((sum, c) => sum + (c.unread_admin_count || 0), 0)
+    : 0;
+
   const handleLogout = async () => {
     await signOut();
     navigate("/auth");
