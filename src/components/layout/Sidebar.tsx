@@ -23,9 +23,11 @@ import {
   ShieldCheck,
   Sparkles,
   MessageCircle,
+  HardHat,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdminConversations } from "@/hooks/useLiveChat";
 import {
   Collapsible,
   CollapsibleContent,
@@ -48,6 +50,7 @@ const kepengelolaanItems = [
   { icon: Headphones, label: "Tenant Relation Office", path: "/kepengelolaan/tro" },
   { icon: Wallet, label: "Finance", path: "/kepengelolaan/finance" },
   { icon: UserCog, label: "HRD & GA", path: "/kepengelolaan/hrd-ga" },
+  { icon: HardHat, label: "Building Service", path: "/kepengelolaan/building-service" },
   { icon: Wrench, label: "Engineering", path: "/kepengelolaan/engineering" },
   { icon: ShieldCheck, label: "Security", path: "/kepengelolaan/security" },
   { icon: Sparkles, label: "House Keeping", path: "/kepengelolaan/housekeeping" },
@@ -55,7 +58,7 @@ const kepengelolaanItems = [
 
 const adminMenuItems = [
   { icon: Shield, label: "Manajemen User", path: "/manajemen-user", adminOnly: true },
-  { icon: MessageCircle, label: "Live Chat", path: "/live-chat-admin", adminOnly: true },
+  { icon: MessageCircle, label: "Live Chat", path: "/live-chat-admin", adminOnly: true, badgeKey: "chat" as const },
   { icon: Settings, label: "Aktivasi Sistem", path: "/aktivasi-sistem", adminOnly: false },
 ];
 
