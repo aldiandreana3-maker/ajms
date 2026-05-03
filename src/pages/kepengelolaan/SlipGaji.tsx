@@ -29,7 +29,7 @@ function useStaffProfiles() {
       const { data: roles, error: rolesErr } = await supabase
         .from("user_roles")
         .select("user_id, role")
-        .in("role", ["super_admin", "admin", "staff", "staff_tro", "staff_finance", "staff_hrd_ga", "staff_engineering", "staff_outsourcing_cleaning", "staff_outsourcing_security", "staff_outsourcing_parkir"]);
+        .in("role", ["super_admin", "admin", "staff", "staff_tro", "staff_finance", "staff_hrd_ga", "staff_engineering", "staff_building_service", "staff_outsourcing_cleaning", "staff_outsourcing_security", "staff_outsourcing_parkir"]);
       if (rolesErr) throw rolesErr;
       const userIds = [...new Set(roles?.map(r => r.user_id) || [])];
       if (userIds.length === 0) return [];
