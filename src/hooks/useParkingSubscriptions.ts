@@ -11,7 +11,7 @@ interface ParkingSubscription {
   vehicle_brand: string | null;
   vehicle_color: string | null;
   start_date: string;
-  end_date: string;
+  end_date: string | null;
   monthly_fee: number;
   is_active: boolean;
   created_at: string;
