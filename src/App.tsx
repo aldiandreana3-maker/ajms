@@ -142,6 +142,7 @@ const App = () => (
               <Route path="/kepengelolaan/hrd-ga/slip-gaji" element={guarded(<SlipGaji />)} />
               <Route path="/kepengelolaan/hrd-ga/data-karyawan" element={guarded(<DataKaryawan />)} />
               <Route path="/kepengelolaan/engineering" element={guarded(<Engineering />)} />
+              <Route path="/kepengelolaan/building-service" element={guarded(<BuildingService />)} />
               <Route path="/kepengelolaan/engineering/meteran-air" element={guarded(<MeteranAir />)} />
               <Route path="/kepengelolaan/laporan-inspeksi" element={guarded(<LaporanInspeksi />)} />
               <Route path="/kepengelolaan/laporan-kerja" element={guarded(<LaporanKerja />)} />
