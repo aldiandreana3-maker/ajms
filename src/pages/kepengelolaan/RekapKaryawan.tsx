@@ -196,7 +196,32 @@ export default function RekapKaryawan() {
 
           <TabsContent value="absensi">
             <Card>
-              <CardHeader><CardTitle>Rekap Kehadiran</CardTitle></CardHeader>
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle>Rekap Kehadiran</CardTitle>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select value={String(exportMonth)} onValueChange={(v) => setExportMonth(Number(v))}>
+                    <SelectTrigger className="w-[140px] h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"].map((m, i) => (
+                        <SelectItem key={i+1} value={String(i+1)}>{m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={String(exportYear)} onValueChange={(v) => setExportYear(Number(v))}>
+                    <SelectTrigger className="w-[100px] h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 5 }).map((_, i) => {
+                        const y = now.getFullYear() - 2 + i;
+                        return <SelectItem key={y} value={String(y)}>{y}</SelectItem>;
+                      })}
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={handleExportMonthly} disabled={exporting || !attendance} className="bg-success hover:bg-success/90 text-white">
+                    {exporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileSpreadsheet className="w-4 h-4 mr-2" />}
+                    Export Excel
+                  </Button>
+                </div>
+              </CardHeader>
               <CardContent>
                 {attLoading ? <div className="flex justify-center py-4"><Loader2 className="w-6 h-6 animate-spin" /></div> : (
                   <div className="overflow-auto">
