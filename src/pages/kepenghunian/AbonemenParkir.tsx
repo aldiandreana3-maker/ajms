@@ -459,7 +459,14 @@ export default function AbonemenParkir() {
                     onChange={(e) => setForm({ ...form, vehicle_number: e.target.value })}
                     placeholder="B 1234 ABC"
                     required
+                    className={plateAlreadyExists ? "border-destructive focus-visible:ring-destructive" : ""}
                   />
+                  {plateAlreadyExists && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      Plat ini sudah terdaftar. Silakan gunakan tombol "Perpanjang" pada daftar.
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
