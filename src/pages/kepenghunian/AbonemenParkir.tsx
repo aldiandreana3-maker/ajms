@@ -644,7 +644,7 @@ export default function AbonemenParkir() {
                           <TableHead className="h-9">Plat</TableHead>
                           <TableHead className="h-9">Berakhir</TableHead>
                           <TableHead className="h-9">Status</TableHead>
-                          {canCancelExtension && <TableHead className="h-9 text-right">Aksi</TableHead>}
+                          {canVerify && <TableHead className="h-9 text-right">Aksi</TableHead>}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -661,28 +661,67 @@ export default function AbonemenParkir() {
                                 {expired ? `Habis ${Math.abs(diffDays)} hari lalu` : diffDays === 0 ? "Habis hari ini" : `${diffDays} hari lagi`}
                               </Badge>
                             </TableCell>
-                            {canCancelExtension && (
+                            {canVerify && (
                               <TableCell className="py-2 text-right">
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  className="h-7 text-xs"
-                                  disabled={cancelExtendMutation.isPending}
-                                  onClick={() => {
-                                    if (window.confirm(`Batalkan perpanjangan untuk plat ${sub.vehicle_number}?`)) {
-                                      cancelExtendMutation.mutate({ id: sub.id, startDate: sub.start_date });
-                                    }
-                                  }}
-                                >
-                                  Batalkan Perpanjangan
-                                </Button>
+                                <div className="flex justify-end gap-1 flex-wrap">
+                                  <Select
+                                    disabled={extendMutation.isPending}
+                                    onValueChange={(v) => {
+                                      if (v === "manual_days") {
+                                        const input = prompt("Masukkan jumlah HARI perpanjangan:", "30");
+                                        if (!input) return;
+                                        const days = parseInt(input, 10);
+                                        if (!Number.isFinite(days) || days <= 0) {
+                                          toast.error("Jumlah hari tidak valid");
+                                          return;
+                                        }
+                                        // Snap ke tgl 5 berikutnya
+                                        const target = new Date();
+                                        target.setHours(0, 0, 0, 0);
+                                        target.setDate(target.getDate() + days);
+                                        if (target.getDate() > 5) target.setMonth(target.getMonth() + 1);
+                                        target.setDate(5);
+                                        extendMutation.mutate({ id: sub.id, customEndDate: target.toISOString().split("T")[0] });
+                                      } else {
+                                        const months = parseInt(v, 10);
+                                        // Patokan: dari hari ini (bukan dari end_date lama yang sudah expired)
+                                        extendMutation.mutate({ id: sub.id, months, currentEndDate: null });
+                                      }
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-7 w-[150px] text-xs bg-success text-success-foreground border-success hover:bg-success/90">
+                                      <SelectValue placeholder="Perpanjang Sekarang" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="manual_days">Manual (Hari)…</SelectItem>
+                                      <SelectItem value="1">1 Bulan (s/d tgl 5)</SelectItem>
+                                      <SelectItem value="2">2 Bulan (s/d tgl 5)</SelectItem>
+                                      <SelectItem value="3">3 Bulan (s/d tgl 5)</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  {canCancelExtension && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 text-xs text-destructive hover:text-destructive"
+                                      disabled={cancelExtendMutation.isPending}
+                                      onClick={() => {
+                                        if (window.confirm(`Batalkan perpanjangan untuk plat ${sub.vehicle_number}?`)) {
+                                          cancelExtendMutation.mutate({ id: sub.id, startDate: sub.start_date });
+                                        }
+                                      }}
+                                    >
+                                      Batalkan
+                                    </Button>
+                                  )}
+                                </div>
                               </TableCell>
                             )}
                           </TableRow>
                         ))}
                         {filteredNotifRows.length === 0 && (
                           <TableRow>
-                            <TableCell colSpan={canCancelExtension ? 6 : 5} className="text-center text-muted-foreground py-4 text-sm">
+                            <TableCell colSpan={canVerify ? 6 : 5} className="text-center text-muted-foreground py-4 text-sm">
                               Tidak ada notifikasi yang sesuai filter.
                             </TableCell>
                           </TableRow>
