@@ -259,8 +259,25 @@ export default function AbonemenParkir() {
 
   const isNewRegistration = form.request_type === "registrasi_baru";
 
+  // Set plat yang sudah terdaftar (untuk validasi duplikasi & feedback realtime di form)
+  const registeredPlates = useMemo(() => {
+    const set = new Set<string>();
+    (subscriptions || []).forEach((s: any) => {
+      if (s.vehicle_number) set.add(normalizePlate(s.vehicle_number));
+    });
+    return set;
+  }, [subscriptions]);
+
+  const plateAlreadyExists =
+    !!form.vehicle_number && registeredPlates.has(normalizePlate(form.vehicle_number));
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Validasi: plat tidak boleh dobel
+    if (plateAlreadyExists) {
+      toast.error(`Nomor plat "${form.vehicle_number}" sudah terdaftar. Gunakan menu Perpanjangan untuk plat ini.`);
+      return;
+    }
     const today = new Date();
 
     // Upload photos
