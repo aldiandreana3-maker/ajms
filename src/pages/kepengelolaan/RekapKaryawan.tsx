@@ -3,17 +3,20 @@ import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShieldAlert, ArrowLeft, Loader2, MapPin, ExternalLink } from "lucide-react";
+import { ShieldAlert, ArrowLeft, Loader2, MapPin, ExternalLink, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAllAttendance } from "@/hooks/useEmployeeAttendance";
 import { useEmployeeLeaves, useUpdateLeaveStatus } from "@/hooks/useEmployeeLeaves";
 import { useEmployeeOvertimes, useUpdateOvertimeStatus } from "@/hooks/useEmployeeOvertimes";
 import { useEmployeePermits, useUpdatePermitStatus } from "@/hooks/useEmployeePermits";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import ExcelJS from "exceljs";
+import { useToast } from "@/hooks/use-toast";
 
 function useProfiles() {
   return useQuery({
