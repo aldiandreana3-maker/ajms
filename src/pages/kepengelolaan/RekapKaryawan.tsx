@@ -3,17 +3,20 @@ import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShieldAlert, ArrowLeft, Loader2, MapPin, ExternalLink } from "lucide-react";
+import { ShieldAlert, ArrowLeft, Loader2, MapPin, ExternalLink, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAllAttendance } from "@/hooks/useEmployeeAttendance";
 import { useEmployeeLeaves, useUpdateLeaveStatus } from "@/hooks/useEmployeeLeaves";
 import { useEmployeeOvertimes, useUpdateOvertimeStatus } from "@/hooks/useEmployeeOvertimes";
 import { useEmployeePermits, useUpdatePermitStatus } from "@/hooks/useEmployeePermits";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import ExcelJS from "exceljs";
+import { useToast } from "@/hooks/use-toast";
 
 function useProfiles() {
   return useQuery({
@@ -28,8 +31,14 @@ function useProfiles() {
 
 export default function RekapKaryawan() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { isSuperAdmin, isAdmin, isLimitedAccess } = useAuth();
   const canAccess = (isSuperAdmin || isAdmin) && !isLimitedAccess;
+
+  const now = new Date();
+  const [exportMonth, setExportMonth] = useState(now.getMonth() + 1);
+  const [exportYear, setExportYear] = useState(now.getFullYear());
+  const [exporting, setExporting] = useState(false);
 
   const { data: profiles } = useProfiles();
   const { data: attendance, isLoading: attLoading } = useAllAttendance();
@@ -41,6 +50,103 @@ export default function RekapKaryawan() {
   const updatePermit = useUpdatePermitStatus();
 
   const getName = (userId: string) => profiles?.find(p => p.id === userId)?.full_name || "Unknown";
+
+  const fmtHHMM = (t: string | null) => t ? new Date(t).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false }) : "";
+
+  const handleExportMonthly = async () => {
+    if (!attendance || !profiles) return;
+    setExporting(true);
+    try {
+      const daysInMonth = new Date(exportYear, exportMonth, 0).getDate();
+      const monthStr = String(exportMonth).padStart(2, "0");
+      const yearStr = String(exportYear);
+
+      // Filter attendance for the selected month
+      const monthAtt = attendance.filter(a => {
+        const d = a.attendance_date; // YYYY-MM-DD
+        return d.startsWith(`${yearStr}-${monthStr}`);
+      });
+
+      // Unique users that have attendance OR all profiles - use users with any attendance in month, fallback to all
+      const userIds = Array.from(new Set(monthAtt.map(a => a.user_id)));
+      // Sort by name
+      const users = userIds
+        .map(id => ({ id, name: getName(id) }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      // Map: userId -> day -> {in, out}
+      const map: Record<string, Record<number, { in: string; out: string }>> = {};
+      monthAtt.forEach(a => {
+        const day = parseInt(a.attendance_date.split("-")[2], 10);
+        if (!map[a.user_id]) map[a.user_id] = {};
+        map[a.user_id][day] = {
+          in: fmtHHMM(a.check_in_time),
+          out: fmtHHMM(a.check_out_time),
+        };
+      });
+
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet(`Absensi ${monthStr}-${yearStr}`);
+
+      // Header rows
+      const headerRow = ["Nama"];
+      for (let d = 1; d <= daysInMonth; d++) {
+        headerRow.push(`${String(d).padStart(2, "0")}/${monthStr}`);
+      }
+      const hRow = ws.addRow(headerRow);
+      hRow.eachCell(cell => {
+        cell.font = { bold: true, size: 10 };
+        cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE5E7EB" } };
+        cell.border = {
+          top: { style: "thin" }, left: { style: "thin" },
+          bottom: { style: "thin" }, right: { style: "thin" },
+        };
+      });
+
+      // Data rows
+      users.forEach(u => {
+        const row: string[] = [u.name];
+        for (let d = 1; d <= daysInMonth; d++) {
+          const entry = map[u.id]?.[d];
+          row.push(entry ? `${entry.in}\n${entry.out}` : "");
+        }
+        const r = ws.addRow(row);
+        r.height = 30;
+        r.eachCell((cell, col) => {
+          cell.alignment = { horizontal: col === 1 ? "left" : "center", vertical: "middle", wrapText: true };
+          cell.font = { size: 9 };
+          cell.border = {
+            top: { style: "thin" }, left: { style: "thin" },
+            bottom: { style: "thin" }, right: { style: "thin" },
+          };
+        });
+      });
+
+      // Column widths
+      ws.getColumn(1).width = 25;
+      for (let i = 2; i <= daysInMonth + 1; i++) {
+        ws.getColumn(i).width = 9;
+      }
+      ws.views = [{ state: "frozen", xSplit: 1, ySplit: 1 }];
+
+      const buf = await wb.xlsx.writeBuffer();
+      const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Rekap-Absensi-${yearStr}-${monthStr}.xlsx`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      toast({ title: "Berhasil", description: "Rekap absensi bulanan berhasil di-export" });
+    } catch (e: any) {
+      toast({ title: "Gagal", description: e.message, variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
 
   if (!canAccess) {
     return (
@@ -90,7 +196,32 @@ export default function RekapKaryawan() {
 
           <TabsContent value="absensi">
             <Card>
-              <CardHeader><CardTitle>Rekap Kehadiran</CardTitle></CardHeader>
+              <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <CardTitle>Rekap Kehadiran</CardTitle>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select value={String(exportMonth)} onValueChange={(v) => setExportMonth(Number(v))}>
+                    <SelectTrigger className="w-[140px] h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"].map((m, i) => (
+                        <SelectItem key={i+1} value={String(i+1)}>{m}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={String(exportYear)} onValueChange={(v) => setExportYear(Number(v))}>
+                    <SelectTrigger className="w-[100px] h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 5 }).map((_, i) => {
+                        const y = now.getFullYear() - 2 + i;
+                        return <SelectItem key={y} value={String(y)}>{y}</SelectItem>;
+                      })}
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={handleExportMonthly} disabled={exporting || !attendance} className="bg-success hover:bg-success/90 text-white">
+                    {exporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileSpreadsheet className="w-4 h-4 mr-2" />}
+                    Export Excel
+                  </Button>
+                </div>
+              </CardHeader>
               <CardContent>
                 {attLoading ? <div className="flex justify-center py-4"><Loader2 className="w-6 h-6 animate-spin" /></div> : (
                   <div className="overflow-auto">
