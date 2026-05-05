@@ -555,8 +555,15 @@ export default function AbonemenParkir() {
                     let success = 0, failed = 0;
                     const errors: string[] = [];
                     const today = new Date();
+                    const seenInBatch = new Set<string>();
                     for (const [i, r] of rows.entries()) {
                       try {
+                        const plateKey = normalizePlate(r.vehicle_number || "");
+                        if (!plateKey) throw new Error("Nomor plat kosong");
+                        if (registeredPlates.has(plateKey) || seenInBatch.has(plateKey)) {
+                          throw new Error(`Plat "${r.vehicle_number}" sudah terdaftar (dilewati)`);
+                        }
+                        seenInBatch.add(plateKey);
                         const created = await createMutation.mutateAsync({
                           vehicle_type: r.vehicle_type || "mobil",
                           vehicle_number: r.vehicle_number || "",
