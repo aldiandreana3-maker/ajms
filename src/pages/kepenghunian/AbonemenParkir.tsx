@@ -532,9 +532,9 @@ export default function AbonemenParkir() {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+                <Button type="submit" className="w-full" disabled={createMutation.isPending || plateAlreadyExists}>
                   {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                  Simpan
+                  {plateAlreadyExists ? "Plat Sudah Terdaftar" : "Simpan"}
                 </Button>
               </form>
             </DialogContent>
