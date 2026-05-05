@@ -29,6 +29,10 @@ import { useFileUpload } from "@/hooks/useFileUpload";
 import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { parseImportTimestamp } from "@/lib/parseImportTimestamp";
+import { toast } from "sonner";
+
+// Normalisasi plat: uppercase + hilangkan semua spasi/strip agar "B 1234 ABC" == "b1234abc"
+const normalizePlate = (plate: string) => (plate || "").toUpperCase().replace(/[\s-]/g, "").trim();
 
 const parkingImportColumns: ImportColumn[] = [
   { header: "Timestamp", key: "created_at", example: "2024-05-15 10:30:00" },
