@@ -29,6 +29,10 @@ import { useFileUpload } from "@/hooks/useFileUpload";
 import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { parseImportTimestamp } from "@/lib/parseImportTimestamp";
+import { toast } from "sonner";
+
+// Normalisasi plat: uppercase + hilangkan semua spasi/strip agar "B 1234 ABC" == "b1234abc"
+const normalizePlate = (plate: string) => (plate || "").toUpperCase().replace(/[\s-]/g, "").trim();
 
 const parkingImportColumns: ImportColumn[] = [
   { header: "Timestamp", key: "created_at", example: "2024-05-15 10:30:00" },
@@ -255,8 +259,25 @@ export default function AbonemenParkir() {
 
   const isNewRegistration = form.request_type === "registrasi_baru";
 
+  // Set plat yang sudah terdaftar (untuk validasi duplikasi & feedback realtime di form)
+  const registeredPlates = useMemo(() => {
+    const set = new Set<string>();
+    (subscriptions || []).forEach((s: any) => {
+      if (s.vehicle_number) set.add(normalizePlate(s.vehicle_number));
+    });
+    return set;
+  }, [subscriptions]);
+
+  const plateAlreadyExists =
+    !!form.vehicle_number && registeredPlates.has(normalizePlate(form.vehicle_number));
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Validasi: plat tidak boleh dobel
+    if (plateAlreadyExists) {
+      toast.error(`Nomor plat "${form.vehicle_number}" sudah terdaftar. Gunakan menu Perpanjangan untuk plat ini.`);
+      return;
+    }
     const today = new Date();
 
     // Upload photos
@@ -438,7 +459,14 @@ export default function AbonemenParkir() {
                     onChange={(e) => setForm({ ...form, vehicle_number: e.target.value })}
                     placeholder="B 1234 ABC"
                     required
+                    className={plateAlreadyExists ? "border-destructive focus-visible:ring-destructive" : ""}
                   />
+                  {plateAlreadyExists && (
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      Plat ini sudah terdaftar. Silakan gunakan tombol "Perpanjang" pada daftar.
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -504,9 +532,9 @@ export default function AbonemenParkir() {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+                <Button type="submit" className="w-full" disabled={createMutation.isPending || plateAlreadyExists}>
                   {createMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                  Simpan
+                  {plateAlreadyExists ? "Plat Sudah Terdaftar" : "Simpan"}
                 </Button>
               </form>
             </DialogContent>
@@ -527,8 +555,15 @@ export default function AbonemenParkir() {
                     let success = 0, failed = 0;
                     const errors: string[] = [];
                     const today = new Date();
+                    const seenInBatch = new Set<string>();
                     for (const [i, r] of rows.entries()) {
                       try {
+                        const plateKey = normalizePlate(r.vehicle_number || "");
+                        if (!plateKey) throw new Error("Nomor plat kosong");
+                        if (registeredPlates.has(plateKey) || seenInBatch.has(plateKey)) {
+                          throw new Error(`Plat "${r.vehicle_number}" sudah terdaftar (dilewati)`);
+                        }
+                        seenInBatch.add(plateKey);
                         const created = await createMutation.mutateAsync({
                           vehicle_type: r.vehicle_type || "mobil",
                           vehicle_number: r.vehicle_number || "",
@@ -609,7 +644,7 @@ export default function AbonemenParkir() {
                           <TableHead className="h-9">Plat</TableHead>
                           <TableHead className="h-9">Berakhir</TableHead>
                           <TableHead className="h-9">Status</TableHead>
-                          {canCancelExtension && <TableHead className="h-9 text-right">Aksi</TableHead>}
+                          {canVerify && <TableHead className="h-9 text-right">Aksi</TableHead>}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -626,28 +661,67 @@ export default function AbonemenParkir() {
                                 {expired ? `Habis ${Math.abs(diffDays)} hari lalu` : diffDays === 0 ? "Habis hari ini" : `${diffDays} hari lagi`}
                               </Badge>
                             </TableCell>
-                            {canCancelExtension && (
+                            {canVerify && (
                               <TableCell className="py-2 text-right">
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  className="h-7 text-xs"
-                                  disabled={cancelExtendMutation.isPending}
-                                  onClick={() => {
-                                    if (window.confirm(`Batalkan perpanjangan untuk plat ${sub.vehicle_number}?`)) {
-                                      cancelExtendMutation.mutate({ id: sub.id, startDate: sub.start_date });
-                                    }
-                                  }}
-                                >
-                                  Batalkan Perpanjangan
-                                </Button>
+                                <div className="flex justify-end gap-1 flex-wrap">
+                                  <Select
+                                    disabled={extendMutation.isPending}
+                                    onValueChange={(v) => {
+                                      if (v === "manual_days") {
+                                        const input = prompt("Masukkan jumlah HARI perpanjangan:", "30");
+                                        if (!input) return;
+                                        const days = parseInt(input, 10);
+                                        if (!Number.isFinite(days) || days <= 0) {
+                                          toast.error("Jumlah hari tidak valid");
+                                          return;
+                                        }
+                                        // Snap ke tgl 5 berikutnya
+                                        const target = new Date();
+                                        target.setHours(0, 0, 0, 0);
+                                        target.setDate(target.getDate() + days);
+                                        if (target.getDate() > 5) target.setMonth(target.getMonth() + 1);
+                                        target.setDate(5);
+                                        extendMutation.mutate({ id: sub.id, customEndDate: target.toISOString().split("T")[0] });
+                                      } else {
+                                        const months = parseInt(v, 10);
+                                        // Patokan: dari hari ini (bukan dari end_date lama yang sudah expired)
+                                        extendMutation.mutate({ id: sub.id, months, currentEndDate: null });
+                                      }
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-7 w-[150px] text-xs bg-success text-success-foreground border-success hover:bg-success/90">
+                                      <SelectValue placeholder="Perpanjang Sekarang" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="manual_days">Manual (Hari)…</SelectItem>
+                                      <SelectItem value="1">1 Bulan (s/d tgl 5)</SelectItem>
+                                      <SelectItem value="2">2 Bulan (s/d tgl 5)</SelectItem>
+                                      <SelectItem value="3">3 Bulan (s/d tgl 5)</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  {canCancelExtension && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 text-xs text-destructive hover:text-destructive"
+                                      disabled={cancelExtendMutation.isPending}
+                                      onClick={() => {
+                                        if (window.confirm(`Batalkan perpanjangan untuk plat ${sub.vehicle_number}?`)) {
+                                          cancelExtendMutation.mutate({ id: sub.id, startDate: sub.start_date });
+                                        }
+                                      }}
+                                    >
+                                      Batalkan
+                                    </Button>
+                                  )}
+                                </div>
                               </TableCell>
                             )}
                           </TableRow>
                         ))}
                         {filteredNotifRows.length === 0 && (
                           <TableRow>
-                            <TableCell colSpan={canCancelExtension ? 6 : 5} className="text-center text-muted-foreground py-4 text-sm">
+                            <TableCell colSpan={canVerify ? 6 : 5} className="text-center text-muted-foreground py-4 text-sm">
                               Tidak ada notifikasi yang sesuai filter.
                             </TableCell>
                           </TableRow>
