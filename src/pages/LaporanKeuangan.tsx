@@ -283,6 +283,16 @@ const LaporanKeuangan = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {editStat && (
+        <EditStatDialog
+          open={!!editStat}
+          onOpenChange={(o) => !o && setEditStat(null)}
+          settingKey={editStat.key}
+          currentValue={editStat.value}
+          title={editStat.title}
+        />
+      )}
     </MainLayout>
   );
 };
