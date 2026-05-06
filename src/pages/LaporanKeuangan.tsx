@@ -62,6 +62,8 @@ const LaporanKeuangan = () => {
       change: "+12.5%",
       isPositive: true,
       icon: TrendingUp,
+      settingKey: "total_pendapatan_override",
+      rawValue: incomeOverride,
     },
     {
       title: "Total Pengeluaran",
@@ -69,6 +71,8 @@ const LaporanKeuangan = () => {
       change: "+5.2%",
       isPositive: false,
       icon: TrendingDown,
+      settingKey: "total_pengeluaran_override",
+      rawValue: expenseOverride,
     },
     {
       title: "Saldo Kas",
