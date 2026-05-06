@@ -117,7 +117,6 @@ export function PhotoUpload({
         onChange={handleFileChange}
         className="hidden"
         ref={fileInputRef}
-        capture="environment"
       />
 
       {preview || value ? (

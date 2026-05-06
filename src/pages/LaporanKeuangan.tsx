@@ -11,6 +11,7 @@ import {
   Trash2,
   Plus,
   Loader2,
+  Pencil,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -18,14 +19,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFinancialReport } from "@/hooks/useFinancialReport";
+import { useDashboardSettings } from "@/hooks/useDashboardSettings";
+import { EditStatDialog } from "@/components/dashboard/EditStatDialog";
 
 const LaporanKeuangan = () => {
   const { isSuperAdmin, isLimitedAccess } = useAuth();
   const { data: financialData, isLoading } = useFinancialReport();
+  const { data: settings = [] } = useDashboardSettings();
 
-  const income = financialData?.totalIncome || 0;
-  const expenses = financialData?.totalExpense || 0;
+  const incomeOverride = settings.find((s) => s.setting_key === "total_pendapatan_override")?.setting_value || 0;
+  const expenseOverride = settings.find((s) => s.setting_key === "total_pengeluaran_override")?.setting_value || 0;
+
+  const income = incomeOverride > 0 ? incomeOverride : (financialData?.totalIncome || 0);
+  const expenses = expenseOverride > 0 ? expenseOverride : (financialData?.totalExpense || 0);
   const balance = income - expenses;
+
+  const [editStat, setEditStat] = useState<{ key: string; title: string; value: number } | null>(null);
 
   const [reports, setReports] = useState([
     { id: "1", name: "Laporan Keuangan November 2025", date: "01 Des 2025", size: "2.4 MB" },
@@ -53,6 +62,8 @@ const LaporanKeuangan = () => {
       change: "+12.5%",
       isPositive: true,
       icon: TrendingUp,
+      settingKey: "total_pendapatan_override",
+      rawValue: incomeOverride,
     },
     {
       title: "Total Pengeluaran",
@@ -60,6 +71,8 @@ const LaporanKeuangan = () => {
       change: "+5.2%",
       isPositive: false,
       icon: TrendingDown,
+      settingKey: "total_pengeluaran_override",
+      rawValue: expenseOverride,
     },
     {
       title: "Saldo Kas",
@@ -128,10 +141,29 @@ const LaporanKeuangan = () => {
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">
-                    {item.title}
-                  </p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {item.title}
+                    </p>
+                    {isSuperAdmin && item.settingKey && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() =>
+                          setEditStat({
+                            key: item.settingKey!,
+                            title: item.title,
+                            value: item.rawValue || 0,
+                          })
+                        }
+                        title="Edit nilai"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
                   <p className="text-2xl font-bold text-foreground">{item.value}</p>
                   <p
                     className={`text-sm font-medium mt-2 ${
@@ -251,6 +283,16 @@ const LaporanKeuangan = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {editStat && (
+        <EditStatDialog
+          open={!!editStat}
+          onOpenChange={(o) => !o && setEditStat(null)}
+          settingKey={editStat.key}
+          currentValue={editStat.value}
+          title={editStat.title}
+        />
+      )}
     </MainLayout>
   );
 };

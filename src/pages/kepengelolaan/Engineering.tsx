@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShieldAlert, Droplets, ClipboardCheck, ArrowLeft, ArrowRight } from "lucide-react";
+import { ShieldAlert, Droplets, ClipboardCheck, ArrowLeft, ArrowRight, MessageSquareWarning } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -21,6 +21,13 @@ const engineeringServices = [
     color: "warning",
     path: "/kepengelolaan/laporan-inspeksi",
   },
+  {
+    icon: MessageSquareWarning,
+    title: "Keluhan Penghuni",
+    description: "Tindak lanjut keluhan teknis dari penghuni",
+    color: "danger",
+    path: "/kepenghunian/keluhan",
+  },
 ];
 
 const colorStyles = {
@@ -31,6 +38,10 @@ const colorStyles = {
   warning: {
     icon: "bg-warning text-warning-foreground",
     hover: "hover:border-warning/50",
+  },
+  danger: {
+    icon: "bg-destructive text-destructive-foreground",
+    hover: "hover:border-destructive/50",
   },
 };
 

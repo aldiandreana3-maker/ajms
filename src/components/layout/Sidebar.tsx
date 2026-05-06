@@ -83,7 +83,9 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const canSeeAdminChat = isAdmin;
   const { data: convs = [] } = useAdminConversations({ enabled: canSeeAdminChat });
   const chatUnread = canSeeAdminChat
-    ? convs.reduce((sum, c) => sum + (c.unread_admin_count || 0), 0)
+    ? convs
+        .filter((c) => !!c.last_message && c.last_message.trim().length > 0)
+        .reduce((sum, c) => sum + (c.unread_admin_count || 0), 0)
     : 0;
 
   const handleLogout = async () => {
