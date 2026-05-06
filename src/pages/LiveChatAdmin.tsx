@@ -18,7 +18,11 @@ import { ImportKnowledgeDialog } from "@/components/chat/ImportKnowledgeDialog";
 import { useQueryClient } from "@tanstack/react-query";
 
 function ChatInbox() {
-  const { data: conversations = [] } = useAdminConversations();
+  const { data: rawConversations = [] } = useAdminConversations();
+  // Hanya tampilkan percakapan yang sudah memiliki pesan (tidak kosong)
+  const conversations = rawConversations.filter(
+    (c) => !!c.last_message && c.last_message.trim().length > 0
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
   const [reply, setReply] = useState("");
   const { data: messages = [] } = useAdminMessages(activeId);
