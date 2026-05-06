@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useNews, useCreateNews, useUpdateNews, useDeleteNews } from "@/hooks/useNews";
 import { useAuth } from "@/contexts/AuthContext";
-import { Newspaper, Plus, Loader2, Edit, Trash2 } from "lucide-react";
+import { Newspaper, Plus, Loader2, Edit, Trash2, Upload, X, Image as ImageIcon } from "lucide-react";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { compressImage } from "@/lib/imageCompression";
+import { toast } from "sonner";
 
 export default function Berita() {
   const { data: news, isLoading } = useNews();
@@ -23,6 +26,8 @@ export default function Berita() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
     title: "",
@@ -40,6 +45,27 @@ export default function Berita() {
       status: "draft",
       scheduled_at: "",
     });
+  };
+
+  const handleImageUpload = async (file: File) => {
+    try {
+      setUploading(true);
+      const compressed = await compressImage(file).catch(() => file);
+      const ext = (compressed.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error } = await supabase.storage
+        .from("news-images")
+        .upload(path, compressed, { cacheControl: "3600", upsert: false });
+      if (error) throw error;
+      const { data } = supabase.storage.from("news-images").getPublicUrl(path);
+      setForm((f) => ({ ...f, image_url: data.publicUrl }));
+      toast.success("Gambar berhasil diunggah");
+    } catch (err: any) {
+      toast.error("Gagal unggah gambar: " + (err?.message || "unknown"));
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -138,12 +164,48 @@ export default function Berita() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>URL Gambar (opsional)</Label>
-                    <Input
-                      value={form.image_url}
-                      onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-                      placeholder="https://..."
+                    <Label>Gambar Berita (rekomendasi rasio 16:9)</Label>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleImageUpload(f);
+                      }}
                     />
+                    {form.image_url ? (
+                      <div className="relative rounded-xl overflow-hidden border border-border bg-muted aspect-[16/9]">
+                        <img src={form.image_url} alt="preview" className="w-full h-full object-cover" />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 h-7 w-7"
+                          onClick={() => setForm({ ...form, image_url: "" })}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="w-full aspect-[16/9] border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-2 text-muted-foreground hover:bg-muted/50 transition-colors"
+                      >
+                        {uploading ? (
+                          <Loader2 className="w-6 h-6 animate-spin" />
+                        ) : (
+                          <>
+                            <Upload className="w-6 h-6" />
+                            <span className="text-sm font-medium">Klik untuk upload gambar</span>
+                            <span className="text-xs">PNG, JPG (max 5MB)</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -190,6 +252,7 @@ export default function Berita() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[120px]">Gambar</TableHead>
                     <TableHead>Judul</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Dibuat</TableHead>
@@ -200,6 +263,15 @@ export default function Berita() {
                 <TableBody>
                   {news?.map((n) => (
                     <TableRow key={n.id}>
+                      <TableCell>
+                        {n.image_url ? (
+                          <img src={n.image_url} alt={n.title} className="w-24 h-14 object-cover rounded-md border border-border" />
+                        ) : (
+                          <div className="w-24 h-14 rounded-md border border-dashed border-border flex items-center justify-center text-muted-foreground">
+                            <ImageIcon className="w-5 h-5" />
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="max-w-md">
                           <p className="font-medium">{n.title}</p>
@@ -229,7 +301,7 @@ export default function Berita() {
                   ))}
                   {news?.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={isSuperAdmin ? 5 : 4} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={isSuperAdmin ? 6 : 5} className="text-center text-muted-foreground py-8">
                         Belum ada berita
                       </TableCell>
                     </TableRow>
