@@ -11,8 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useNews, useCreateNews, useUpdateNews, useDeleteNews } from "@/hooks/useNews";
 import { useAuth } from "@/contexts/AuthContext";
-import { Newspaper, Plus, Loader2, Edit, Trash2 } from "lucide-react";
+import { Newspaper, Plus, Loader2, Edit, Trash2, Upload, X, Image as ImageIcon } from "lucide-react";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { compressImage } from "@/lib/imageCompression";
+import { toast } from "sonner";
 
 export default function Berita() {
   const { data: news, isLoading } = useNews();
