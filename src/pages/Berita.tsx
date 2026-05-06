@@ -252,6 +252,7 @@ export default function Berita() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-[120px]">Gambar</TableHead>
                     <TableHead>Judul</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Dibuat</TableHead>
@@ -262,6 +263,15 @@ export default function Berita() {
                 <TableBody>
                   {news?.map((n) => (
                     <TableRow key={n.id}>
+                      <TableCell>
+                        {n.image_url ? (
+                          <img src={n.image_url} alt={n.title} className="w-24 h-14 object-cover rounded-md border border-border" />
+                        ) : (
+                          <div className="w-24 h-14 rounded-md border border-dashed border-border flex items-center justify-center text-muted-foreground">
+                            <ImageIcon className="w-5 h-5" />
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="max-w-md">
                           <p className="font-medium">{n.title}</p>
