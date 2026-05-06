@@ -19,7 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFinancialReport } from "@/hooks/useFinancialReport";
-import { useDashboardSettings, useUpdateDashboardSetting } from "@/hooks/useDashboardSettings";
+import { useDashboardSettings } from "@/hooks/useDashboardSettings";
 import { EditStatDialog } from "@/components/dashboard/EditStatDialog";
 
 const LaporanKeuangan = () => {
