@@ -141,10 +141,29 @@ const LaporanKeuangan = () => {
               style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">
-                    {item.title}
-                  </p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {item.title}
+                    </p>
+                    {isSuperAdmin && item.settingKey && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() =>
+                          setEditStat({
+                            key: item.settingKey!,
+                            title: item.title,
+                            value: item.rawValue || 0,
+                          })
+                        }
+                        title="Edit nilai"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
                   <p className="text-2xl font-bold text-foreground">{item.value}</p>
                   <p
                     className={`text-sm font-medium mt-2 ${
