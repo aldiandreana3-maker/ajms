@@ -301,7 +301,7 @@ export default function Berita() {
                   ))}
                   {news?.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={isSuperAdmin ? 5 : 4} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={isSuperAdmin ? 6 : 5} className="text-center text-muted-foreground py-8">
                         Belum ada berita
                       </TableCell>
                     </TableRow>
