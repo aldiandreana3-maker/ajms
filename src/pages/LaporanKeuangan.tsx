@@ -11,6 +11,7 @@ import {
   Trash2,
   Plus,
   Loader2,
+  Pencil,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -18,14 +19,22 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFinancialReport } from "@/hooks/useFinancialReport";
+import { useDashboardSettings, useUpdateDashboardSetting } from "@/hooks/useDashboardSettings";
+import { EditStatDialog } from "@/components/dashboard/EditStatDialog";
 
 const LaporanKeuangan = () => {
   const { isSuperAdmin, isLimitedAccess } = useAuth();
   const { data: financialData, isLoading } = useFinancialReport();
+  const { data: settings = [] } = useDashboardSettings();
 
-  const income = financialData?.totalIncome || 0;
-  const expenses = financialData?.totalExpense || 0;
+  const incomeOverride = settings.find((s) => s.setting_key === "total_pendapatan_override")?.setting_value || 0;
+  const expenseOverride = settings.find((s) => s.setting_key === "total_pengeluaran_override")?.setting_value || 0;
+
+  const income = incomeOverride > 0 ? incomeOverride : (financialData?.totalIncome || 0);
+  const expenses = expenseOverride > 0 ? expenseOverride : (financialData?.totalExpense || 0);
   const balance = income - expenses;
+
+  const [editStat, setEditStat] = useState<{ key: string; title: string; value: number } | null>(null);
 
   const [reports, setReports] = useState([
     { id: "1", name: "Laporan Keuangan November 2025", date: "01 Des 2025", size: "2.4 MB" },
