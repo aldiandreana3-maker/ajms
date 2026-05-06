@@ -164,12 +164,48 @@ export default function Berita() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>URL Gambar (opsional)</Label>
-                    <Input
-                      value={form.image_url}
-                      onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-                      placeholder="https://..."
+                    <Label>Gambar Berita (rekomendasi rasio 16:9)</Label>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleImageUpload(f);
+                      }}
                     />
+                    {form.image_url ? (
+                      <div className="relative rounded-xl overflow-hidden border border-border bg-muted aspect-[16/9]">
+                        <img src={form.image_url} alt="preview" className="w-full h-full object-cover" />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 h-7 w-7"
+                          onClick={() => setForm({ ...form, image_url: "" })}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="w-full aspect-[16/9] border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-2 text-muted-foreground hover:bg-muted/50 transition-colors"
+                      >
+                        {uploading ? (
+                          <Loader2 className="w-6 h-6 animate-spin" />
+                        ) : (
+                          <>
+                            <Upload className="w-6 h-6" />
+                            <span className="text-sm font-medium">Klik untuk upload gambar</span>
+                            <span className="text-xs">PNG, JPG (max 5MB)</span>
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
