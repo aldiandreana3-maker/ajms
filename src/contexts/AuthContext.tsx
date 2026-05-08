@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAgent = role === "agent";
   const isPenghuni = role === "penghuni";
   const isLimitedAccess = role === "penghuni" || role === "agent";
-  const isStaff = role === "staff" || role === "staff_tro" || role === "staff_finance" || role === "staff_hrd_ga" || role === "staff_engineering" || role === "staff_building_service" || role === "staff_outsourcing_cleaning" || role === "staff_outsourcing_security" || role === "staff_outsourcing_parkir" || isAdmin;
+  const isStaff = role === "staff" || role === "staff_tro" || role === "staff_finance" || role === "staff_hrd_ga" || role === "staff_engineering" || role === "staff_building_service" || role === "staff_outsourcing_cleaning" || role === "staff_outsourcing_security" || role === "staff_outsourcing_parkir" || role === "staff_purchasing" || isAdmin;
 
   return (
     <AuthContext.Provider
