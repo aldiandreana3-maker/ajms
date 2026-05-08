@@ -112,39 +112,6 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
     scheduled_at: n.scheduled_at,
   })) || [];
 
-  // Public view for unauthenticated visitors
-  if (!user) {
-    return (
-      <div className="space-y-6">
-        <div className="text-center py-8">
-          <h1 className="text-2xl font-bold text-foreground">
-            Selamat Datang di AJMS!
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Sistem Manajemen Apartemen The Jarrdin
-          </p>
-        </div>
-        {newsLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          </div>
-        ) : (
-          <NewsSlider 
-            news={formattedNews.length > 0 ? formattedNews : [
-              {
-                id: 0,
-                title: "Belum ada berita",
-                excerpt: "Tambahkan berita melalui menu Berita",
-                date: new Date().toLocaleDateString("id-ID"),
-                category: "Info",
-              }
-            ]} 
-          />
-        )}
-      </div>
-    );
-  }
-
   if (statsLoading || settingsLoading) {
     return (
       <div className="flex items-center justify-center py-12">
