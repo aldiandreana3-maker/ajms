@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Plus, Truck, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Truck, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFileUpload } from "@/hooks/useFileUpload";
@@ -18,7 +18,7 @@ import { useFileUpload } from "@/hooks/useFileUpload";
 export default function GoodsReceipts() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { user } = useAuth();
+  const { uploadFile, uploading } = useFileUpload({ bucket: "kepenghunian-files", folder: "purchasing-grn" });
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<any>({ po_number: "", supplier_name: "", receipt_date: new Date().toISOString().slice(0,10), received_by_name: "", condition_notes: "", photo_url: "" });
 
@@ -35,7 +35,7 @@ export default function GoodsReceipts() {
     mutationFn: async () => {
       if (!form.po_number?.trim()) throw new Error("No. PO wajib");
       const grn_number = `GRN-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${Math.floor(Math.random()*9000+1000)}`;
-      const payload = { ...form, grn_number, received_by: user?.id };
+      const payload = { ...form, grn_number };
       const { error } = await (supabase as any).from("goods_receipts").insert(payload);
       if (error) throw error;
     },
@@ -112,7 +112,12 @@ export default function GoodsReceipts() {
               <div className="space-y-2"><Label>Catatan Kondisi Barang</Label><Textarea rows={3} value={form.condition_notes} onChange={e => setForm({ ...form, condition_notes: e.target.value })} /></div>
               <div className="space-y-2">
                 <Label>Foto Bukti Penerimaan</Label>
-                <PhotoUpload bucket="kepenghunian-files" folder="purchasing-grn" value={form.photo_url} onChange={(url) => setForm({ ...form, photo_url: url })} />
+                <Input type="file" accept="image/*" onChange={async (e) => {
+                  const f = e.target.files?.[0]; if (!f) return;
+                  const path = await uploadFile(f);
+                  if (path) setForm({ ...form, photo_url: path });
+                }} disabled={uploading} />
+                {form.photo_url && <p className="text-xs text-muted-foreground">Tersimpan: {form.photo_url}</p>}
               </div>
             </div>
             <DialogFooter>
