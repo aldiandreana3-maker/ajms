@@ -24,6 +24,7 @@ import {
   Sparkles,
   MessageCircle,
   HardHat,
+  ShoppingCart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -50,6 +51,7 @@ const kepengelolaanItems = [
   { icon: Headphones, label: "Tenant Relation Office", path: "/kepengelolaan/tro" },
   { icon: Wallet, label: "Finance", path: "/kepengelolaan/finance" },
   { icon: UserCog, label: "HRD & GA", path: "/kepengelolaan/hrd-ga" },
+  { icon: ShoppingCart, label: "Purchasing", path: "/kepengelolaan/purchasing" },
   { icon: HardHat, label: "Building Service", path: "/kepengelolaan/building-service" },
   { icon: Wrench, label: "Engineering", path: "/kepengelolaan/engineering" },
   { icon: ShieldCheck, label: "Security", path: "/kepengelolaan/security" },
@@ -76,7 +78,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   );
   
   // Hide kepengelolaan from penghuni and agent, except Finance
-  const canAccessKepengelolaan = (isSuperAdmin || isAdmin) && !isLimitedAccess;
+  const canAccessKepengelolaan = ((isSuperAdmin || isAdmin) && !isLimitedAccess) || role === "staff_purchasing";
   const canAccessFinance = !!user; // All logged-in users can access Finance
 
   // Live Chat unread badge for admins

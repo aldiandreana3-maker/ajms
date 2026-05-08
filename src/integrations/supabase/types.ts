@@ -1727,6 +1727,95 @@ export type Database = {
           },
         ]
       }
+      goods_receipt_items: {
+        Row: {
+          created_at: string
+          grn_id: string | null
+          id: string
+          item_name: string
+          notes: string | null
+          quantity_ordered: number | null
+          quantity_received: number
+          unit: string
+        }
+        Insert: {
+          created_at?: string
+          grn_id?: string | null
+          id?: string
+          item_name: string
+          notes?: string | null
+          quantity_ordered?: number | null
+          quantity_received?: number
+          unit?: string
+        }
+        Update: {
+          created_at?: string
+          grn_id?: string | null
+          id?: string
+          item_name?: string
+          notes?: string | null
+          quantity_ordered?: number | null
+          quantity_received?: number
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goods_receipt_items_grn_id_fkey"
+            columns: ["grn_id"]
+            isOneToOne: false
+            referencedRelation: "goods_receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goods_receipts: {
+        Row: {
+          condition_notes: string | null
+          created_at: string
+          grn_number: string
+          id: string
+          photo_url: string | null
+          po_id: string | null
+          po_number: string | null
+          receipt_date: string
+          received_by: string | null
+          received_by_name: string | null
+          status: string
+          supplier_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          condition_notes?: string | null
+          created_at?: string
+          grn_number: string
+          id?: string
+          photo_url?: string | null
+          po_id?: string | null
+          po_number?: string | null
+          receipt_date?: string
+          received_by?: string | null
+          received_by_name?: string | null
+          status?: string
+          supplier_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          condition_notes?: string | null
+          created_at?: string
+          grn_number?: string
+          id?: string
+          photo_url?: string | null
+          po_id?: string | null
+          po_number?: string | null
+          receipt_date?: string
+          received_by?: string | null
+          received_by_name?: string | null
+          status?: string
+          supplier_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       housekeeping_tasks: {
         Row: {
           area_name: string
@@ -2309,6 +2398,196 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_order_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_name: string
+          po_id: string | null
+          price: number
+          quantity: number
+          total: number
+          unit: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_name: string
+          po_id?: string | null
+          price?: number
+          quantity?: number
+          total?: number
+          unit?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_name?: string
+          po_id?: string | null
+          price?: number
+          quantity?: number
+          total?: number
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_items_po_id_fkey"
+            columns: ["po_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expected_date: string | null
+          id: string
+          notes: string | null
+          order_date: string
+          po_number: string
+          pr_id: string | null
+          pr_number: string | null
+          status: string
+          subtotal: number
+          supplier_id: string | null
+          supplier_name: string | null
+          tax: number
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expected_date?: string | null
+          id?: string
+          notes?: string | null
+          order_date?: string
+          po_number: string
+          pr_id?: string | null
+          pr_number?: string | null
+          status?: string
+          subtotal?: number
+          supplier_id?: string | null
+          supplier_name?: string | null
+          tax?: number
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expected_date?: string | null
+          id?: string
+          notes?: string | null
+          order_date?: string
+          po_number?: string
+          pr_id?: string | null
+          pr_number?: string | null
+          status?: string
+          subtotal?: number
+          supplier_id?: string | null
+          supplier_name?: string | null
+          tax?: number
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      purchase_request_items: {
+        Row: {
+          created_at: string
+          estimated_price: number | null
+          id: string
+          item_name: string
+          notes: string | null
+          pr_id: string | null
+          quantity: number
+          unit: string
+        }
+        Insert: {
+          created_at?: string
+          estimated_price?: number | null
+          id?: string
+          item_name: string
+          notes?: string | null
+          pr_id?: string | null
+          quantity?: number
+          unit?: string
+        }
+        Update: {
+          created_at?: string
+          estimated_price?: number | null
+          id?: string
+          item_name?: string
+          notes?: string | null
+          pr_id?: string | null
+          quantity?: number
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_request_items_pr_id_fkey"
+            columns: ["pr_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          description: string | null
+          id: string
+          needed_date: string | null
+          notes: string | null
+          pr_number: string
+          priority: string
+          requester_division: string
+          requester_id: string | null
+          requester_name: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          needed_date?: string | null
+          notes?: string | null
+          pr_number: string
+          priority?: string
+          requester_division: string
+          requester_id?: string | null
+          requester_name?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          needed_date?: string | null
+          notes?: string | null
+          pr_number?: string
+          priority?: string
+          requester_division?: string
+          requester_id?: string | null
+          requester_name?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       reconciliations: {
         Row: {
           account_id: string
@@ -2406,6 +2685,54 @@ export type Database = {
           patrol_time?: string
           photo_url?: string | null
           status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          category: string | null
+          contact_person: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          npwp: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          category?: string | null
+          contact_person?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          npwp?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          category?: string | null
+          contact_person?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          npwp?: string | null
+          phone?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -2866,6 +3193,7 @@ export type Database = {
         | "master_dev"
         | "staff_kasir"
         | "staff_building_service"
+        | "staff_purchasing"
       bill_type:
         | "ipl"
         | "kebersihan"
@@ -3024,6 +3352,7 @@ export const Constants = {
         "master_dev",
         "staff_kasir",
         "staff_building_service",
+        "staff_purchasing",
       ],
       bill_type: [
         "ipl",
