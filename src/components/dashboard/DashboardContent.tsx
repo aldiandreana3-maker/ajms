@@ -8,6 +8,7 @@ import {
   Wrench,
   Car,
   Loader2,
+  Newspaper,
 } from "lucide-react";
 import { StatCard } from "./StatCard";
 import { NewsSlider } from "./NewsSlider";
