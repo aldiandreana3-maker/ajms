@@ -114,7 +114,7 @@ export function NewsDetailDialog({ news, open, onOpenChange }: NewsDetailDialogP
         </div>
 
         {/* Sticky footer */}
-        <div className="sticky bottom-0 px-4 sm:px-6 py-3 bg-background/95 backdrop-blur border-t border-border">
+        <div className="flex-shrink-0 px-4 sm:px-6 py-3 bg-background/95 backdrop-blur border-t border-border">
           <Button
             variant="outline"
             className="w-full rounded-full h-12"
