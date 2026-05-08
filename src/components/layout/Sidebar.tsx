@@ -78,7 +78,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   );
   
   // Hide kepengelolaan from penghuni and agent, except Finance
-  const canAccessKepengelolaan = (isSuperAdmin || isAdmin) && !isLimitedAccess;
+  const canAccessKepengelolaan = ((isSuperAdmin || isAdmin) && !isLimitedAccess) || role === "staff_purchasing";
   const canAccessFinance = !!user; // All logged-in users can access Finance
 
   // Live Chat unread badge for admins
