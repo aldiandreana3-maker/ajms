@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, Plus, Truck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { PhotoUpload } from "@/components/shared/PhotoUpload";
+import { useFileUpload } from "@/hooks/useFileUpload";
 
 export default function GoodsReceipts() {
   const navigate = useNavigate();
