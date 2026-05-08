@@ -128,8 +128,13 @@ export function useCreateParkingSubscription() {
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
       toast.success("Abonemen parkir berhasil ditambahkan");
     },
-    onError: (error) => {
-      toast.error("Gagal menambahkan abonemen: " + error.message);
+    onError: (error: any) => {
+      const msg = error?.message || "";
+      if (msg.toLowerCase().includes("sudah terdaftar") || error?.code === "23505") {
+        toast.error("Nomor plat sudah terdaftar dan masih aktif. Gunakan menu Perpanjangan.");
+      } else {
+        toast.error("Gagal menambahkan abonemen: " + msg);
+      }
     },
   });
 }
