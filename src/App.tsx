@@ -54,6 +54,11 @@ import RekapKaryawan from "./pages/kepengelolaan/RekapKaryawan";
 import SlipGaji from "./pages/kepengelolaan/SlipGaji";
 import DataKaryawan from "./pages/kepengelolaan/DataKaryawan";
 import Engineering from "./pages/kepengelolaan/Engineering";
+import Purchasing from "./pages/kepengelolaan/Purchasing";
+import PurchasingSuppliers from "./pages/kepengelolaan/purchasing/Suppliers";
+import PurchaseRequests from "./pages/kepengelolaan/purchasing/PurchaseRequests";
+import PurchaseOrders from "./pages/kepengelolaan/purchasing/PurchaseOrders";
+import GoodsReceipts from "./pages/kepengelolaan/purchasing/GoodsReceipts";
 import BuildingService from "./pages/kepengelolaan/BuildingService";
 import MeteranAir from "./pages/kepengelolaan/MeteranAir";
 import Security from "./pages/kepengelolaan/Security";
@@ -142,6 +147,11 @@ const App = () => (
               <Route path="/kepengelolaan/hrd-ga/slip-gaji" element={guarded(<SlipGaji />)} />
               <Route path="/kepengelolaan/hrd-ga/data-karyawan" element={guarded(<DataKaryawan />)} />
               <Route path="/kepengelolaan/engineering" element={guarded(<Engineering />)} />
+              <Route path="/kepengelolaan/purchasing" element={guarded(<Purchasing />)} />
+              <Route path="/kepengelolaan/purchasing/supplier" element={guarded(<PurchasingSuppliers />)} />
+              <Route path="/kepengelolaan/purchasing/permintaan" element={guarded(<PurchaseRequests />)} />
+              <Route path="/kepengelolaan/purchasing/po" element={guarded(<PurchaseOrders />)} />
+              <Route path="/kepengelolaan/purchasing/penerimaan" element={guarded(<GoodsReceipts />)} />
               <Route path="/kepengelolaan/building-service" element={guarded(<BuildingService />)} />
               <Route path="/kepengelolaan/engineering/meteran-air" element={guarded(<MeteranAir />)} />
               <Route path="/kepengelolaan/laporan-inspeksi" element={guarded(<LaporanInspeksi />)} />
