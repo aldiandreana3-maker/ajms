@@ -64,10 +64,10 @@ export function NewsDetailDialog({ news, open, onOpenChange }: NewsDetailDialogP
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-3xl w-[95vw] sm:w-full max-h-[92vh] p-0 overflow-hidden gap-0 [&>button]:hidden"
+        className="max-w-3xl w-[95vw] sm:w-full max-h-[92vh] p-0 overflow-hidden gap-0 flex flex-col [&>button]:hidden"
       >
         {/* Sticky header */}
-        <div className="sticky top-0 z-10 flex items-center justify-between px-4 sm:px-6 py-3 bg-background/95 backdrop-blur border-b border-border">
+        <div className="flex-shrink-0 flex items-center justify-between px-4 sm:px-6 py-3 bg-background/95 backdrop-blur border-b border-border">
           <Button
             variant="ghost"
             size="icon"
@@ -82,7 +82,7 @@ export function NewsDetailDialog({ news, open, onOpenChange }: NewsDetailDialogP
         </div>
 
         {/* Scrollable body */}
-        <div className="overflow-y-auto px-4 sm:px-8 py-6 space-y-5">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-8 py-6 space-y-5">
           <div className="space-y-2">
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
               {news.title}
