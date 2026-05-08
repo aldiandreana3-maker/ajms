@@ -2866,6 +2866,7 @@ export type Database = {
         | "master_dev"
         | "staff_kasir"
         | "staff_building_service"
+        | "staff_purchasing"
       bill_type:
         | "ipl"
         | "kebersihan"
@@ -3024,6 +3025,7 @@ export const Constants = {
         "master_dev",
         "staff_kasir",
         "staff_building_service",
+        "staff_purchasing",
       ],
       bill_type: [
         "ipl",
