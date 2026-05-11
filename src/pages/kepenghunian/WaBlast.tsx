@@ -5,6 +5,7 @@ import * as XLSX from "xlsx";
 import {
   ArrowLeft,
   Send,
+  Download,
   Upload,
   Users,
   Smile,
@@ -433,6 +434,40 @@ export default function WaBlast() {
   const cancelBlast = () => {
     cancelRef.current = true;
     toast.info("Membatalkan blast...");
+  };
+
+  const statusLabel = (s: SendStatus) =>
+    s === "success" ? "Berhasil"
+    : s === "failed" ? "Gagal"
+    : s === "cancelled" ? "Tidak Terkirim"
+    : s === "sending" ? "Mengirim" : "Pending";
+
+  const downloadReport = (mode: "failed" | "all") => {
+    const rows = (mode === "failed"
+      ? statuses.filter((s) => s.status === "failed" || s.status === "cancelled")
+      : statuses
+    ).map((s, idx) => ({
+      No: idx + 1,
+      Nama: s.name || "-",
+      Unit: s.unit || "-",
+      Nomor: s.phone,
+      Status: statusLabel(s.status),
+      Keterangan: s.error || (s.status === "cancelled" ? "Dibatalkan" : "-"),
+    }));
+    if (!rows.length) {
+      toast.error("Tidak ada data untuk diunduh");
+      return;
+    }
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws["!cols"] = [{ wch: 5 }, { wch: 22 }, { wch: 10 }, { wch: 16 }, { wch: 16 }, { wch: 40 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Laporan WA Blast");
+    const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    const fname = mode === "failed"
+      ? `wa-blast-gagal-${ts}.xlsx`
+      : `wa-blast-laporan-${ts}.xlsx`;
+    XLSX.writeFile(wb, fname);
+    toast.success(`Laporan diunduh (${rows.length} baris)`);
   };
 
   // ---- Preview spintax variants ----
@@ -938,7 +973,28 @@ export default function WaBlast() {
           {/* Status list */}
           {statuses.length > 0 && (
             <Card className="p-5">
-              <h3 className="font-bold mb-3">Status Pengiriman</h3>
+              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                <h3 className="font-bold">Status Pengiriman</h3>
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => downloadReport("failed")}
+                    disabled={!stats.failed && !stats.cancelled}
+                  >
+                    <Download className="w-3.5 h-3.5 mr-1" />
+                    Gagal/Tidak Terkirim ({stats.failed + stats.cancelled})
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => downloadReport("all")}
+                  >
+                    <Download className="w-3.5 h-3.5 mr-1" />
+                    Laporan Lengkap
+                  </Button>
+                </div>
+              </div>
               <ScrollArea className="h-64">
                 <div className="space-y-1">
                   {statuses.map((s) => (
@@ -948,6 +1004,9 @@ export default function WaBlast() {
                     >
                       <span className="truncate">
                         {s.name || "—"} · {s.phone}
+                        {s.error && (
+                          <span className="text-destructive ml-2">({s.error})</span>
+                        )}
                       </span>
                       <Badge
                         variant="outline"
