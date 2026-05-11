@@ -436,6 +436,40 @@ export default function WaBlast() {
     toast.info("Membatalkan blast...");
   };
 
+  const statusLabel = (s: SendStatus) =>
+    s === "success" ? "Berhasil"
+    : s === "failed" ? "Gagal"
+    : s === "cancelled" ? "Tidak Terkirim"
+    : s === "sending" ? "Mengirim" : "Pending";
+
+  const downloadReport = (mode: "failed" | "all") => {
+    const rows = (mode === "failed"
+      ? statuses.filter((s) => s.status === "failed" || s.status === "cancelled")
+      : statuses
+    ).map((s, idx) => ({
+      No: idx + 1,
+      Nama: s.name || "-",
+      Unit: s.unit || "-",
+      Nomor: s.phone,
+      Status: statusLabel(s.status),
+      Keterangan: s.error || (s.status === "cancelled" ? "Dibatalkan" : "-"),
+    }));
+    if (!rows.length) {
+      toast.error("Tidak ada data untuk diunduh");
+      return;
+    }
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws["!cols"] = [{ wch: 5 }, { wch: 22 }, { wch: 10 }, { wch: 16 }, { wch: 16 }, { wch: 40 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Laporan WA Blast");
+    const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    const fname = mode === "failed"
+      ? `wa-blast-gagal-${ts}.xlsx`
+      : `wa-blast-laporan-${ts}.xlsx`;
+    XLSX.writeFile(wb, fname);
+    toast.success(`Laporan diunduh (${rows.length} baris)`);
+  };
+
   // ---- Preview spintax variants ----
   const sampleContact: WaContact =
     contacts[0] ?? {
