@@ -939,7 +939,28 @@ export default function WaBlast() {
           {/* Status list */}
           {statuses.length > 0 && (
             <Card className="p-5">
-              <h3 className="font-bold mb-3">Status Pengiriman</h3>
+              <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+                <h3 className="font-bold">Status Pengiriman</h3>
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => downloadReport("failed")}
+                    disabled={!stats.failed && !stats.cancelled}
+                  >
+                    <Download className="w-3.5 h-3.5 mr-1" />
+                    Gagal/Tidak Terkirim ({stats.failed + stats.cancelled})
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => downloadReport("all")}
+                  >
+                    <Download className="w-3.5 h-3.5 mr-1" />
+                    Laporan Lengkap
+                  </Button>
+                </div>
+              </div>
               <ScrollArea className="h-64">
                 <div className="space-y-1">
                   {statuses.map((s) => (
@@ -949,6 +970,9 @@ export default function WaBlast() {
                     >
                       <span className="truncate">
                         {s.name || "—"} · {s.phone}
+                        {s.error && (
+                          <span className="text-destructive ml-2">({s.error})</span>
+                        )}
                       </span>
                       <Badge
                         variant="outline"
