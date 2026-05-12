@@ -23,8 +23,8 @@ const formatCurrency = (amount: number) =>
 export default function Tagihan() {
   const { isAdmin, isSuperAdmin, isLimitedAccess } = useAuth();
   const canAccess = (isSuperAdmin || isAdmin) && !isLimitedAccess;
-
-  const { data: bills, isLoading } = useBills();
+  const { data: counts } = useBillStatusCounts();
+  const [exporting, setExporting] = useState(false);
 
   if (!canAccess) {
     return (
@@ -40,46 +40,60 @@ export default function Tagihan() {
     );
   }
 
-  const unpaidBills = bills?.filter((b) => b.payment_status === "unpaid") || [];
-  const partialBills = bills?.filter((b) => b.payment_status === "partial") || [];
-  const paidBills = bills?.filter((b) => b.payment_status === "paid") || [];
-
-  // Recap totals for paid bills
-  const totalPaidAmount = paidBills.reduce((sum, b) => sum + (b.paid_amount || b.total_amount), 0);
-  const totalPaidSC = paidBills.reduce((sum, b) => sum + b.sc_total, 0);
-  const totalPaidSF = paidBills.reduce((sum, b) => sum + b.sf_total, 0);
-
-  const handleExportPaid = () => {
-    if (paidBills.length === 0) return;
-    const rows = paidBills.map((b) => ({
-      unit: b.units?.unit_number || b.unit_number || "-",
-      penghuni: b.penghuni?.full_name || "-",
-      periode: b.quarter_label,
-      sc_bulanan: b.sc_monthly,
-      sf_bulanan: b.sf_monthly,
-      lain_lain: Math.max(0, (b.total_amount || 0) - (b.sc_total || 0) - (b.sf_total || 0)),
-      total_kuartal: b.total_amount,
-      jumlah_dibayar: b.paid_amount || b.total_amount,
-      tanggal_lunas: b.paid_at ? format(new Date(b.paid_at), "dd/MM/yyyy HH:mm") : "-",
-      catatan: b.notes || "",
-    }));
-    exportToExcel({
-      filename: `Tagihan_Lunas_${format(new Date(), "yyyyMMdd")}`,
-      sheetName: "Tagihan Lunas",
-      data: rows,
-      columns: [
-        { header: "Unit", key: "unit", width: 12 },
-        { header: "Penghuni", key: "penghuni", width: 20 },
-        { header: "Periode", key: "periode", width: 16 },
-        { header: "SC/bulan", key: "sc_bulanan", width: 15 },
-        { header: "SF/bulan", key: "sf_bulanan", width: 15 },
-        { header: "Lain-lain", key: "lain_lain", width: 15 },
-        { header: "Total", key: "total_kuartal", width: 18 },
-        { header: "Jumlah Dibayar", key: "jumlah_dibayar", width: 18 },
-        { header: "Tanggal Lunas", key: "tanggal_lunas", width: 20 },
-        { header: "Catatan", key: "catatan", width: 25 },
-      ],
-    });
+  const handleExportPaid = async () => {
+    setExporting(true);
+    try {
+      const all: any[] = [];
+      const pageSize = 1000;
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("bills")
+          .select(`*, units:unit_id(unit_number), penghuni:penghuni_id(full_name)`)
+          .eq("payment_status", "paid")
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all.push(...data);
+        if (data.length < pageSize) break;
+        from += pageSize;
+      }
+      if (all.length === 0) { toast.info("Tidak ada data lunas"); return; }
+      const rows = all.map((b: any) => ({
+        unit: b.units?.unit_number || b.unit_number || "-",
+        penghuni: b.penghuni?.full_name || "-",
+        periode: b.quarter_label,
+        sc_bulanan: b.sc_monthly,
+        sf_bulanan: b.sf_monthly,
+        lain_lain: Math.max(0, (b.total_amount || 0) - (b.sc_total || 0) - (b.sf_total || 0)),
+        total_kuartal: b.total_amount,
+        jumlah_dibayar: b.paid_amount || b.total_amount,
+        tanggal_lunas: b.paid_at ? format(new Date(b.paid_at), "dd/MM/yyyy HH:mm") : "-",
+        catatan: b.notes || "",
+      }));
+      exportToExcel({
+        filename: `Tagihan_Lunas_${format(new Date(), "yyyyMMdd")}`,
+        sheetName: "Tagihan Lunas",
+        data: rows,
+        columns: [
+          { header: "Unit", key: "unit", width: 12 },
+          { header: "Penghuni", key: "penghuni", width: 20 },
+          { header: "Periode", key: "periode", width: 16 },
+          { header: "SC/bulan", key: "sc_bulanan", width: 15 },
+          { header: "SF/bulan", key: "sf_bulanan", width: 15 },
+          { header: "Lain-lain", key: "lain_lain", width: 15 },
+          { header: "Total", key: "total_kuartal", width: 18 },
+          { header: "Jumlah Dibayar", key: "jumlah_dibayar", width: 18 },
+          { header: "Tanggal Lunas", key: "tanggal_lunas", width: 20 },
+          { header: "Catatan", key: "catatan", width: 25 },
+        ],
+      });
+    } catch (e: any) {
+      toast.error("Gagal export: " + e.message);
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -108,56 +122,36 @@ export default function Tagihan() {
 
         <Card>
           <CardContent className="pt-6">
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-              </div>
-            ) : (
-              <Tabs defaultValue="unpaid">
-                <TabsList>
-                  <TabsTrigger value="unpaid">Belum Bayar ({unpaidBills.length})</TabsTrigger>
-                  <TabsTrigger value="partial">Sebagian ({partialBills.length})</TabsTrigger>
-                  <TabsTrigger value="paid">Lunas ({paidBills.length})</TabsTrigger>
-                  <TabsTrigger value="all">Semua ({bills?.length || 0})</TabsTrigger>
-                </TabsList>
+            <Tabs defaultValue="unpaid">
+              <TabsList>
+                <TabsTrigger value="unpaid">Belum Bayar ({counts?.unpaid ?? 0})</TabsTrigger>
+                <TabsTrigger value="partial">Sebagian ({counts?.partial ?? 0})</TabsTrigger>
+                <TabsTrigger value="paid">Lunas ({counts?.paid ?? 0})</TabsTrigger>
+                <TabsTrigger value="all">Semua ({counts?.all ?? 0})</TabsTrigger>
+              </TabsList>
 
-                <TabsContent value="unpaid" className="mt-4">
-                  <BillTable bills={unpaidBills} showInvoice />
-                </TabsContent>
+              <TabsContent value="unpaid" className="mt-4">
+                <ServerBillTable status="unpaid" showInvoice />
+              </TabsContent>
 
-                <TabsContent value="partial" className="mt-4">
-                  <BillTable bills={partialBills} showInvoice />
-                </TabsContent>
+              <TabsContent value="partial" className="mt-4">
+                <ServerBillTable status="partial" showInvoice />
+              </TabsContent>
 
-                <TabsContent value="paid" className="mt-4 space-y-4">
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div className="p-4 bg-muted rounded-lg">
-                      <p className="text-xs text-muted-foreground">Total Terkumpul</p>
-                      <p className="text-lg font-bold text-foreground">{formatCurrency(totalPaidAmount)}</p>
-                    </div>
-                    <div className="p-4 bg-muted rounded-lg">
-                      <p className="text-xs text-muted-foreground">Service Charge (SC)</p>
-                      <p className="text-lg font-bold text-foreground">{formatCurrency(totalPaidSC)}</p>
-                    </div>
-                    <div className="p-4 bg-muted rounded-lg">
-                      <p className="text-xs text-muted-foreground">Sinking Fund (SF)</p>
-                      <p className="text-lg font-bold text-foreground">{formatCurrency(totalPaidSF)}</p>
-                    </div>
-                  </div>
-                  <div className="flex justify-end">
-                    <Button variant="outline" size="sm" onClick={handleExportPaid} disabled={paidBills.length === 0}>
-                      <Download className="w-4 h-4 mr-2" />
-                      Export Excel
-                    </Button>
-                  </div>
-                  <BillTable bills={paidBills} showInvoice />
-                </TabsContent>
+              <TabsContent value="paid" className="mt-4 space-y-4">
+                <div className="flex justify-end">
+                  <Button variant="outline" size="sm" onClick={handleExportPaid} disabled={exporting}>
+                    <Download className="w-4 h-4 mr-2" />
+                    {exporting ? "Mengekspor..." : "Export Excel"}
+                  </Button>
+                </div>
+                <ServerBillTable status="paid" showInvoice />
+              </TabsContent>
 
-                <TabsContent value="all" className="mt-4">
-                  <BillTable bills={bills || []} showInvoice />
-                </TabsContent>
-              </Tabs>
-            )}
+              <TabsContent value="all" className="mt-4">
+                <ServerBillTable status="all" showInvoice />
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>
