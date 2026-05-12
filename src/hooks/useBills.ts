@@ -46,6 +46,27 @@ export interface QuarterlyBill {
   bill_payments?: BillPayment[];
 }
 
+export function useBillStatusCounts() {
+  return useQuery({
+    queryKey: ["bills-status-counts"],
+    queryFn: async () => {
+      const statuses = ["unpaid", "partial", "paid"] as const;
+      const results = await Promise.all([
+        supabase.from("bills").select("id", { count: "exact", head: true }),
+        ...statuses.map((s) =>
+          supabase.from("bills").select("id", { count: "exact", head: true }).eq("payment_status", s)
+        ),
+      ]);
+      return {
+        all: results[0].count || 0,
+        unpaid: results[1].count || 0,
+        partial: results[2].count || 0,
+        paid: results[3].count || 0,
+      };
+    },
+  });
+}
+
 export function useBillsPaginated(params: {
   status?: "all" | "unpaid" | "partial" | "paid";
   page: number;
