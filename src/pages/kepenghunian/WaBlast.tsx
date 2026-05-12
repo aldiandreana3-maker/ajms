@@ -1017,6 +1017,14 @@ export default function WaBlast() {
             )}
           </Card>
 
+          {/* Multi-day scheduling */}
+          <ScheduleBlastSection
+            contacts={contacts}
+            message={message}
+            mediaUrl={mediaUrl}
+            mediaName={mediaName}
+          />
+
           {/* Status list */}
           {statuses.length > 0 && (
             <Card className="p-5">
