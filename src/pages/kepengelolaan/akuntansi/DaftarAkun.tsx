@@ -210,6 +210,11 @@ export default function DaftarAkun() {
           isPending={addAccount.isPending || updateAccount.isPending}
         />
         <CoaAuditDialog open={auditOpen} onOpenChange={setAuditOpen} />
+        <CoaMutationsDialog
+          open={!!mutationsAccount}
+          onOpenChange={(v) => { if (!v) setMutationsAccount(null); }}
+          account={mutationsAccount}
+        />
       </div>
     </MainLayout>
   );
