@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { TablePagination, usePagination } from "@/components/shared/TablePagination";
+import { ExportExcelButton } from "@/components/akuntansi/AccountingExcelTools";
 
 const formatRp = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
@@ -100,14 +101,41 @@ export default function BukuBesar() {
           </div>
         </div>
 
-        <Select value={selectedAccount} onValueChange={setSelectedAccount}>
-          <SelectTrigger className="w-full sm:w-[350px]"><SelectValue placeholder="Pilih akun untuk dilihat" /></SelectTrigger>
-          <SelectContent>
-            {accounts.map((a) => (
-              <SelectItem key={a.id} value={a.id}>{a.account_code} - {a.account_name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex flex-wrap items-center gap-3">
+          <Select value={selectedAccount} onValueChange={setSelectedAccount}>
+            <SelectTrigger className="w-full sm:w-[350px]"><SelectValue placeholder="Pilih akun untuk dilihat" /></SelectTrigger>
+            <SelectContent>
+              {accounts.map((a) => (
+                <SelectItem key={a.id} value={a.id}>{a.account_code} - {a.account_name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedAccount && account && (
+            <ExportExcelButton
+              filename={`buku-besar-${account.account_code}-${new Date().toISOString().slice(0, 10)}`}
+              sheetName="Buku Besar"
+              data={[
+                { date: "", entry_number: "", desc: "Saldo Awal", debit: 0, kredit: 0, balance: account.opening_balance || 0 },
+                ...linesWithBalance.map((l) => ({
+                  date: format(new Date(l.entry_date), "dd/MM/yyyy"),
+                  entry_number: l.entry_number,
+                  desc: l.journal_description,
+                  debit: l.debit_amount,
+                  kredit: l.credit_amount,
+                  balance: l.runningBalance,
+                })),
+              ]}
+              columns={[
+                { header: "Tanggal", key: "date", width: 14 },
+                { header: "No. Jurnal", key: "entry_number", width: 16 },
+                { header: "Keterangan", key: "desc", width: 36 },
+                { header: "Debit", key: "debit", width: 16 },
+                { header: "Kredit", key: "kredit", width: 16 },
+                { header: "Saldo", key: "balance", width: 18 },
+              ]}
+            />
+          )}
+        </div>
 
         {selectedAccount && account && (
           <div className="bg-muted/50 rounded-xl p-4 flex flex-wrap gap-6">
