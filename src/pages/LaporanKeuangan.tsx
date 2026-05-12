@@ -12,15 +12,29 @@ import {
   Plus,
   Loader2,
   Pencil,
+  Eraser,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFinancialReport } from "@/hooks/useFinancialReport";
 import { useDashboardSettings } from "@/hooks/useDashboardSettings";
 import { EditStatDialog } from "@/components/dashboard/EditStatDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 const LaporanKeuangan = () => {
   const { isSuperAdmin, isLimitedAccess } = useAuth();
