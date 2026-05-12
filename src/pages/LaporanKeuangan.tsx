@@ -196,6 +196,7 @@ const LaporanKeuangan = () => {
               <span className="text-sm font-medium text-foreground">Desember 2025</span>
             </div>
           </div>
+        </div>
 
         {/* Summary Cards - hidden for penghuni/agent */}
         {!isLimitedAccess && (
