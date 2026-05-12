@@ -3,14 +3,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
-import { useBills } from "@/hooks/useBills";
-import { BillTable } from "@/components/tagihan/BillTable";
-import { Receipt, Loader2, LogIn } from "lucide-react";
+import { useBillStatusCounts } from "@/hooks/useBills";
+import { ServerBillTable } from "@/components/tagihan/ServerBillTable";
+import { Receipt, LogIn } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function SistemTagihan() {
   const { user } = useAuth();
-  const { data: bills, isLoading } = useBills();
+  const { data: counts } = useBillStatusCounts();
 
   if (!user) {
     return (
@@ -29,10 +29,6 @@ export default function SistemTagihan() {
     );
   }
 
-  const unpaidBills = bills?.filter((b) => b.payment_status === "unpaid") || [];
-  const partialBills = bills?.filter((b) => b.payment_status === "partial") || [];
-  const paidBills = bills?.filter((b) => b.payment_status === "paid") || [];
-
   return (
     <MainLayout>
       <div className="space-y-6 animate-fade-in">
@@ -48,32 +44,26 @@ export default function SistemTagihan() {
 
         <Card>
           <CardContent className="pt-6">
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-              </div>
-            ) : (
-              <Tabs defaultValue="unpaid">
-                <TabsList>
-                  <TabsTrigger value="unpaid">Belum Bayar ({unpaidBills.length})</TabsTrigger>
-                  <TabsTrigger value="partial">Sebagian ({partialBills.length})</TabsTrigger>
-                  <TabsTrigger value="paid">Lunas ({paidBills.length})</TabsTrigger>
-                  <TabsTrigger value="all">Semua ({bills?.length || 0})</TabsTrigger>
-                </TabsList>
-                <TabsContent value="unpaid" className="mt-4">
-                  <BillTable bills={unpaidBills} showInvoice />
-                </TabsContent>
-                <TabsContent value="partial" className="mt-4">
-                  <BillTable bills={partialBills} showInvoice />
-                </TabsContent>
-                <TabsContent value="paid" className="mt-4">
-                  <BillTable bills={paidBills} showInvoice />
-                </TabsContent>
-                <TabsContent value="all" className="mt-4">
-                  <BillTable bills={bills || []} showInvoice />
-                </TabsContent>
-              </Tabs>
-            )}
+            <Tabs defaultValue="unpaid">
+              <TabsList>
+                <TabsTrigger value="unpaid">Belum Bayar ({counts?.unpaid ?? 0})</TabsTrigger>
+                <TabsTrigger value="partial">Sebagian ({counts?.partial ?? 0})</TabsTrigger>
+                <TabsTrigger value="paid">Lunas ({counts?.paid ?? 0})</TabsTrigger>
+                <TabsTrigger value="all">Semua ({counts?.all ?? 0})</TabsTrigger>
+              </TabsList>
+              <TabsContent value="unpaid" className="mt-4">
+                <ServerBillTable status="unpaid" showInvoice />
+              </TabsContent>
+              <TabsContent value="partial" className="mt-4">
+                <ServerBillTable status="partial" showInvoice />
+              </TabsContent>
+              <TabsContent value="paid" className="mt-4">
+                <ServerBillTable status="paid" showInvoice />
+              </TabsContent>
+              <TabsContent value="all" className="mt-4">
+                <ServerBillTable status="all" showInvoice />
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>
