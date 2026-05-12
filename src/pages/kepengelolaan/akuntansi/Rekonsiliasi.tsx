@@ -11,19 +11,21 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useReconciliations } from "@/hooks/useReconciliations";
 import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
-import { ArrowLeft, Plus, CheckCircle, Loader2, Eye } from "lucide-react";
+import { ArrowLeft, Plus, CheckCircle, Loader2, Eye, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 import { CoaMutationsDialog } from "@/components/akuntansi/CoaMutationsDialog";
+import { ExportExcelButton, ImportExcelButton } from "@/components/akuntansi/AccountingExcelTools";
+import { toast } from "sonner";
 
 const formatRp = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
 export default function Rekonsiliasi() {
   const navigate = useNavigate();
   const { isAdmin, isSuperAdmin } = useAuth();
-  const { reconciliations, isLoading, addReconciliation, updateReconciliation } = useReconciliations();
+  const { reconciliations, isLoading, addReconciliation, updateReconciliation, deleteReconciliation, bulkInsert } = useReconciliations();
   const { accounts } = useChartOfAccounts();
   const canManage = isSuperAdmin || isAdmin;
 
@@ -60,7 +62,63 @@ export default function Rekonsiliasi() {
           </div>
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2 flex-wrap">
+          <ExportExcelButton
+            filename={`rekonsiliasi-${new Date().toISOString().slice(0, 10)}`}
+            sheetName="Rekonsiliasi"
+            data={reconciliations.map((r) => {
+              const acc = accounts.find((a) => a.id === r.account_id);
+              return {
+                account_code: acc?.account_code || "",
+                account_name: acc?.account_name || "",
+                period_label: r.period_label,
+                period_date: r.period_date,
+                system_balance: r.system_balance,
+                actual_balance: r.actual_balance,
+                difference: r.difference,
+                status: r.status,
+                notes: r.notes || "",
+              };
+            })}
+            columns={[
+              { header: "Kode Akun", key: "account_code", width: 14 },
+              { header: "Nama Akun", key: "account_name", width: 28 },
+              { header: "Periode", key: "period_label", width: 16 },
+              { header: "Tanggal", key: "period_date", width: 14 },
+              { header: "Saldo Sistem", key: "system_balance", width: 18 },
+              { header: "Saldo Aktual", key: "actual_balance", width: 18 },
+              { header: "Selisih", key: "difference", width: 16 },
+              { header: "Status", key: "status", width: 12 },
+              { header: "Catatan", key: "notes", width: 28 },
+            ]}
+          />
+          {canManage && (
+            <ImportExcelButton
+              onParsed={(rows) => {
+                const payload: any[] = [];
+                for (const r of rows) {
+                  const code = String(r["Kode Akun"] || "").trim();
+                  const acc = accounts.find((a) => a.account_code === code);
+                  if (!acc) continue;
+                  const dateRaw = r["Tanggal"];
+                  let period_date = new Date().toISOString().split("T")[0];
+                  try { const d = new Date(dateRaw); if (!isNaN(d.getTime())) period_date = d.toISOString().split("T")[0]; } catch {}
+                  payload.push({
+                    account_id: acc.id,
+                    period_label: String(r["Periode"] || ""),
+                    period_date,
+                    system_balance: Number(r["Saldo Sistem"] || 0),
+                    actual_balance: Number(r["Saldo Aktual"] || 0),
+                    status: String(r["Status"] || "belum"),
+                    notes: String(r["Catatan"] || ""),
+                  });
+                }
+                if (payload.length === 0) { toast.error("Tidak ada data valid"); return; }
+                bulkInsert.mutate(payload);
+              }}
+              disabled={bulkInsert.isPending}
+            />
+          )}
           {canManage && (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
@@ -159,6 +217,9 @@ export default function Rekonsiliasi() {
                                 <Eye className="w-4 h-4" />
                               </Button>
                               {r.status !== "selesai" && <Button size="sm" variant="outline" onClick={() => markDone(r.id)}>Selesaikan</Button>}
+                              <Button variant="ghost" size="icon" title="Hapus" onClick={() => { if (confirm("Hapus data rekonsiliasi ini?")) deleteReconciliation.mutate(r.id); }}>
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
                             </div>
                           </TableCell>
                         )}
