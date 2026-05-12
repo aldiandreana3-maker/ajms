@@ -7,8 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useChartOfAccounts, ChartAccount } from "@/hooks/useChartOfAccounts";
-import { ArrowLeft, Plus, Pencil, Trash2, List, Loader2, History, Search, Eye } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, List, Loader2, History, Search, Eye, RotateCcw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Select as ResetSelect, SelectContent as ResetSelectContent, SelectItem as ResetSelectItem, SelectTrigger as ResetSelectTrigger, SelectValue as ResetSelectValue } from "@/components/ui/select";
 import { CoaFormDialog } from "@/components/akuntansi/CoaFormDialog";
 import { CoaAuditDialog } from "@/components/akuntansi/CoaAuditDialog";
 import { CoaImportExport } from "@/components/akuntansi/CoaImportExport";
