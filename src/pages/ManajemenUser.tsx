@@ -103,8 +103,47 @@ export default function ManajemenUser() {
   const [deleteUser, setDeleteUser] = useState<{ id: string; email: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const queryClient = useQueryClient();
-  const canManageAccount = isMasterDev || isSuperAdmin; // delete + toggle status
-  const visibleUsers = users?.filter((u) => isMasterDev || !isHiddenMasterAccount(u.email, u.role)) ?? [];
+  const canManageAccount = isMasterDev || isSuperAdmin;
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const ROLE_ORDER: Record<string, number> = {
+    master_dev: 0,
+    super_admin: 1,
+    admin: 2,
+    staff: 3,
+    staff_tro: 3,
+    staff_finance: 3,
+    staff_hrd_ga: 3,
+    staff_engineering: 3,
+    staff_building_service: 3,
+    staff_outsourcing_cleaning: 3,
+    staff_outsourcing_security: 3,
+    staff_outsourcing_parkir: 3,
+    staff_purchasing: 3,
+    agent: 4,
+    penghuni: 5,
+  };
+
+  const filteredUsers = (users ?? [])
+    .filter((u) => isMasterDev || !isHiddenMasterAccount(u.email, u.role));
+
+  const visibleUsers = filteredUsers
+    .filter((u) => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        (u.full_name || "").toLowerCase().includes(q) ||
+        (u.email || "").toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) => {
+      const ra = ROLE_ORDER[a.role || "penghuni"] ?? 99;
+      const rb = ROLE_ORDER[b.role || "penghuni"] ?? 99;
+      if (ra !== rb) return ra - rb;
+      const na = (a.full_name || a.email || "").toLowerCase();
+      const nb = (b.full_name || b.email || "").toLowerCase();
+      return na.localeCompare(nb);
+    });
 
   const handleUpdateRole = async () => {
     if (selectedUser) {
