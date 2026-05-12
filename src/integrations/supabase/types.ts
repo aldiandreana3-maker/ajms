@@ -607,6 +607,7 @@ export type Database = {
       }
       cashier_transaction_items: {
         Row: {
+          bill_payment_id: string | null
           created_at: string
           id: string
           item_name: string
@@ -616,6 +617,7 @@ export type Database = {
           transaction_id: string | null
         }
         Insert: {
+          bill_payment_id?: string | null
           created_at?: string
           id?: string
           item_name: string
@@ -625,6 +627,7 @@ export type Database = {
           transaction_id?: string | null
         }
         Update: {
+          bill_payment_id?: string | null
           created_at?: string
           id?: string
           item_name?: string

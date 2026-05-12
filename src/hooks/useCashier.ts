@@ -62,6 +62,8 @@ export interface CashierTransaction {
   cashier_id: string | null;
   transaction_date: string;
   created_at: string;
+  coa_account_id: string | null;
+  journal_entry_id: string | null;
 }
 
 const today = () => format(new Date(), "yyyy-MM-dd");
@@ -264,6 +266,7 @@ export function useCashier() {
         quantity: 1,
         price: Number(p.total_amount),
         total: Number(p.total_amount),
+        bill_payment_id: p.id,
       }));
 
       const { error: itemsError } = await supabase
@@ -427,6 +430,104 @@ export function useCashier() {
     },
   });
 
+  // Delete a transaction (admin) – reverses bill payments and journal entry
+  const deleteTransaction = useMutation({
+    mutationFn: async (transactionId: string) => {
+      // Fetch transaction
+      const { data: tx, error: txErr } = await supabase
+        .from("cashier_transactions")
+        .select("*")
+        .eq("id", transactionId)
+        .single();
+      if (txErr || !tx) throw txErr || new Error("Transaksi tidak ditemukan");
+
+      // Fetch items
+      const { data: items } = await supabase
+        .from("cashier_transaction_items")
+        .select("*")
+        .eq("transaction_id", transactionId);
+
+      // Reverse bill_payments using bill_payment_id when available
+      const billIdsToRecompute = new Set<string>();
+      for (const item of (items || []) as any[]) {
+        if (!item.bill_payment_id) continue;
+        const { data: bp } = await supabase
+          .from("bill_payments")
+          .select("bill_id")
+          .eq("id", item.bill_payment_id)
+          .single();
+        if (bp?.bill_id) billIdsToRecompute.add(bp.bill_id);
+        await supabase
+          .from("bill_payments")
+          .update({ is_paid: false, paid_at: null, paid_amount: null })
+          .eq("id", item.bill_payment_id);
+      }
+
+      // Recompute parent bills
+      for (const billId of billIdsToRecompute) {
+        const { data: allPayments } = await supabase
+          .from("bill_payments")
+          .select("is_paid, paid_amount")
+          .eq("bill_id", billId);
+        const paidCount = allPayments?.filter((p: any) => p.is_paid).length || 0;
+        const totalCount = allPayments?.length || 0;
+        const newStatus = paidCount === 0 ? "unpaid" : paidCount === totalCount ? "paid" : "partial";
+        const totalPaidAmount = allPayments?.filter((p: any) => p.is_paid).reduce((s: number, p: any) => s + (p.paid_amount || 0), 0) || 0;
+        await supabase
+          .from("bills")
+          .update({
+            payment_status: newStatus as any,
+            paid_amount: totalPaidAmount > 0 ? totalPaidAmount : null,
+            paid_at: newStatus === "paid" ? new Date().toISOString() : null,
+          })
+          .eq("id", billId);
+      }
+
+      // Reverse journal entry if exists
+      const journalId = (tx as any).journal_entry_id;
+      if (journalId) {
+        const { data: lines } = await supabase
+          .from("journal_entry_lines" as any)
+          .select("*")
+          .eq("journal_entry_id", journalId);
+        for (const line of ((lines as any[]) || [])) {
+          const { data: acc } = await supabase
+            .from("chart_of_accounts" as any)
+            .select("current_balance, normal_balance")
+            .eq("id", line.account_id)
+            .single();
+          if (!acc) continue;
+          const a: any = acc;
+          let newBal = Number(a.current_balance);
+          if (a.normal_balance === "debit") newBal -= (Number(line.debit_amount) - Number(line.credit_amount));
+          else newBal -= (Number(line.credit_amount) - Number(line.debit_amount));
+          await supabase
+            .from("chart_of_accounts" as any)
+            .update({ current_balance: newBal } as any)
+            .eq("id", line.account_id);
+        }
+        await supabase.from("journal_entry_lines" as any).delete().eq("journal_entry_id", journalId);
+        await supabase.from("journal_entries" as any).delete().eq("id", journalId);
+      }
+
+      // Delete items + transaction
+      await supabase.from("cashier_transaction_items").delete().eq("transaction_id", transactionId);
+      const { error: delErr } = await supabase.from("cashier_transactions").delete().eq("id", transactionId);
+      if (delErr) throw delErr;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cashier-transactions-all"] });
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+      queryClient.invalidateQueries({ queryKey: ["financial-report"] });
+      queryClient.invalidateQueries({ queryKey: ["chart_of_accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["journal_entries"] });
+      toast({ title: "Transaksi dihapus & saldo dikembalikan" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Gagal menghapus transaksi", description: error.message, variant: "destructive" });
+    },
+  });
+
   // Derived data
   const waitingQueues = queues.filter((q) => q.status === "waiting");
   const calledQueue = queues.find((q) => q.status === "called");
@@ -446,6 +547,7 @@ export function useCashier() {
     takeQueue,
     callNext,
     completeTransaction,
+    deleteTransaction,
     fetchUnitBills,
   };
 }

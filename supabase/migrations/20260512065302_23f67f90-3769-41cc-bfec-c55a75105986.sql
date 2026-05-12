@@ -1,0 +1,1 @@
+ALTER TABLE public.cashier_transaction_items ADD COLUMN IF NOT EXISTS bill_payment_id uuid;

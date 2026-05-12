@@ -20,8 +20,12 @@ import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared
 import { exportToExcel } from "@/lib/exportExcel";
 import {
   ArrowLeft, Megaphone, ShoppingCart, LayoutDashboard,
-  Printer, ShieldAlert, Volume2, DollarSign, Users, Clock, Search, ChevronsUpDown, Check, Loader2, Download,
+  Printer, ShieldAlert, Volume2, DollarSign, Users, Clock, Search, ChevronsUpDown, Check, Loader2, Download, Trash2,
 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -356,6 +360,12 @@ export default function SistemKasir() {
                 : dateFiltered;
               const filteredTotal = filteredTx.reduce((s, t) => s + Number(t.total_amount), 0);
 
+              const coaNameFor = (id: string | null) => {
+                if (!id) return "-";
+                const a = coaAccounts.find((x) => x.id === id);
+                return a ? `${a.account_code} - ${a.account_name}` : "-";
+              };
+
               const handleExport = () => {
                 exportToExcel({
                   filename: `transaksi-kasir-${format(new Date(), "yyyy-MM-dd")}`,
@@ -365,12 +375,14 @@ export default function SistemKasir() {
                     total_formatted: formatRupiah(Number(tx.total_amount)),
                     method_label: tx.payment_method === "transfer" ? "Transfer" : "QRIS",
                     waktu: format(new Date(tx.created_at), "dd/MM/yyyy HH:mm"),
+                    coa_label: coaNameFor(tx.coa_account_id),
                   })),
                   columns: [
                     { header: "ID Transaksi", key: "transaction_id", width: 30 },
                     { header: "No. Antrian", key: "queue_number", width: 12 },
                     { header: "No. Unit", key: "customer_name", width: 12 },
                     { header: "Metode", key: "method_label", width: 12 },
+                    { header: "COA Penerima", key: "coa_label", width: 30 },
                     { header: "Total", key: "total_formatted", width: 20 },
                     { header: "Tanggal", key: "waktu", width: 20 },
                   ],
@@ -463,8 +475,10 @@ export default function SistemKasir() {
                                 <TableHead>Antrian</TableHead>
                                 <TableHead>No. Unit</TableHead>
                                 <TableHead>Metode</TableHead>
+                                <TableHead>COA Penerima</TableHead>
                                 <TableHead className="text-right">Total</TableHead>
                                 <TableHead>Waktu</TableHead>
+                                {isAdmin && <TableHead className="text-right">Aksi</TableHead>}
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -478,10 +492,42 @@ export default function SistemKasir() {
                                       {tx.payment_method === "transfer" ? "Transfer" : "QRIS"}
                                     </Badge>
                                   </TableCell>
+                                  <TableCell className="text-xs">{coaNameFor(tx.coa_account_id)}</TableCell>
                                   <TableCell className="text-right font-medium">{formatRupiah(Number(tx.total_amount))}</TableCell>
                                   <TableCell className="text-muted-foreground text-xs">
                                     {format(new Date(tx.created_at), "dd/MM/yyyy HH:mm")}
                                   </TableCell>
+                                  {isAdmin && (
+                                    <TableCell className="text-right">
+                                      <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                          <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive">
+                                            <Trash2 className="w-4 h-4" />
+                                          </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              Pelunasan akan dibatalkan: tagihan kembali ke status belum terbayar,
+                                              jurnal terkait dihapus, dan saldo akun COA dikembalikan.
+                                              <br /><br />
+                                              <span className="font-mono text-xs">{tx.transaction_id}</span> — {tx.customer_name} — {formatRupiah(Number(tx.total_amount))}
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                                            <AlertDialogAction
+                                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                              onClick={() => cashier.deleteTransaction.mutate(tx.id)}
+                                            >
+                                              Ya, Hapus & Kembalikan
+                                            </AlertDialogAction>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    </TableCell>
+                                  )}
                                 </TableRow>
                               ))}
                             </TableBody>
