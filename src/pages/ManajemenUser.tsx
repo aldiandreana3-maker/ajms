@@ -252,6 +252,18 @@ export default function ManajemenUser() {
             <CardTitle>Daftar User</CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="mb-4 flex items-center gap-2">
+              <div className="relative w-full sm:w-80">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <Input
+                  placeholder="Cari nama atau email..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <span className="text-sm text-muted-foreground">{visibleUsers.length} pengguna</span>
+            </div>
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
