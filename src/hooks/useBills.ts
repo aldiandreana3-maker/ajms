@@ -46,6 +46,61 @@ export interface QuarterlyBill {
   bill_payments?: BillPayment[];
 }
 
+export function useBillsPaginated(params: {
+  status?: "all" | "unpaid" | "partial" | "paid";
+  page: number;
+  pageSize: number;
+  search?: string;
+}) {
+  const { status = "all", page, pageSize, search = "" } = params;
+  return useQuery({
+    queryKey: ["bills-paginated", status, page, pageSize, search],
+    placeholderData: (prev) => prev,
+    queryFn: async (): Promise<{ bills: QuarterlyBill[]; total: number }> => {
+      let query = supabase
+        .from("bills")
+        .select(
+          `*, units:unit_id(unit_number), penghuni:penghuni_id(full_name, phone, address)`,
+          { count: "exact" }
+        )
+        .order("created_at", { ascending: false });
+
+      if (status !== "all") query = query.eq("payment_status", status);
+      if (search.trim()) {
+        const s = `%${search.trim()}%`;
+        query = query.or(
+          `unit_number.ilike.${s},quarter_label.ilike.${s},notes.ilike.${s}`
+        );
+      }
+
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+      const { data, error, count } = await query.range(from, to);
+      if (error) throw error;
+
+      const bills = (data || []) as unknown as QuarterlyBill[];
+
+      // Fetch bill_payments only for the current page
+      if (bills.length > 0) {
+        const ids = bills.map((b) => b.id);
+        const { data: payments } = await supabase
+          .from("bill_payments")
+          .select("*")
+          .in("bill_id", ids)
+          .order("month_number", { ascending: true });
+        const map = new Map<string, BillPayment[]>();
+        for (const p of (payments || []) as BillPayment[]) {
+          if (!map.has(p.bill_id)) map.set(p.bill_id, []);
+          map.get(p.bill_id)!.push(p);
+        }
+        for (const b of bills) b.bill_payments = map.get(b.id) || [];
+      }
+
+      return { bills, total: count || 0 };
+    },
+  });
+}
+
 export function useBills() {
   return useQuery({
     queryKey: ["bills"],
