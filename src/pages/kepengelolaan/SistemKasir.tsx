@@ -266,14 +266,17 @@ export default function SistemKasir() {
   };
 
   const handleSubmitPayment = async () => {
-    if (!cashier.calledQueue || !selectedUnit || selectedPayments.length === 0) return;
+    if (!selectedUnit || selectedPayments.length === 0) return;
+    // Either a called queue exists OR walk-in mode is enabled
+    if (!cashier.calledQueue && !walkInMode) return;
 
     const result = await cashier.completeTransaction.mutateAsync({
-      queueId: cashier.calledQueue.id,
-      queueNumber: cashier.calledQueue.queue_number,
+      queueId: cashier.calledQueue?.id || null,
+      queueNumber: cashier.calledQueue?.queue_number || null,
       unitNumber: selectedUnit,
       selectedPayments,
       paymentMethod,
+      coaAccountId: selectedCoaId || null,
     });
 
     if (result) {
@@ -288,6 +291,7 @@ export default function SistemKasir() {
       setUnitBills([]);
       setSelectedPaymentIds(new Set());
       setPaymentMethod("transfer");
+      setSelectedCoaId("");
     }
   };
 
