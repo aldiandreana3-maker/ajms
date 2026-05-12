@@ -54,8 +54,32 @@ export default function DaftarAkun() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [mutationsAccount, setMutationsAccount] = useState<ChartAccount | null>(null);
+  const [resetType, setResetType] = useState<string>("PENDAPATAN");
+  const [resetting, setResetting] = useState(false);
+  const queryClient = useQueryClient();
 
   const canManage = isSuperAdmin || isAdmin;
+
+  const handleResetBalances = async () => {
+    setResetting(true);
+    try {
+      let q = supabase.from("chart_of_accounts").update({
+        current_balance: 0,
+        opening_balance: 0,
+      } as any).neq("id", "00000000-0000-0000-0000-000000000000");
+      if (resetType !== "ALL") {
+        q = q.eq("account_type", resetType);
+      }
+      const { error } = await q;
+      if (error) throw error;
+      toast.success(`Saldo COA berhasil direset (${resetType === "ALL" ? "semua tipe" : resetType})`);
+      queryClient.invalidateQueries({ queryKey: ["chart-of-accounts"] });
+    } catch (e: any) {
+      toast.error("Gagal reset saldo: " + (e.message || ""));
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const handleSubmit = (data: Partial<ChartAccount>) => {
     if (data.id) {
