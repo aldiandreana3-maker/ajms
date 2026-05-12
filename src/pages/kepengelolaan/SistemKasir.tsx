@@ -475,8 +475,10 @@ export default function SistemKasir() {
                                 <TableHead>Antrian</TableHead>
                                 <TableHead>No. Unit</TableHead>
                                 <TableHead>Metode</TableHead>
+                                <TableHead>COA Penerima</TableHead>
                                 <TableHead className="text-right">Total</TableHead>
                                 <TableHead>Waktu</TableHead>
+                                {isAdmin && <TableHead className="text-right">Aksi</TableHead>}
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -490,10 +492,42 @@ export default function SistemKasir() {
                                       {tx.payment_method === "transfer" ? "Transfer" : "QRIS"}
                                     </Badge>
                                   </TableCell>
+                                  <TableCell className="text-xs">{coaNameFor(tx.coa_account_id)}</TableCell>
                                   <TableCell className="text-right font-medium">{formatRupiah(Number(tx.total_amount))}</TableCell>
                                   <TableCell className="text-muted-foreground text-xs">
                                     {format(new Date(tx.created_at), "dd/MM/yyyy HH:mm")}
                                   </TableCell>
+                                  {isAdmin && (
+                                    <TableCell className="text-right">
+                                      <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                          <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive">
+                                            <Trash2 className="w-4 h-4" />
+                                          </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                          <AlertDialogHeader>
+                                            <AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                              Pelunasan akan dibatalkan: tagihan kembali ke status belum terbayar,
+                                              jurnal terkait dihapus, dan saldo akun COA dikembalikan.
+                                              <br /><br />
+                                              <span className="font-mono text-xs">{tx.transaction_id}</span> — {tx.customer_name} — {formatRupiah(Number(tx.total_amount))}
+                                            </AlertDialogDescription>
+                                          </AlertDialogHeader>
+                                          <AlertDialogFooter>
+                                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                                            <AlertDialogAction
+                                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                              onClick={() => cashier.deleteTransaction.mutate(tx.id)}
+                                            >
+                                              Ya, Hapus & Kembalikan
+                                            </AlertDialogAction>
+                                          </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                      </AlertDialog>
+                                    </TableCell>
+                                  )}
                                 </TableRow>
                               ))}
                             </TableBody>
