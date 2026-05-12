@@ -16,7 +16,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Select as ResetSelect, SelectContent as ResetSelectContent, SelectItem as ResetSelectItem, SelectTrigger as ResetSelectTrigger, SelectValue as ResetSelectValue } from "@/components/ui/select";
+
 import { CoaFormDialog } from "@/components/akuntansi/CoaFormDialog";
 import { CoaAuditDialog } from "@/components/akuntansi/CoaAuditDialog";
 import { CoaImportExport } from "@/components/akuntansi/CoaImportExport";
