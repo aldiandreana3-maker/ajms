@@ -360,6 +360,29 @@ const LaporanKeuangan = () => {
           title={editStat.title}
         />
       )}
+
+      <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Data Testing Keuangan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini akan: (1) mereset semua tagihan menjadi <b>belum terbayar</b>, (2) menghapus semua data <b>pengeluaran</b>, dan (3) mereset nilai override Total Pendapatan & Pengeluaran ke 0.
+              <br /><br />
+              <span className="text-destructive font-medium">Aksi ini tidak dapat dibatalkan. Gunakan hanya untuk membersihkan data testing.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resetting}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleResetTesting(); }}
+              disabled={resetting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {resetting ? "Membersihkan..." : "Ya, Reset Data"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 };
