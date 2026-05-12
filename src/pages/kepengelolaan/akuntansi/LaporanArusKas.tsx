@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useChartOfAccounts, ChartAccount } from "@/hooks/useChartOfAccounts";
 import { ArrowLeft, ArrowUpDown, Loader2 } from "lucide-react";
 import { TablePagination, usePagination } from "@/components/shared/TablePagination";
+import { ExportExcelButton } from "@/components/akuntansi/AccountingExcelTools";
 
 const formatRp = (n: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
@@ -97,6 +98,29 @@ export default function LaporanArusKas() {
               <p className="text-muted-foreground">Cash Flow Statement</p>
             </div>
           </div>
+        </div>
+
+        <div className="flex justify-end">
+          <ExportExcelButton
+            filename={`laporan-arus-kas-${new Date().toISOString().slice(0, 10)}`}
+            sheetName="Arus Kas"
+            data={[
+              ...operasional.map((a) => ({ kategori: "Operasional", code: a.account_code, name: a.account_name, mapping: a.map_to_cash_flow, balance: a.current_balance })),
+              { kategori: "TOTAL OPERASIONAL", code: "", name: "", mapping: "", balance: totalOperasional },
+              ...investasi.map((a) => ({ kategori: "Investasi", code: a.account_code, name: a.account_name, mapping: a.map_to_cash_flow, balance: a.current_balance })),
+              { kategori: "TOTAL INVESTASI", code: "", name: "", mapping: "", balance: totalInvestasi },
+              ...pendanaan.map((a) => ({ kategori: "Pendanaan", code: a.account_code, name: a.account_name, mapping: a.map_to_cash_flow, balance: a.current_balance })),
+              { kategori: "TOTAL PENDANAAN", code: "", name: "", mapping: "", balance: totalPendanaan },
+              { kategori: "TOTAL ARUS KAS BERSIH", code: "", name: "", mapping: "", balance: totalArusKas },
+            ]}
+            columns={[
+              { header: "Kategori", key: "kategori", width: 22 },
+              { header: "Kode Akun", key: "code", width: 15 },
+              { header: "Nama Akun", key: "name", width: 30 },
+              { header: "Mapping", key: "mapping", width: 22 },
+              { header: "Saldo", key: "balance", width: 18 },
+            ]}
+          />
         </div>
 
         {isLoading ? (
