@@ -12,15 +12,29 @@ import {
   Plus,
   Loader2,
   Pencil,
+  Eraser,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFinancialReport } from "@/hooks/useFinancialReport";
 import { useDashboardSettings } from "@/hooks/useDashboardSettings";
 import { EditStatDialog } from "@/components/dashboard/EditStatDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 const LaporanKeuangan = () => {
   const { isSuperAdmin, isLimitedAccess } = useAuth();
@@ -35,6 +49,51 @@ const LaporanKeuangan = () => {
   const balance = income - expenses;
 
   const [editStat, setEditStat] = useState<{ key: string; title: string; value: number } | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleResetTesting = async () => {
+    setResetting(true);
+    try {
+      // Reset all bills to unpaid
+      const { error: e1 } = await supabase
+        .from("bills")
+        .update({ payment_status: "unpaid", paid_amount: null, paid_at: null })
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      if (e1) throw e1;
+
+      // Reset bill_payments
+      const { error: e2 } = await supabase
+        .from("bill_payments")
+        .update({ is_paid: false, paid_amount: null, paid_at: null })
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      if (e2) throw e2;
+
+      // Delete all expenses
+      const { error: e3 } = await supabase
+        .from("expenses")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      if (e3) throw e3;
+
+      // Reset dashboard overrides
+      await supabase
+        .from("dashboard_settings")
+        .update({ setting_value: 0 })
+        .in("setting_key", ["total_pendapatan_override", "total_pengeluaran_override"]);
+
+      toast({ title: "Berhasil", description: "Data testing keuangan telah dibersihkan." });
+      queryClient.invalidateQueries({ queryKey: ["financial-report"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-settings"] });
+      setResetOpen(false);
+    } catch (err: any) {
+      toast({ title: "Gagal", description: err.message, variant: "destructive" });
+    } finally {
+      setResetting(false);
+    }
+  };
+
 
   const [reports, setReports] = useState([
     { id: "1", name: "Laporan Keuangan November 2025", date: "01 Des 2025", size: "2.4 MB" },
@@ -125,9 +184,17 @@ const LaporanKeuangan = () => {
             <h1 className="text-2xl font-bold text-foreground">Laporan Keuangan</h1>
             <p className="text-muted-foreground">Ringkasan keuangan bulanan</p>
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 bg-muted rounded-lg">
-            <Calendar className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-foreground">Desember 2025</span>
+          <div className="flex items-center gap-2">
+            {isSuperAdmin && (
+              <Button variant="destructive" size="sm" onClick={() => setResetOpen(true)}>
+                <Eraser className="w-4 h-4 mr-2" />
+                Reset Data Testing
+              </Button>
+            )}
+            <div className="flex items-center gap-2 px-4 py-2 bg-muted rounded-lg">
+              <Calendar className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Desember 2025</span>
+            </div>
           </div>
         </div>
 
@@ -293,6 +360,29 @@ const LaporanKeuangan = () => {
           title={editStat.title}
         />
       )}
+
+      <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Data Testing Keuangan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tindakan ini akan: (1) mereset semua tagihan menjadi <b>belum terbayar</b>, (2) menghapus semua data <b>pengeluaran</b>, dan (3) mereset nilai override Total Pendapatan & Pengeluaran ke 0.
+              <br /><br />
+              <span className="text-destructive font-medium">Aksi ini tidak dapat dibatalkan. Gunakan hanya untuk membersihkan data testing.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resetting}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleResetTesting(); }}
+              disabled={resetting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {resetting ? "Membersihkan..." : "Ya, Reset Data"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 };
