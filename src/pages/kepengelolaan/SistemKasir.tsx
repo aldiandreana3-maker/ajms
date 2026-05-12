@@ -198,10 +198,18 @@ export default function SistemKasir() {
   const { user, isSuperAdmin, isAdmin, isStaff } = useAuth();
   const canAccess = isSuperAdmin || isAdmin || isStaff;
   const cashier = useCashier();
+  const { accounts: coaAccounts } = useChartOfAccounts();
+  // Cash/bank-like accounts for receiving payment
+  const cashCoaAccounts = useMemo(
+    () => coaAccounts.filter((a) => a.is_active && a.account_type === "AKTIVA" && a.is_detail),
+    [coaAccounts]
+  );
 
   const [unitOpen, setUnitOpen] = useState(false);
   const [unitSearch, setUnitSearch] = useState("");
   const [selectedUnit, setSelectedUnit] = useState("");
+  const [walkInMode, setWalkInMode] = useState(false);
+  const [selectedCoaId, setSelectedCoaId] = useState<string>("");
 
   const [unitBills, setUnitBills] = useState<UnitBillWithPayments[]>([]);
   const [selectedPaymentIds, setSelectedPaymentIds] = useState<Set<string>>(new Set());
