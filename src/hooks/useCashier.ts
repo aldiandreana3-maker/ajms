@@ -266,6 +266,7 @@ export function useCashier() {
         quantity: 1,
         price: Number(p.total_amount),
         total: Number(p.total_amount),
+        bill_payment_id: p.id,
       }));
 
       const { error: itemsError } = await supabase
