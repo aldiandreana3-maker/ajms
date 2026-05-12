@@ -144,12 +144,14 @@ export default function DaftarAkun() {
                     <TableHead>Map to Cash Flow</TableHead>
                     <TableHead>Pos Budget</TableHead>
                     <TableHead>Sumber Dana</TableHead>
+                    <TableHead className="text-right">Saldo Berjalan</TableHead>
+                    <TableHead className="text-center w-[60px]">Mutasi</TableHead>
                     {canManage && <TableHead className="text-right">Aksi</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedData.length === 0 ? (
-                    <TableRow><TableCell colSpan={canManage ? 11 : 10} className="text-center py-8 text-muted-foreground">Belum ada akun</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={canManage ? 13 : 12} className="text-center py-8 text-muted-foreground">Belum ada akun</TableCell></TableRow>
                   ) : paginatedData.map((acc, i) => (
                     <TableRow key={acc.id} className={!acc.is_detail ? "bg-muted/30 font-semibold" : ""}>
                       <TableCell className="text-center">{startIndex + i + 1}</TableCell>
@@ -170,6 +172,12 @@ export default function DaftarAkun() {
                       <TableCell className="text-sm">{acc.map_to_cash_flow || "-"}</TableCell>
                       <TableCell className="text-sm">{acc.pos_budget || "-"}</TableCell>
                       <TableCell className="text-sm">{acc.sumber_dana || "-"}</TableCell>
+                      <TableCell className="text-right font-mono text-sm">{formatRp(Number(acc.current_balance || 0))}</TableCell>
+                      <TableCell className="text-center">
+                        <Button variant="ghost" size="icon" onClick={() => setMutationsAccount(acc)} title="Lihat mutasi">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
                       {canManage && (
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
