@@ -360,6 +360,12 @@ export default function SistemKasir() {
                 : dateFiltered;
               const filteredTotal = filteredTx.reduce((s, t) => s + Number(t.total_amount), 0);
 
+              const coaNameFor = (id: string | null) => {
+                if (!id) return "-";
+                const a = coaAccounts.find((x) => x.id === id);
+                return a ? `${a.account_code} - ${a.account_name}` : "-";
+              };
+
               const handleExport = () => {
                 exportToExcel({
                   filename: `transaksi-kasir-${format(new Date(), "yyyy-MM-dd")}`,
@@ -369,12 +375,14 @@ export default function SistemKasir() {
                     total_formatted: formatRupiah(Number(tx.total_amount)),
                     method_label: tx.payment_method === "transfer" ? "Transfer" : "QRIS",
                     waktu: format(new Date(tx.created_at), "dd/MM/yyyy HH:mm"),
+                    coa_label: coaNameFor(tx.coa_account_id),
                   })),
                   columns: [
                     { header: "ID Transaksi", key: "transaction_id", width: 30 },
                     { header: "No. Antrian", key: "queue_number", width: 12 },
                     { header: "No. Unit", key: "customer_name", width: 12 },
                     { header: "Metode", key: "method_label", width: 12 },
+                    { header: "COA Penerima", key: "coa_label", width: 30 },
                     { header: "Total", key: "total_formatted", width: 20 },
                     { header: "Tanggal", key: "waktu", width: 20 },
                   ],
