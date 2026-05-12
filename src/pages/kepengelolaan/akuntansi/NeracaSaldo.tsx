@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
 import { ArrowLeft, Scale, Loader2 } from "lucide-react";
 import { TablePagination, usePagination } from "@/components/shared/TablePagination";
+import { ExportExcelButton } from "@/components/akuntansi/AccountingExcelTools";
 
 const formatRp = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
@@ -42,6 +43,30 @@ export default function NeracaSaldo() {
               <p className="text-muted-foreground">Trial Balance — cek keseimbangan debit & kredit</p>
             </div>
           </div>
+        </div>
+
+        <div className="flex justify-end">
+          <ExportExcelButton
+            filename={`neraca-saldo-${new Date().toISOString().slice(0, 10)}`}
+            sheetName="Neraca Saldo"
+            data={[
+              ...activeAccounts.map((a) => ({
+                code: a.account_code,
+                name: a.account_name,
+                type: a.account_type,
+                debit: a.normal_balance === "debit" ? a.current_balance : 0,
+                kredit: a.normal_balance === "kredit" ? a.current_balance : 0,
+              })),
+              { code: "", name: "TOTAL", type: "", debit: totalDebit, kredit: totalCredit },
+            ]}
+            columns={[
+              { header: "Kode", key: "code", width: 15 },
+              { header: "Nama Akun", key: "name", width: 30 },
+              { header: "Tipe", key: "type", width: 15 },
+              { header: "Debit", key: "debit", width: 18 },
+              { header: "Kredit", key: "kredit", width: 18 },
+            ]}
+          />
         </div>
 
         <div className={`rounded-xl p-4 ${isBalanced ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
