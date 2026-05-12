@@ -7,8 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useChartOfAccounts, ChartAccount } from "@/hooks/useChartOfAccounts";
-import { ArrowLeft, Plus, Pencil, Trash2, List, Loader2, History, Search, Eye } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, List, Loader2, History, Search, Eye, RotateCcw } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 import { CoaFormDialog } from "@/components/akuntansi/CoaFormDialog";
 import { CoaAuditDialog } from "@/components/akuntansi/CoaAuditDialog";
 import { CoaImportExport } from "@/components/akuntansi/CoaImportExport";
@@ -46,8 +54,32 @@ export default function DaftarAkun() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [mutationsAccount, setMutationsAccount] = useState<ChartAccount | null>(null);
+  const [resetType, setResetType] = useState<string>("PENDAPATAN");
+  const [resetting, setResetting] = useState(false);
+  const queryClient = useQueryClient();
 
   const canManage = isSuperAdmin || isAdmin;
+
+  const handleResetBalances = async () => {
+    setResetting(true);
+    try {
+      let q = supabase.from("chart_of_accounts").update({
+        current_balance: 0,
+        opening_balance: 0,
+      } as any).neq("id", "00000000-0000-0000-0000-000000000000");
+      if (resetType !== "ALL") {
+        q = q.eq("account_type", resetType);
+      }
+      const { error } = await q;
+      if (error) throw error;
+      toast.success(`Saldo COA berhasil direset (${resetType === "ALL" ? "semua tipe" : resetType})`);
+      queryClient.invalidateQueries({ queryKey: ["chart-of-accounts"] });
+    } catch (e: any) {
+      toast.error("Gagal reset saldo: " + (e.message || ""));
+    } finally {
+      setResetting(false);
+    }
+  };
 
   const handleSubmit = (data: Partial<ChartAccount>) => {
     if (data.id) {
@@ -118,6 +150,44 @@ export default function DaftarAkun() {
               <Button variant="outline" size="sm" onClick={() => setAuditOpen(true)}>
                 <History className="w-4 h-4 mr-2" />Audit Log
               </Button>
+              {isSuperAdmin && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="text-destructive border-destructive/40 hover:bg-destructive/10">
+                      <RotateCcw className="w-4 h-4 mr-2" />Reset Saldo COA
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Reset Saldo COA</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Akan menol-kan <strong>current_balance</strong> dan <strong>opening_balance</strong> pada akun terpilih.
+                        Tindakan ini tidak menghapus akun, hanya saldonya. <strong>Tidak bisa di-undo.</strong>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="py-2">
+                      <label className="text-sm font-medium mb-2 block">Pilih tipe akun:</label>
+                      <Select value={resetType} onValueChange={setResetType}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ALL">Semua Tipe</SelectItem>
+                          {ACCOUNT_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={resetting}>Batal</AlertDialogCancel>
+                      <AlertDialogAction
+                        disabled={resetting}
+                        onClick={(e) => { e.preventDefault(); handleResetBalances(); }}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {resetting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Reset Sekarang"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
               <Button size="sm" onClick={() => { setEditing(null); setFormOpen(true); }}>
                 <Plus className="w-4 h-4 mr-2" />Tambah
               </Button>
