@@ -222,31 +222,36 @@ export function useCashier() {
       unitNumber,
       selectedPayments,
       paymentMethod,
+      coaAccountId,
     }: {
-      queueId: string;
-      queueNumber: string;
+      queueId?: string | null;
+      queueNumber?: string | null;
       unitNumber: string;
       selectedPayments: BillPaymentItem[];
       paymentMethod: string;
+      coaAccountId?: string | null;
     }) => {
       const totalAmount = selectedPayments.reduce((s, p) => s + Number(p.total_amount), 0);
       const txId = `TXN-${format(new Date(), "yyyyMMdd-HHmmss")}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
       const { data: { user } } = await supabase.auth.getUser();
 
+      const effectiveQueueNumber = queueNumber || `WALKIN-${format(new Date(), "HHmmss")}`;
+
       const { data: tx, error: txError } = await supabase
         .from("cashier_transactions")
         .insert({
-          queue_id: queueId,
+          queue_id: queueId || null,
           transaction_id: txId,
-          queue_number: queueNumber,
+          queue_number: effectiveQueueNumber,
           customer_name: unitNumber,
           payment_method: paymentMethod,
           subtotal: totalAmount,
           total_amount: totalAmount,
           cashier_id: user?.id || null,
           transaction_date: today(),
-        })
+          coa_account_id: coaAccountId || null,
+        } as any)
         .select()
         .single();
 
