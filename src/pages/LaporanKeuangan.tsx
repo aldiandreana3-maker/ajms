@@ -95,6 +95,13 @@ const LaporanKeuangan = () => {
   };
 
 
+  const [reports, setReports] = useState([
+    { id: "1", name: "Laporan Keuangan November 2025", date: "01 Des 2025", size: "2.4 MB" },
+    { id: "2", name: "Laporan Keuangan Oktober 2025", date: "01 Nov 2025", size: "2.1 MB" },
+    { id: "3", name: "Laporan Keuangan September 2025", date: "01 Okt 2025", size: "2.3 MB" },
+    { id: "4", name: "Laporan Keuangan Q3 2025", date: "15 Okt 2025", size: "5.8 MB" },
+  ]);
+
   const [isOpen, setIsOpen] = useState(false);
   const [editingReport, setEditingReport] = useState<{ id: string; name: string; date: string; size: string } | null>(null);
   const [form, setForm] = useState({ name: "", date: "", size: "" });
