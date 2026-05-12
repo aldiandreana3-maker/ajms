@@ -11,11 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useReconciliations } from "@/hooks/useReconciliations";
 import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
-import { ArrowLeft, Plus, CheckCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, CheckCircle, Loader2, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { TablePagination, usePagination } from "@/components/shared/TablePagination";
+import { CoaMutationsDialog } from "@/components/akuntansi/CoaMutationsDialog";
 
 const formatRp = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
