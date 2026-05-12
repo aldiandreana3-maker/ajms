@@ -253,7 +253,8 @@ export default function JurnalTransaksi() {
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="icon" onClick={() => showDetail(e)}><Eye className="w-4 h-4" /></Button>
-                          {canManage && !e.is_posted && <Button variant="ghost" size="icon" onClick={() => deleteEntry.mutate(e.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>}
+                          {canManage && !e.is_posted && <Button variant="ghost" size="icon" onClick={() => { if (confirm("Hapus jurnal ini?")) deleteEntry.mutate(e.id); }}><Trash2 className="w-4 h-4 text-destructive" /></Button>}
+                          {canManage && e.is_posted && <Button variant="ghost" size="icon" title="Hapus paksa (reverse saldo)" onClick={() => { if (confirm("Hapus jurnal terposting? Saldo akun akan dikembalikan otomatis. Lanjutkan?")) forceDeleteEntry.mutate(e.id); }}><Trash2 className="w-4 h-4 text-destructive" /></Button>}
                         </div>
                       </TableCell>
                     </TableRow>
