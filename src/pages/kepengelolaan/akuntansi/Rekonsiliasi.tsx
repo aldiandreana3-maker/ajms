@@ -31,6 +31,7 @@ export default function Rekonsiliasi() {
   const [form, setForm] = useState({ account_id: "", period_label: "", period_date: new Date().toISOString().split("T")[0], system_balance: 0, actual_balance: 0, notes: "" });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [mutationsAccountId, setMutationsAccountId] = useState<string | null>(null);
 
   const handleSubmit = () => {
     if (!form.account_id || !form.period_label) return;
