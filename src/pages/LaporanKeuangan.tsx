@@ -184,11 +184,18 @@ const LaporanKeuangan = () => {
             <h1 className="text-2xl font-bold text-foreground">Laporan Keuangan</h1>
             <p className="text-muted-foreground">Ringkasan keuangan bulanan</p>
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 bg-muted rounded-lg">
-            <Calendar className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-foreground">Desember 2025</span>
+          <div className="flex items-center gap-2">
+            {isSuperAdmin && (
+              <Button variant="destructive" size="sm" onClick={() => setResetOpen(true)}>
+                <Eraser className="w-4 h-4 mr-2" />
+                Reset Data Testing
+              </Button>
+            )}
+            <div className="flex items-center gap-2 px-4 py-2 bg-muted rounded-lg">
+              <Calendar className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Desember 2025</span>
+            </div>
           </div>
-        </div>
 
         {/* Summary Cards - hidden for penghuni/agent */}
         {!isLimitedAccess && (
