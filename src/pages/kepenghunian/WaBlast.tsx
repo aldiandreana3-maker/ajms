@@ -516,6 +516,52 @@ export default function WaBlast() {
         </div>
       </div>
 
+      {/* Hasil Blast - banner penuh setelah selesai kirim */}
+      {!sending && statuses.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 mt-6">
+          <Card className="p-5 border-success/40 bg-success/5">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+              <div>
+                <h3 className="font-bold text-foreground">Hasil Pengiriman WA Blast</h3>
+                <p className="text-xs text-muted-foreground">
+                  Total {statuses.length} kontak · Berhasil {stats.success} · Gagal {stats.failed} · Tidak Terkirim {stats.cancelled}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => downloadReport("failed")}
+                  disabled={!stats.failed && !stats.cancelled}
+                >
+                  <Download className="w-4 h-4 mr-1" />
+                  Unduh Gagal/Tidak Terkirim ({stats.failed + stats.cancelled})
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-success hover:bg-success/90 text-success-foreground"
+                  onClick={() => downloadReport("all")}
+                >
+                  <Download className="w-4 h-4 mr-1" />
+                  Unduh Laporan Lengkap ({statuses.length})
+                </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-xs text-center">
+              <div className="bg-success/10 text-success rounded p-2 font-semibold">
+                ✓ Berhasil: {stats.success}
+              </div>
+              <div className="bg-destructive/10 text-destructive rounded p-2 font-semibold">
+                ✗ Gagal: {stats.failed}
+              </div>
+              <div className="bg-muted rounded p-2 font-semibold">
+                ⊘ Tidak Terkirim: {stats.cancelled}
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left col: input + composer */}
         <div className="lg:col-span-2 space-y-6">
