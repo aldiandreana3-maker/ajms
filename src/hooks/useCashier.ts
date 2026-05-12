@@ -62,6 +62,8 @@ export interface CashierTransaction {
   cashier_id: string | null;
   transaction_date: string;
   created_at: string;
+  coa_account_id: string | null;
+  journal_entry_id: string | null;
 }
 
 const today = () => format(new Date(), "yyyy-MM-dd");
