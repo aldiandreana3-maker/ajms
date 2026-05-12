@@ -803,10 +803,15 @@ export default function SistemKasir() {
                             className="w-full"
                             size="lg"
                             onClick={handleSubmitPayment}
-                            disabled={cashier.completeTransaction.isPending || grandTotal <= 0}
+                            disabled={cashier.completeTransaction.isPending || grandTotal <= 0 || !selectedCoaId}
                           >
                             {cashier.completeTransaction.isPending ? "Memproses..." : "Selesai & Cetak Invoice"}
                           </Button>
+                          {!selectedCoaId && (
+                            <p className="text-xs text-destructive text-center -mt-2">
+                              Pilih Akun Penerima (COA) terlebih dahulu untuk dapat menyelesaikan & mencetak invoice.
+                            </p>
+                          )}
                         </>
                       ) : (
                         <p className="text-sm text-muted-foreground text-center py-4">

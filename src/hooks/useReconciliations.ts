@@ -67,5 +67,34 @@ export function useReconciliations() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  return { reconciliations, isLoading, addReconciliation, updateReconciliation };
+  const deleteReconciliation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("reconciliations" as any).delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reconciliations"] });
+      toast.success("Rekonsiliasi berhasil dihapus");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const bulkInsert = useMutation({
+    mutationFn: async (rows: Partial<Reconciliation>[]) => {
+      const payload = rows.map((r) => ({
+        ...r,
+        difference: (r.actual_balance || 0) - (r.system_balance || 0),
+        created_by: user?.id,
+      }));
+      const { error } = await supabase.from("reconciliations" as any).insert(payload as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reconciliations"] });
+      toast.success("Import rekonsiliasi berhasil");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return { reconciliations, isLoading, addReconciliation, updateReconciliation, deleteReconciliation, bulkInsert };
 }

@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
 import { ArrowLeft, FileText, Loader2 } from "lucide-react";
 import { TablePagination, usePagination } from "@/components/shared/TablePagination";
+import { ExportExcelButton } from "@/components/akuntansi/AccountingExcelTools";
 
 const formatRp = (n: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
@@ -45,6 +46,26 @@ export default function LaporanLabaRugi() {
               <p className="text-muted-foreground">Pendapatan & Biaya</p>
             </div>
           </div>
+        </div>
+
+        <div className="flex justify-end">
+          <ExportExcelButton
+            filename={`laporan-laba-rugi-${new Date().toISOString().slice(0, 10)}`}
+            sheetName="Laba Rugi"
+            data={[
+              ...pendapatanAccounts.map((a) => ({ kategori: "Pendapatan", code: a.account_code, name: a.account_name, balance: a.current_balance })),
+              { kategori: "TOTAL PENDAPATAN", code: "", name: "", balance: totalPendapatan },
+              ...bebanAccounts.map((a) => ({ kategori: "Beban", code: a.account_code, name: a.account_name, balance: a.current_balance })),
+              { kategori: "TOTAL BEBAN", code: "", name: "", balance: totalBeban },
+              { kategori: labaRugi >= 0 ? "LABA BERSIH" : "RUGI BERSIH", code: "", name: "", balance: Math.abs(labaRugi) },
+            ]}
+            columns={[
+              { header: "Kategori", key: "kategori", width: 22 },
+              { header: "Kode Akun", key: "code", width: 15 },
+              { header: "Nama Akun", key: "name", width: 30 },
+              { header: "Saldo", key: "balance", width: 18 },
+            ]}
+          />
         </div>
 
         {isLoading ? (

@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { TablePagination, usePagination } from "@/components/shared/TablePagination";
+import { ExportExcelButton } from "@/components/akuntansi/AccountingExcelTools";
 
 const formatRp = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
@@ -46,10 +47,30 @@ export default function PostingData() {
           </div>
         </div>
 
-        <div className="bg-muted/50 rounded-xl p-4">
-          <p className="text-sm text-muted-foreground">
+        <div className="bg-muted/50 rounded-xl p-4 flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-sm text-muted-foreground flex-1">
             Posting akan memindahkan data jurnal ke buku besar dan mengupdate saldo setiap akun. Jurnal yang sudah diposting tidak dapat dihapus.
           </p>
+          <ExportExcelButton
+            filename={`posting-data-${new Date().toISOString().slice(0, 10)}`}
+            sheetName="Posting"
+            data={entries.map((e) => ({
+              entry_number: e.entry_number,
+              date: format(new Date(e.entry_date), "dd/MM/yyyy"),
+              description: e.description,
+              debit: e.total_debit,
+              kredit: e.total_credit,
+              status: e.is_posted ? "Terposting" : "Draft",
+            }))}
+            columns={[
+              { header: "No. Jurnal", key: "entry_number", width: 16 },
+              { header: "Tanggal", key: "date", width: 14 },
+              { header: "Deskripsi", key: "description", width: 36 },
+              { header: "Debit", key: "debit", width: 16 },
+              { header: "Kredit", key: "kredit", width: 16 },
+              { header: "Status", key: "status", width: 14 },
+            ]}
+          />
         </div>
 
         <h2 className="text-lg font-semibold">Jurnal Belum Diposting ({unposted.length})</h2>

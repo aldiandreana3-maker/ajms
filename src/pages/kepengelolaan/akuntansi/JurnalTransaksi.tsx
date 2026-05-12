@@ -15,13 +15,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { TablePagination, usePagination } from "@/components/shared/TablePagination";
+import { ExportExcelButton, ImportExcelButton } from "@/components/akuntansi/AccountingExcelTools";
+import { toast } from "sonner";
 
 const formatRp = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
 export default function JurnalTransaksi() {
   const navigate = useNavigate();
   const { isAdmin, isSuperAdmin } = useAuth();
-  const { entries, isLoading, addEntry, deleteEntry, getEntryLines } = useJournalEntries();
+  const { entries, isLoading, addEntry, deleteEntry, forceDeleteEntry, bulkInsert, getEntryLines } = useJournalEntries();
   const { accounts } = useChartOfAccounts();
   const canManage = isSuperAdmin || isAdmin;
 
@@ -89,7 +91,77 @@ export default function JurnalTransaksi() {
           </div>
         </div>
 
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2 flex-wrap">
+          <ExportExcelButton
+            filename={`jurnal-transaksi-${new Date().toISOString().slice(0, 10)}`}
+            sheetName="Jurnal"
+            data={entries.map((e) => ({
+              entry_number: e.entry_number,
+              entry_date: format(new Date(e.entry_date), "dd/MM/yyyy"),
+              description: e.description,
+              reference_number: e.reference_number || "",
+              total_debit: e.total_debit,
+              total_credit: e.total_credit,
+              status: e.is_posted ? "Terposting" : "Draft",
+            }))}
+            columns={[
+              { header: "No. Jurnal", key: "entry_number", width: 16 },
+              { header: "Tanggal", key: "entry_date", width: 14 },
+              { header: "Deskripsi", key: "description", width: 36 },
+              { header: "Referensi", key: "reference_number", width: 18 },
+              { header: "Debit", key: "total_debit", width: 16 },
+              { header: "Kredit", key: "total_credit", width: 16 },
+              { header: "Status", key: "status", width: 14 },
+            ]}
+          />
+          {canManage && (
+            <ImportExcelButton
+              onParsed={(rows) => {
+                // Format expected: entry_number, entry_date, description, account_code, debit, kredit
+                // Group by entry_number
+                const groups = new Map<string, { entry: any; lines: any[] }>();
+                for (const r of rows) {
+                  const num = String(r["No. Jurnal"] || r.entry_number || "").trim();
+                  if (!num) continue;
+                  const code = String(r["Kode Akun"] || r.account_code || "").trim();
+                  const acc = accounts.find((a) => a.account_code === code);
+                  if (!acc) continue;
+                  const debit = Number(r["Debit"] || r.debit || 0);
+                  const kredit = Number(r["Kredit"] || r.kredit || 0);
+                  if (!groups.has(num)) {
+                    const dateRaw = r["Tanggal"] || r.entry_date || new Date().toISOString();
+                    let entryDate = new Date().toISOString().split("T")[0];
+                    try {
+                      const d = new Date(dateRaw);
+                      if (!isNaN(d.getTime())) entryDate = d.toISOString().split("T")[0];
+                    } catch {}
+                    groups.set(num, {
+                      entry: {
+                        entry_number: num,
+                        entry_date: entryDate,
+                        description: String(r["Deskripsi"] || r.description || ""),
+                        reference_number: String(r["Referensi"] || r.reference_number || ""),
+                        total_debit: 0,
+                        total_credit: 0,
+                      },
+                      lines: [],
+                    });
+                  }
+                  const g = groups.get(num)!;
+                  g.lines.push({ account_id: acc.id, debit_amount: debit, credit_amount: kredit, description: "" });
+                  g.entry.total_debit += debit;
+                  g.entry.total_credit += kredit;
+                }
+                const payload = [...groups.values()].filter((g) => g.lines.length > 0 && g.entry.total_debit === g.entry.total_credit && g.entry.total_debit > 0);
+                if (payload.length === 0) {
+                  toast.error("Tidak ada jurnal yang valid & seimbang. Format: kolom No. Jurnal, Tanggal, Deskripsi, Kode Akun, Debit, Kredit");
+                  return;
+                }
+                bulkInsert.mutate(payload);
+              }}
+              disabled={bulkInsert.isPending}
+            />
+          )}
           {canManage && (
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
@@ -181,7 +253,8 @@ export default function JurnalTransaksi() {
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="icon" onClick={() => showDetail(e)}><Eye className="w-4 h-4" /></Button>
-                          {canManage && !e.is_posted && <Button variant="ghost" size="icon" onClick={() => deleteEntry.mutate(e.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>}
+                          {canManage && !e.is_posted && <Button variant="ghost" size="icon" onClick={() => { if (confirm("Hapus jurnal ini?")) deleteEntry.mutate(e.id); }}><Trash2 className="w-4 h-4 text-destructive" /></Button>}
+                          {canManage && e.is_posted && <Button variant="ghost" size="icon" title="Hapus paksa (reverse saldo)" onClick={() => { if (confirm("Hapus jurnal terposting? Saldo akun akan dikembalikan otomatis. Lanjutkan?")) forceDeleteEntry.mutate(e.id); }}><Trash2 className="w-4 h-4 text-destructive" /></Button>}
                         </div>
                       </TableCell>
                     </TableRow>
