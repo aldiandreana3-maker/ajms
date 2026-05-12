@@ -531,13 +531,16 @@ export default function SistemKasir() {
 
           {/* Cashier Tab */}
           <TabsContent value="cashier" className="space-y-4">
-            {!cashier.calledQueue ? (
+            {!cashier.calledQueue && !walkInMode ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-16 space-y-4">
                   <Megaphone className="w-12 h-12 text-muted-foreground" />
                   <p className="text-muted-foreground text-center">
-                    Belum ada antrian yang dipanggil. Panggil nomor antrian terlebih dahulu di tab <strong>Panggil</strong>.
+                    Belum ada antrian yang dipanggil. Panggil nomor antrian di tab <strong>Panggil</strong>, atau lanjutkan tanpa antrian.
                   </p>
+                  <Button onClick={() => setWalkInMode(true)} variant="outline">
+                    Lanjutkan Tanpa Nomor Antrian (Walk-in)
+                  </Button>
                 </CardContent>
               </Card>
             ) : (
@@ -547,7 +550,16 @@ export default function SistemKasir() {
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg">Kasir Pembayaran</CardTitle>
-                        <Badge className="text-lg px-3 py-1">{cashier.calledQueue.queue_number}</Badge>
+                        <div className="flex items-center gap-2">
+                          {cashier.calledQueue ? (
+                            <Badge className="text-lg px-3 py-1">{cashier.calledQueue.queue_number}</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-sm px-3 py-1">Walk-in</Badge>
+                          )}
+                          {!cashier.calledQueue && walkInMode && (
+                            <Button size="sm" variant="ghost" onClick={() => setWalkInMode(false)}>Batal</Button>
+                          )}
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
