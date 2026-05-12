@@ -729,18 +729,42 @@ export default function SistemKasir() {
 
                       {/* Payment Method */}
                       {selectedPayments.length > 0 && (
-                        <div>
-                          <Label>Metode Pembayaran</Label>
-                          <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="transfer">🏦 Transfer</SelectItem>
-                              <SelectItem value="qris">📱 QRIS</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        <>
+                          <div>
+                            <Label>Metode Pembayaran</Label>
+                            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="transfer">🏦 Transfer</SelectItem>
+                                <SelectItem value="qris">📱 QRIS</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label>Akun Penerima (COA) <span className="text-xs text-muted-foreground">— pembayaran masuk ke akun ini</span></Label>
+                            <Select value={selectedCoaId} onValueChange={setSelectedCoaId}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Pilih akun kas/bank…" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {cashCoaAccounts.length === 0 ? (
+                                  <div className="px-3 py-2 text-xs text-muted-foreground">Belum ada akun AKTIVA aktif</div>
+                                ) : cashCoaAccounts.map((a) => (
+                                  <SelectItem key={a.id} value={a.id}>
+                                    {a.account_code} — {a.account_name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {!selectedCoaId && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Jika dipilih, transaksi otomatis tercatat ke jurnal & saldo COA.
+                              </p>
+                            )}
+                          </div>
+                        </>
                       )}
                     </CardContent>
                   </Card>
