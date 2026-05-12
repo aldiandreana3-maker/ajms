@@ -64,6 +64,7 @@ import {
   normalizePhone,
   isValidPhone,
 } from "@/lib/waBlastUtils";
+import ScheduleBlastSection from "@/components/wa-blast/ScheduleBlastSection";
 
 const EMOJIS = ["😊", "👍", "🎉", "🙏", "❤️", "🔥", "✨", "📣", "📢", "✅", "📌", "💬"];
 
