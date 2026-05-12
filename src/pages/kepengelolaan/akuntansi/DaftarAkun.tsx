@@ -7,12 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useChartOfAccounts, ChartAccount } from "@/hooks/useChartOfAccounts";
-import { ArrowLeft, Plus, Pencil, Trash2, List, Loader2, History, Search } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, List, Loader2, History, Search, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { CoaFormDialog } from "@/components/akuntansi/CoaFormDialog";
 import { CoaAuditDialog } from "@/components/akuntansi/CoaAuditDialog";
 import { CoaImportExport } from "@/components/akuntansi/CoaImportExport";
+import { CoaMutationsDialog } from "@/components/akuntansi/CoaMutationsDialog";
 import { TablePagination, usePagination } from "@/components/shared/TablePagination";
+
+const formatRp = (n: number) =>
+  new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
 const ACCOUNT_TYPES = [
   { value: "AKTIVA", label: "Aktiva" },
