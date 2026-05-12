@@ -20,8 +20,12 @@ import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared
 import { exportToExcel } from "@/lib/exportExcel";
 import {
   ArrowLeft, Megaphone, ShoppingCart, LayoutDashboard,
-  Printer, ShieldAlert, Volume2, DollarSign, Users, Clock, Search, ChevronsUpDown, Check, Loader2, Download,
+  Printer, ShieldAlert, Volume2, DollarSign, Users, Clock, Search, ChevronsUpDown, Check, Loader2, Download, Trash2,
 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
