@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.notify-parking-expiring]
 verify_jwt = false
+
+[functions.wa-blast-worker]
+verify_jwt = false
