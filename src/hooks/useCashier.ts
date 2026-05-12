@@ -222,31 +222,36 @@ export function useCashier() {
       unitNumber,
       selectedPayments,
       paymentMethod,
+      coaAccountId,
     }: {
-      queueId: string;
-      queueNumber: string;
+      queueId?: string | null;
+      queueNumber?: string | null;
       unitNumber: string;
       selectedPayments: BillPaymentItem[];
       paymentMethod: string;
+      coaAccountId?: string | null;
     }) => {
       const totalAmount = selectedPayments.reduce((s, p) => s + Number(p.total_amount), 0);
       const txId = `TXN-${format(new Date(), "yyyyMMdd-HHmmss")}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
       const { data: { user } } = await supabase.auth.getUser();
 
+      const effectiveQueueNumber = queueNumber || `WALKIN-${format(new Date(), "HHmmss")}`;
+
       const { data: tx, error: txError } = await supabase
         .from("cashier_transactions")
         .insert({
-          queue_id: queueId,
+          queue_id: queueId || null,
           transaction_id: txId,
-          queue_number: queueNumber,
+          queue_number: effectiveQueueNumber,
           customer_name: unitNumber,
           payment_method: paymentMethod,
           subtotal: totalAmount,
           total_amount: totalAmount,
           cashier_id: user?.id || null,
           transaction_date: today(),
-        })
+          coa_account_id: coaAccountId || null,
+        } as any)
         .select()
         .single();
 
@@ -302,16 +307,110 @@ export function useCashier() {
           .eq("id", billId);
       }
 
-      // Mark queue as completed
-      await supabase
-        .from("cashier_queues")
-        .update({ status: "completed", completed_at: new Date().toISOString() })
-        .eq("id", queueId);
+      // Mark queue as completed (only if there's a queue)
+      if (queueId) {
+        await supabase
+          .from("cashier_queues")
+          .update({ status: "completed", completed_at: new Date().toISOString() })
+          .eq("id", queueId);
+      }
+
+      // Auto-create journal entry if COA selected
+      let journalEntryId: string | null = null;
+      if (coaAccountId && totalAmount > 0) {
+        try {
+          // Find a default income/revenue account (PENDAPATAN)
+          const { data: incomeAccounts } = await supabase
+            .from("chart_of_accounts" as any)
+            .select("id, account_type, account_code, normal_balance")
+            .eq("account_type", "PENDAPATAN")
+            .eq("is_active", true)
+            .order("account_code")
+            .limit(1);
+          const incomeAccount: any = (incomeAccounts || [])[0];
+
+          // Get the chosen (cash/bank) account
+          const { data: cashAccount } = await supabase
+            .from("chart_of_accounts" as any)
+            .select("id, current_balance, normal_balance, account_type")
+            .eq("id", coaAccountId)
+            .single();
+
+          if (incomeAccount && cashAccount) {
+            const entryNumber = `KAS-${format(new Date(), "yyyyMMdd-HHmmss")}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
+            const { data: entry, error: entryErr } = await supabase
+              .from("journal_entries" as any)
+              .insert({
+                entry_number: entryNumber,
+                entry_date: today(),
+                description: `Penerimaan kasir ${unitNumber} (${txId})`,
+                reference_number: txId,
+                total_debit: totalAmount,
+                total_credit: totalAmount,
+                is_posted: true,
+                posted_at: new Date().toISOString(),
+                posted_by: user?.id || null,
+                created_by: user?.id || null,
+              } as any)
+              .select()
+              .single();
+
+            if (!entryErr && entry) {
+              journalEntryId = (entry as any).id;
+              await supabase.from("journal_entry_lines" as any).insert([
+                {
+                  journal_entry_id: journalEntryId,
+                  account_id: coaAccountId,
+                  debit_amount: totalAmount,
+                  credit_amount: 0,
+                  description: `Penerimaan dari unit ${unitNumber}`,
+                },
+                {
+                  journal_entry_id: journalEntryId,
+                  account_id: incomeAccount.id,
+                  debit_amount: 0,
+                  credit_amount: totalAmount,
+                  description: `Pendapatan IPL unit ${unitNumber}`,
+                },
+              ] as any);
+
+              // Update account balances based on normal balance
+              const cashAcc: any = cashAccount;
+              const cashDelta = cashAcc.normal_balance === "debit" ? totalAmount : -totalAmount;
+              await supabase
+                .from("chart_of_accounts" as any)
+                .update({ current_balance: Number(cashAcc.current_balance) + cashDelta } as any)
+                .eq("id", coaAccountId);
+
+              const { data: incFresh } = await supabase
+                .from("chart_of_accounts" as any)
+                .select("current_balance, normal_balance")
+                .eq("id", incomeAccount.id)
+                .single();
+              const incAcc: any = incFresh;
+              const incDelta = incAcc.normal_balance === "credit" ? totalAmount : -totalAmount;
+              await supabase
+                .from("chart_of_accounts" as any)
+                .update({ current_balance: Number(incAcc.current_balance) + incDelta } as any)
+                .eq("id", incomeAccount.id);
+
+              // Link journal to transaction
+              await supabase
+                .from("cashier_transactions")
+                .update({ journal_entry_id: journalEntryId } as any)
+                .eq("id", tx.id);
+            }
+          }
+        } catch (e) {
+          console.error("Failed to create journal entry:", e);
+        }
+      }
 
       return {
         ...tx,
         items: itemsToInsert.map((i) => ({ item_name: i.item_name, quantity: i.quantity, price: i.price, total: i.total })),
         selectedPayments,
+        journalEntryId,
       };
     },
     onSuccess: () => {
@@ -319,6 +418,8 @@ export function useCashier() {
       queryClient.invalidateQueries({ queryKey: ["cashier-transactions-all"] });
       queryClient.invalidateQueries({ queryKey: ["bills"] });
       queryClient.invalidateQueries({ queryKey: ["financial-report"] });
+      queryClient.invalidateQueries({ queryKey: ["chart_of_accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["journal_entries"] });
       toast({ title: "Transaksi berhasil disimpan" });
     },
     onError: (error: Error) => {

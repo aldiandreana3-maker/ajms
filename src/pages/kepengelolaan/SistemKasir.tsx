@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCashier, UnitBillWithPayments, BillPaymentItem, CashierTransaction } from "@/hooks/useCashier";
+import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -197,10 +198,18 @@ export default function SistemKasir() {
   const { user, isSuperAdmin, isAdmin, isStaff } = useAuth();
   const canAccess = isSuperAdmin || isAdmin || isStaff;
   const cashier = useCashier();
+  const { accounts: coaAccounts } = useChartOfAccounts();
+  // Cash/bank-like accounts for receiving payment
+  const cashCoaAccounts = useMemo(
+    () => coaAccounts.filter((a) => a.is_active && a.account_type === "AKTIVA" && a.is_detail),
+    [coaAccounts]
+  );
 
   const [unitOpen, setUnitOpen] = useState(false);
   const [unitSearch, setUnitSearch] = useState("");
   const [selectedUnit, setSelectedUnit] = useState("");
+  const [walkInMode, setWalkInMode] = useState(false);
+  const [selectedCoaId, setSelectedCoaId] = useState<string>("");
 
   const [unitBills, setUnitBills] = useState<UnitBillWithPayments[]>([]);
   const [selectedPaymentIds, setSelectedPaymentIds] = useState<Set<string>>(new Set());
@@ -257,14 +266,17 @@ export default function SistemKasir() {
   };
 
   const handleSubmitPayment = async () => {
-    if (!cashier.calledQueue || !selectedUnit || selectedPayments.length === 0) return;
+    if (!selectedUnit || selectedPayments.length === 0) return;
+    // Either a called queue exists OR walk-in mode is enabled
+    if (!cashier.calledQueue && !walkInMode) return;
 
     const result = await cashier.completeTransaction.mutateAsync({
-      queueId: cashier.calledQueue.id,
-      queueNumber: cashier.calledQueue.queue_number,
+      queueId: cashier.calledQueue?.id || null,
+      queueNumber: cashier.calledQueue?.queue_number || null,
       unitNumber: selectedUnit,
       selectedPayments,
       paymentMethod,
+      coaAccountId: selectedCoaId || null,
     });
 
     if (result) {
@@ -279,6 +291,7 @@ export default function SistemKasir() {
       setUnitBills([]);
       setSelectedPaymentIds(new Set());
       setPaymentMethod("transfer");
+      setSelectedCoaId("");
     }
   };
 
@@ -518,13 +531,16 @@ export default function SistemKasir() {
 
           {/* Cashier Tab */}
           <TabsContent value="cashier" className="space-y-4">
-            {!cashier.calledQueue ? (
+            {!cashier.calledQueue && !walkInMode ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-16 space-y-4">
                   <Megaphone className="w-12 h-12 text-muted-foreground" />
                   <p className="text-muted-foreground text-center">
-                    Belum ada antrian yang dipanggil. Panggil nomor antrian terlebih dahulu di tab <strong>Panggil</strong>.
+                    Belum ada antrian yang dipanggil. Panggil nomor antrian di tab <strong>Panggil</strong>, atau lanjutkan tanpa antrian.
                   </p>
+                  <Button onClick={() => setWalkInMode(true)} variant="outline">
+                    Lanjutkan Tanpa Nomor Antrian (Walk-in)
+                  </Button>
                 </CardContent>
               </Card>
             ) : (
@@ -534,7 +550,16 @@ export default function SistemKasir() {
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <CardTitle className="text-lg">Kasir Pembayaran</CardTitle>
-                        <Badge className="text-lg px-3 py-1">{cashier.calledQueue.queue_number}</Badge>
+                        <div className="flex items-center gap-2">
+                          {cashier.calledQueue ? (
+                            <Badge className="text-lg px-3 py-1">{cashier.calledQueue.queue_number}</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-sm px-3 py-1">Walk-in</Badge>
+                          )}
+                          {!cashier.calledQueue && walkInMode && (
+                            <Button size="sm" variant="ghost" onClick={() => setWalkInMode(false)}>Batal</Button>
+                          )}
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -704,18 +729,42 @@ export default function SistemKasir() {
 
                       {/* Payment Method */}
                       {selectedPayments.length > 0 && (
-                        <div>
-                          <Label>Metode Pembayaran</Label>
-                          <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="transfer">🏦 Transfer</SelectItem>
-                              <SelectItem value="qris">📱 QRIS</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
+                        <>
+                          <div>
+                            <Label>Metode Pembayaran</Label>
+                            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="transfer">🏦 Transfer</SelectItem>
+                                <SelectItem value="qris">📱 QRIS</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label>Akun Penerima (COA) <span className="text-xs text-muted-foreground">— pembayaran masuk ke akun ini</span></Label>
+                            <Select value={selectedCoaId} onValueChange={setSelectedCoaId}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Pilih akun kas/bank…" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {cashCoaAccounts.length === 0 ? (
+                                  <div className="px-3 py-2 text-xs text-muted-foreground">Belum ada akun AKTIVA aktif</div>
+                                ) : cashCoaAccounts.map((a) => (
+                                  <SelectItem key={a.id} value={a.id}>
+                                    {a.account_code} — {a.account_name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {!selectedCoaId && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Jika dipilih, transaksi otomatis tercatat ke jurnal & saldo COA.
+                              </p>
+                            )}
+                          </div>
+                        </>
                       )}
                     </CardContent>
                   </Card>

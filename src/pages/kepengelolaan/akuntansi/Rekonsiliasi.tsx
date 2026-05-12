@@ -11,11 +11,12 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useReconciliations } from "@/hooks/useReconciliations";
 import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
-import { ArrowLeft, Plus, CheckCircle, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, CheckCircle, Loader2, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { TablePagination, usePagination } from "@/components/shared/TablePagination";
+import { CoaMutationsDialog } from "@/components/akuntansi/CoaMutationsDialog";
 
 const formatRp = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
@@ -30,6 +31,7 @@ export default function Rekonsiliasi() {
   const [form, setForm] = useState({ account_id: "", period_label: "", period_date: new Date().toISOString().split("T")[0], system_balance: 0, actual_balance: 0, notes: "" });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [mutationsAccountId, setMutationsAccountId] = useState<string | null>(null);
 
   const handleSubmit = () => {
     if (!form.account_id || !form.period_label) return;
@@ -81,6 +83,14 @@ export default function Rekonsiliasi() {
                       </SelectContent>
                     </Select>
                   </div>
+                  {form.account_id && (
+                    <div className="flex items-center justify-between bg-primary/5 border border-primary/20 p-2 rounded-md text-xs">
+                      <span className="text-muted-foreground">Saldo sistem diambil otomatis dari mutasi jurnal akun ini.</span>
+                      <Button type="button" size="sm" variant="ghost" onClick={() => setMutationsAccountId(form.account_id)}>
+                        <Eye className="w-3 h-3 mr-1" /> Lihat Mutasi
+                      </Button>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-3">
                     <div><Label>Periode</Label><Input value={form.period_label} onChange={(e) => setForm({ ...form, period_label: e.target.value })} placeholder="April 2026" /></div>
                     <div><Label>Tanggal</Label><Input type="date" value={form.period_date} onChange={(e) => setForm({ ...form, period_date: e.target.value })} /></div>
@@ -128,7 +138,15 @@ export default function Rekonsiliasi() {
                     const acc = accounts.find((a) => a.id === r.account_id);
                     return (
                       <TableRow key={r.id}>
-                        <TableCell className="font-medium">{acc ? `${acc.account_code} - ${acc.account_name}` : "-"}</TableCell>
+                        <TableCell className="font-medium">
+                          <button
+                            type="button"
+                            className="hover:underline text-left"
+                            onClick={() => acc && setMutationsAccountId(acc.id)}
+                          >
+                            {acc ? `${acc.account_code} - ${acc.account_name}` : "-"}
+                          </button>
+                        </TableCell>
                         <TableCell>{r.period_label}</TableCell>
                         <TableCell className="text-right font-mono">{formatRp(r.system_balance)}</TableCell>
                         <TableCell className="text-right font-mono">{formatRp(r.actual_balance)}</TableCell>
@@ -136,7 +154,12 @@ export default function Rekonsiliasi() {
                         <TableCell><Badge variant={r.status === "selesai" ? "default" : "secondary"}>{r.status === "selesai" ? "Selesai" : "Belum"}</Badge></TableCell>
                         {canManage && (
                           <TableCell className="text-right">
-                            {r.status !== "selesai" && <Button size="sm" variant="outline" onClick={() => markDone(r.id)}>Selesaikan</Button>}
+                            <div className="flex justify-end gap-1">
+                              <Button size="icon" variant="ghost" onClick={() => acc && setMutationsAccountId(acc.id)} title="Lihat mutasi jurnal">
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              {r.status !== "selesai" && <Button size="sm" variant="outline" onClick={() => markDone(r.id)}>Selesaikan</Button>}
+                            </div>
                           </TableCell>
                         )}
                       </TableRow>
@@ -154,6 +177,11 @@ export default function Rekonsiliasi() {
             />
           </>
         )}
+        <CoaMutationsDialog
+          open={!!mutationsAccountId}
+          onOpenChange={(v) => { if (!v) setMutationsAccountId(null); }}
+          account={mutationsAccountId ? accounts.find((a) => a.id === mutationsAccountId) || null : null}
+        />
       </div>
     </MainLayout>
   );

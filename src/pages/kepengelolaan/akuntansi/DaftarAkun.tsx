@@ -7,12 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useChartOfAccounts, ChartAccount } from "@/hooks/useChartOfAccounts";
-import { ArrowLeft, Plus, Pencil, Trash2, List, Loader2, History, Search } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, List, Loader2, History, Search, Eye } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { CoaFormDialog } from "@/components/akuntansi/CoaFormDialog";
 import { CoaAuditDialog } from "@/components/akuntansi/CoaAuditDialog";
 import { CoaImportExport } from "@/components/akuntansi/CoaImportExport";
+import { CoaMutationsDialog } from "@/components/akuntansi/CoaMutationsDialog";
 import { TablePagination, usePagination } from "@/components/shared/TablePagination";
+
+const formatRp = (n: number) =>
+  new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
 const ACCOUNT_TYPES = [
   { value: "AKTIVA", label: "Aktiva" },
@@ -41,6 +45,7 @@ export default function DaftarAkun() {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [mutationsAccount, setMutationsAccount] = useState<ChartAccount | null>(null);
 
   const canManage = isSuperAdmin || isAdmin;
 
@@ -139,12 +144,14 @@ export default function DaftarAkun() {
                     <TableHead>Map to Cash Flow</TableHead>
                     <TableHead>Pos Budget</TableHead>
                     <TableHead>Sumber Dana</TableHead>
+                    <TableHead className="text-right">Saldo Berjalan</TableHead>
+                    <TableHead className="text-center w-[60px]">Mutasi</TableHead>
                     {canManage && <TableHead className="text-right">Aksi</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedData.length === 0 ? (
-                    <TableRow><TableCell colSpan={canManage ? 11 : 10} className="text-center py-8 text-muted-foreground">Belum ada akun</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={canManage ? 13 : 12} className="text-center py-8 text-muted-foreground">Belum ada akun</TableCell></TableRow>
                   ) : paginatedData.map((acc, i) => (
                     <TableRow key={acc.id} className={!acc.is_detail ? "bg-muted/30 font-semibold" : ""}>
                       <TableCell className="text-center">{startIndex + i + 1}</TableCell>
@@ -165,6 +172,12 @@ export default function DaftarAkun() {
                       <TableCell className="text-sm">{acc.map_to_cash_flow || "-"}</TableCell>
                       <TableCell className="text-sm">{acc.pos_budget || "-"}</TableCell>
                       <TableCell className="text-sm">{acc.sumber_dana || "-"}</TableCell>
+                      <TableCell className="text-right font-mono text-sm">{formatRp(Number(acc.current_balance || 0))}</TableCell>
+                      <TableCell className="text-center">
+                        <Button variant="ghost" size="icon" onClick={() => setMutationsAccount(acc)} title="Lihat mutasi">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
                       {canManage && (
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
@@ -197,6 +210,11 @@ export default function DaftarAkun() {
           isPending={addAccount.isPending || updateAccount.isPending}
         />
         <CoaAuditDialog open={auditOpen} onOpenChange={setAuditOpen} />
+        <CoaMutationsDialog
+          open={!!mutationsAccount}
+          onOpenChange={(v) => { if (!v) setMutationsAccount(null); }}
+          account={mutationsAccount}
+        />
       </div>
     </MainLayout>
   );
