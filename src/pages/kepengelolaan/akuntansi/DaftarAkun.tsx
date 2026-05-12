@@ -45,6 +45,7 @@ export default function DaftarAkun() {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [mutationsAccount, setMutationsAccount] = useState<ChartAccount | null>(null);
 
   const canManage = isSuperAdmin || isAdmin;
 
