@@ -177,6 +177,11 @@ export default function Rekonsiliasi() {
             />
           </>
         )}
+        <CoaMutationsDialog
+          open={!!mutationsAccountId}
+          onOpenChange={(v) => { if (!v) setMutationsAccountId(null); }}
+          account={mutationsAccountId ? accounts.find((a) => a.id === mutationsAccountId) || null : null}
+        />
       </div>
     </MainLayout>
   );
