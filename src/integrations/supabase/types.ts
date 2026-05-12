@@ -646,12 +646,14 @@ export type Database = {
       cashier_transactions: {
         Row: {
           cashier_id: string | null
+          coa_account_id: string | null
           created_at: string
           customer_name: string
           id: string
+          journal_entry_id: string | null
           payment_method: string
           queue_id: string | null
-          queue_number: string
+          queue_number: string | null
           subtotal: number
           total_amount: number
           transaction_date: string
@@ -660,12 +662,14 @@ export type Database = {
         }
         Insert: {
           cashier_id?: string | null
+          coa_account_id?: string | null
           created_at?: string
           customer_name: string
           id?: string
+          journal_entry_id?: string | null
           payment_method?: string
           queue_id?: string | null
-          queue_number: string
+          queue_number?: string | null
           subtotal?: number
           total_amount?: number
           transaction_date?: string
@@ -674,12 +678,14 @@ export type Database = {
         }
         Update: {
           cashier_id?: string | null
+          coa_account_id?: string | null
           created_at?: string
           customer_name?: string
           id?: string
+          journal_entry_id?: string | null
           payment_method?: string
           queue_id?: string | null
-          queue_number?: string
+          queue_number?: string | null
           subtotal?: number
           total_amount?: number
           transaction_date?: string
