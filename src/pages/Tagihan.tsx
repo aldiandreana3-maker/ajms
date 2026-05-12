@@ -2,16 +2,19 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useBills } from "@/hooks/useBills";
+import { useBillStatusCounts } from "@/hooks/useBills";
 import { useAuth } from "@/contexts/AuthContext";
 import { BillRatesCard } from "@/components/tagihan/BillRatesCard";
 import { OutstandingBillsCard } from "@/components/tagihan/OutstandingBillsCard";
 import { GenerateBillDialog } from "@/components/tagihan/GenerateBillDialog";
 import { BillingStatementDialog } from "@/components/tagihan/BillingStatementDialog";
 import { ManualBillDialog } from "@/components/tagihan/ManualBillDialog";
-import { BillTable } from "@/components/tagihan/BillTable";
-import { Receipt, Loader2, ShieldAlert, Download } from "lucide-react";
+import { ServerBillTable } from "@/components/tagihan/ServerBillTable";
+import { Receipt, ShieldAlert, Download } from "lucide-react";
 import { exportToExcel } from "@/lib/exportExcel";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useState } from "react";
 import { format } from "date-fns";
 
 const formatCurrency = (amount: number) =>
