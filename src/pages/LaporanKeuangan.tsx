@@ -49,13 +49,51 @@ const LaporanKeuangan = () => {
   const balance = income - expenses;
 
   const [editStat, setEditStat] = useState<{ key: string; title: string; value: number } | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const queryClient = useQueryClient();
 
-  const [reports, setReports] = useState([
-    { id: "1", name: "Laporan Keuangan November 2025", date: "01 Des 2025", size: "2.4 MB" },
-    { id: "2", name: "Laporan Keuangan Oktober 2025", date: "01 Nov 2025", size: "2.1 MB" },
-    { id: "3", name: "Laporan Keuangan September 2025", date: "01 Okt 2025", size: "2.3 MB" },
-    { id: "4", name: "Laporan Keuangan Q3 2025", date: "15 Okt 2025", size: "5.8 MB" },
-  ]);
+  const handleResetTesting = async () => {
+    setResetting(true);
+    try {
+      // Reset all bills to unpaid
+      const { error: e1 } = await supabase
+        .from("bills")
+        .update({ payment_status: "unpaid", paid_amount: null, paid_at: null })
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      if (e1) throw e1;
+
+      // Reset bill_payments
+      const { error: e2 } = await supabase
+        .from("bill_payments")
+        .update({ is_paid: false, paid_amount: null, paid_at: null })
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      if (e2) throw e2;
+
+      // Delete all expenses
+      const { error: e3 } = await supabase
+        .from("expenses")
+        .delete()
+        .neq("id", "00000000-0000-0000-0000-000000000000");
+      if (e3) throw e3;
+
+      // Reset dashboard overrides
+      await supabase
+        .from("dashboard_settings")
+        .update({ setting_value: 0 })
+        .in("setting_key", ["total_pendapatan_override", "total_pengeluaran_override"]);
+
+      toast({ title: "Berhasil", description: "Data testing keuangan telah dibersihkan." });
+      queryClient.invalidateQueries({ queryKey: ["financial-report"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-settings"] });
+      setResetOpen(false);
+    } catch (err: any) {
+      toast({ title: "Gagal", description: err.message, variant: "destructive" });
+    } finally {
+      setResetting(false);
+    }
+  };
+
 
   const [isOpen, setIsOpen] = useState(false);
   const [editingReport, setEditingReport] = useState<{ id: string; name: string; date: string; size: string } | null>(null);
