@@ -64,6 +64,7 @@ import {
   normalizePhone,
   isValidPhone,
 } from "@/lib/waBlastUtils";
+import ScheduleBlastSection from "@/components/wa-blast/ScheduleBlastSection";
 
 const EMOJIS = ["😊", "👍", "🎉", "🙏", "❤️", "🔥", "✨", "📣", "📢", "✅", "📌", "💬"];
 
@@ -1015,6 +1016,14 @@ export default function WaBlast() {
               </Button>
             )}
           </Card>
+
+          {/* Multi-day scheduling */}
+          <ScheduleBlastSection
+            contacts={contacts}
+            message={message}
+            mediaUrl={mediaUrl}
+            mediaName={mediaName}
+          />
 
           {/* Status list */}
           {statuses.length > 0 && (

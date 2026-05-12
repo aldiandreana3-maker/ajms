@@ -2908,6 +2908,75 @@ export type Database = {
         }
         Relationships: []
       }
+      wa_blast_campaigns: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          daily_cap: number
+          failed_count: number
+          id: string
+          last_run_at: string | null
+          max_delay_seconds: number
+          media_filename: string | null
+          media_url: string | null
+          message_template: string
+          min_delay_seconds: number
+          name: string
+          send_hour_end: number
+          send_hour_start: number
+          sent_count: number
+          start_date: string
+          status: string
+          total_contacts: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          daily_cap?: number
+          failed_count?: number
+          id?: string
+          last_run_at?: string | null
+          max_delay_seconds?: number
+          media_filename?: string | null
+          media_url?: string | null
+          message_template: string
+          min_delay_seconds?: number
+          name: string
+          send_hour_end?: number
+          send_hour_start?: number
+          sent_count?: number
+          start_date?: string
+          status?: string
+          total_contacts?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          daily_cap?: number
+          failed_count?: number
+          id?: string
+          last_run_at?: string | null
+          max_delay_seconds?: number
+          media_filename?: string | null
+          media_url?: string | null
+          message_template?: string
+          min_delay_seconds?: number
+          name?: string
+          send_hour_end?: number
+          send_hour_start?: number
+          sent_count?: number
+          start_date?: string
+          status?: string
+          total_contacts?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       wa_blast_history: {
         Row: {
           cancelled_count: number
@@ -2964,6 +3033,59 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      wa_blast_queue: {
+        Row: {
+          attempts: number
+          campaign_id: string
+          contact_name: string | null
+          contact_phone: string
+          contact_unit: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          scheduled_date: string
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          campaign_id: string
+          contact_name?: string | null
+          contact_phone: string
+          contact_unit?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          scheduled_date: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          campaign_id?: string
+          contact_name?: string | null
+          contact_phone?: string
+          contact_unit?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          scheduled_date?: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wa_blast_queue_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "wa_blast_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       water_meters: {
         Row: {
