@@ -138,7 +138,15 @@ export default function Rekonsiliasi() {
                     const acc = accounts.find((a) => a.id === r.account_id);
                     return (
                       <TableRow key={r.id}>
-                        <TableCell className="font-medium">{acc ? `${acc.account_code} - ${acc.account_name}` : "-"}</TableCell>
+                        <TableCell className="font-medium">
+                          <button
+                            type="button"
+                            className="hover:underline text-left"
+                            onClick={() => acc && setMutationsAccountId(acc.id)}
+                          >
+                            {acc ? `${acc.account_code} - ${acc.account_name}` : "-"}
+                          </button>
+                        </TableCell>
                         <TableCell>{r.period_label}</TableCell>
                         <TableCell className="text-right font-mono">{formatRp(r.system_balance)}</TableCell>
                         <TableCell className="text-right font-mono">{formatRp(r.actual_balance)}</TableCell>
@@ -146,7 +154,12 @@ export default function Rekonsiliasi() {
                         <TableCell><Badge variant={r.status === "selesai" ? "default" : "secondary"}>{r.status === "selesai" ? "Selesai" : "Belum"}</Badge></TableCell>
                         {canManage && (
                           <TableCell className="text-right">
-                            {r.status !== "selesai" && <Button size="sm" variant="outline" onClick={() => markDone(r.id)}>Selesaikan</Button>}
+                            <div className="flex justify-end gap-1">
+                              <Button size="icon" variant="ghost" onClick={() => acc && setMutationsAccountId(acc.id)} title="Lihat mutasi jurnal">
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              {r.status !== "selesai" && <Button size="sm" variant="outline" onClick={() => markDone(r.id)}>Selesaikan</Button>}
+                            </div>
                           </TableCell>
                         )}
                       </TableRow>
