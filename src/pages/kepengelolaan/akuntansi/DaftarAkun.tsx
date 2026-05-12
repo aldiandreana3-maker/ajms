@@ -150,6 +150,44 @@ export default function DaftarAkun() {
               <Button variant="outline" size="sm" onClick={() => setAuditOpen(true)}>
                 <History className="w-4 h-4 mr-2" />Audit Log
               </Button>
+              {isSuperAdmin && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="text-destructive border-destructive/40 hover:bg-destructive/10">
+                      <RotateCcw className="w-4 h-4 mr-2" />Reset Saldo COA
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Reset Saldo COA</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Akan menol-kan <strong>current_balance</strong> dan <strong>opening_balance</strong> pada akun terpilih.
+                        Tindakan ini tidak menghapus akun, hanya saldonya. <strong>Tidak bisa di-undo.</strong>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="py-2">
+                      <label className="text-sm font-medium mb-2 block">Pilih tipe akun:</label>
+                      <Select value={resetType} onValueChange={setResetType}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ALL">Semua Tipe</SelectItem>
+                          {ACCOUNT_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={resetting}>Batal</AlertDialogCancel>
+                      <AlertDialogAction
+                        disabled={resetting}
+                        onClick={(e) => { e.preventDefault(); handleResetBalances(); }}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        {resetting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Reset Sekarang"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
               <Button size="sm" onClick={() => { setEditing(null); setFormOpen(true); }}>
                 <Plus className="w-4 h-4 mr-2" />Tambah
               </Button>
