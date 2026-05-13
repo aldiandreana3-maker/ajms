@@ -85,9 +85,12 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
         throw wmError;
       }
 
-      // Auto-create water bill
+      // Auto-create water bill (skip jika tidak ada pemakaian / baseline awal)
       const usage = input.meter_end - input.meter_start;
       const nominal = usage * 17000;
+      if (usage <= 0) {
+        return wmData;
+      }
       const billingDate = new Date(input.billing_month);
       const dueDate = new Date(billingDate);
       dueDate.setMonth(dueDate.getMonth() + 1);
