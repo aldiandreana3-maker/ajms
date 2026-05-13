@@ -86,9 +86,14 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
 
   const createMutation = useMutation({
     mutationFn: async (input: WaterMeterInput) => {
+      const usagePre = Math.max(0, input.meter_end - input.meter_start);
+      const isBaseline = input.meter_start === 0 && input.meter_end === 0;
+      const tariffPre = await getCurrentTariff();
+      const nominalPre = isBaseline ? 0 : calcWaterNominal(usagePre, tariffPre.abonemen, tariffPre.price_per_m3);
+
       const { data: wmData, error: wmError } = await (supabase as any)
         .from("water_meters")
-        .insert(input)
+        .insert({ ...input, usage_m3: usagePre, nominal: nominalPre })
         .select()
         .single();
 
