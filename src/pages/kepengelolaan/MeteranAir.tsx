@@ -16,10 +16,14 @@ import { PhotoUpload } from "@/components/shared/PhotoUpload";
 import { Dialog as ViewDialog, DialogContent as ViewDialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { TablePagination } from "@/components/shared/TablePagination";
-import { ArrowLeft, Droplets, Plus, ShieldAlert, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, Droplets, Plus, ShieldAlert, Search, Trash2, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Combobox } from "@/components/ui/combobox";
+import { WaterTariffCard } from "@/components/water/WaterTariffCard";
+import { EditMeteranDialog } from "@/components/water/EditMeteranDialog";
+import { useWaterTariff, calcWaterNominal } from "@/hooks/useWaterTariff";
+import type { WaterMeter } from "@/hooks/useWaterMeters";
 
 function PhotoThumb({ path, signedUrls, onView }: { path: string | null; signedUrls: Record<string, string>; onView: (url: string) => void }) {
   if (!path) return <span className="text-muted-foreground text-xs">-</span>;
@@ -32,8 +36,10 @@ function PhotoThumb({ path, signedUrls, onView }: { path: string | null; signedU
 
 export default function MeteranAir() {
   const navigate = useNavigate();
-  const { isSuperAdmin, isAdmin, isStaff, isLimitedAccess, user } = useAuth();
+  const { isSuperAdmin, isAdmin, isStaff, isLimitedAccess, role, user } = useAuth();
+  const isEngineering = role === "staff_engineering";
   const canAccess = (isSuperAdmin || isAdmin || isStaff) && !isLimitedAccess;
+  const canEditMeter = isSuperAdmin || isAdmin || isEngineering;
 
   const [search, setSearch] = useState("");
   const [filterMonth, setFilterMonth] = useState("");
@@ -56,7 +62,9 @@ export default function MeteranAir() {
   const { data: waterMeters, isLoading, create, isCreating, remove, getPreviousMeter } = useWaterMeters({ search, month: filterMonth, year: filterYear });
   const { penghuni } = usePenghuni();
   const { uploadFile, uploading } = useFileUpload({ folder: "water-meters" });
+  const { tariff } = useWaterTariff();
   const [loadingPrev, setLoadingPrev] = useState(false);
+  const [editTarget, setEditTarget] = useState<WaterMeter | null>(null);
 
   // Auto-load meter awal dari meter akhir bulan sebelumnya
   useEffect(() => {
@@ -111,8 +119,9 @@ export default function MeteranAir() {
     if (found) { setPenghuniName(found.name); setUnitId(found.unitId); } else { setPenghuniName(""); setUnitId(null); }
   };
 
-  const usage = meterEnd && meterStart ? Math.max(0, Number(meterEnd) - Number(meterStart)) : 0;
-  const nominal = usage * 17000;
+  const usage = meterEnd !== "" && meterStart !== "" ? Math.max(0, Number(meterEnd) - Number(meterStart)) : 0;
+  const isBaseline = Number(meterStart) === 0 && Number(meterEnd) === 0;
+  const nominal = isBaseline ? 0 : calcWaterNominal(usage, tariff.abonemen, tariff.price_per_m3);
 
   const resetForm = () => {
     setUnitNumber(""); setUnitId(null); setPenghuniName(""); setMeterStart(""); setMeterEnd("");
@@ -120,7 +129,7 @@ export default function MeteranAir() {
   };
 
   const handleSubmit = async () => {
-    if (!unitNumber || !meterStart || !meterEnd) return;
+    if (!unitNumber || meterEnd === "") return;
     let photoStartUrl: string | null = null;
     let photoEndUrl: string | null = null;
     if (photoStartFile) photoStartUrl = await uploadFile(photoStartFile);
@@ -128,7 +137,7 @@ export default function MeteranAir() {
     await create({
       unit_number: unitNumber, unit_id: unitId, penghuni_name: penghuniName || null,
       photo_start_url: photoStartUrl, photo_end_url: photoEndUrl,
-      meter_start: Number(meterStart), meter_end: Number(meterEnd),
+      meter_start: Number(meterStart) || 0, meter_end: Number(meterEnd) || 0,
       billing_month: `${billingMonth}-01`, recorded_by: user?.id, recorded_by_name: user?.email || null,
     });
     resetForm(); setDialogOpen(false);
@@ -174,6 +183,8 @@ export default function MeteranAir() {
             </div>
           </div>
         </div>
+
+        <WaterTariffCard />
 
         <Card>
           <CardContent className="pt-6">
@@ -223,28 +234,41 @@ export default function MeteranAir() {
                     </div>
                     <Card className="border-dashed bg-muted/30">
                       <CardContent className="pt-4 space-y-2">
-                        <Label className="text-base font-semibold">Meteran Awal (Otomatis)</Label>
-                        <p className="text-xs text-muted-foreground">Diambil otomatis dari meteran akhir periode sebelumnya. Tidak perlu input ulang.</p>
-                        <Input type="number" value={loadingPrev ? "Memuat..." : meterStart} disabled readOnly />
+                        <Label className="text-base font-semibold">Meteran Awal {canEditMeter ? "(Bisa diubah manual)" : "(Otomatis)"}</Label>
+                        <p className="text-xs text-muted-foreground">
+                          {canEditMeter
+                            ? "Diambil dari meteran akhir periode sebelumnya. Anda boleh mengubah jika diperlukan koreksi."
+                            : "Diambil otomatis dari meteran akhir periode sebelumnya."}
+                        </p>
+                        <Input
+                          type="number"
+                          value={loadingPrev ? "" : meterStart}
+                          placeholder={loadingPrev ? "Memuat..." : "0"}
+                          onChange={(e) => setMeterStart(e.target.value)}
+                          disabled={!canEditMeter || loadingPrev}
+                          readOnly={!canEditMeter}
+                        />
                       </CardContent>
                     </Card>
                     <Card className="border-dashed">
                       <CardContent className="pt-4 space-y-3">
-                        <Label className="text-base font-semibold">Meteran Akhir *</Label>
-                        <PhotoUpload label="Foto Meteran Akhir (real-time)" value={photoEndFile} onChange={setPhotoEndFile} />
+                        <Label className="text-base font-semibold">Meteran Akhir</Label>
+                        <p className="text-xs text-muted-foreground">Boleh diisi 0 jika belum ada pencatatan akhir. Bisa diperbarui kemudian.</p>
+                        <PhotoUpload label="Foto Meteran Akhir (real-time, opsional)" value={photoEndFile} onChange={setPhotoEndFile} />
                         <div><Label>Angka Meteran Akhir</Label><Input type="number" value={meterEnd} onChange={(e) => setMeterEnd(e.target.value)} placeholder="0" /></div>
                       </CardContent>
                     </Card>
-                    {meterStart && meterEnd && (
-                      <Card className="bg-muted/50">
-                        <CardContent className="pt-4 space-y-2">
-                          <div className="flex justify-between text-sm"><span>Pemakaian</span><span className="font-semibold">{usage} m³</span></div>
-                          <div className="flex justify-between text-sm"><span>Nominal</span><span className="font-semibold text-primary">Rp {nominal.toLocaleString("id-ID")}</span></div>
-                        </CardContent>
-                      </Card>
-                    )}
-                    <Button onClick={handleSubmit} disabled={!unitNumber || !meterEnd || Number(meterEnd) < Number(meterStart) || isCreating || uploading} className="w-full">
-                      {isCreating || uploading ? "Menyimpan..." : "Simpan & Buat Tagihan"}
+                    <Card className="bg-muted/50">
+                      <CardContent className="pt-4 space-y-2">
+                        <div className="flex justify-between text-sm"><span>Pemakaian</span><span className="font-semibold">{usage} m³</span></div>
+                        <div className="flex justify-between text-sm"><span>Abonemen</span><span>Rp {tariff.abonemen.toLocaleString("id-ID")}</span></div>
+                        <div className="flex justify-between text-sm"><span>Pemakaian × Tarif</span><span>Rp {(usage * tariff.price_per_m3).toLocaleString("id-ID")}</span></div>
+                        <div className="flex justify-between text-sm border-t pt-2"><span>Total Tagihan</span><span className="font-semibold text-primary">Rp {nominal.toLocaleString("id-ID")}</span></div>
+                        {isBaseline && <p className="text-xs text-muted-foreground">Baseline (0 → 0): tidak akan membuat tagihan.</p>}
+                      </CardContent>
+                    </Card>
+                    <Button onClick={handleSubmit} disabled={!unitNumber || meterEnd === "" || Number(meterEnd) < Number(meterStart) || isCreating || uploading} className="w-full">
+                      {isCreating || uploading ? "Menyimpan..." : isBaseline ? "Simpan Baseline" : "Simpan & Buat Tagihan"}
                     </Button>
                   </div>
                 </DialogContent>
@@ -268,7 +292,7 @@ export default function MeteranAir() {
                     <TableHead>Bulan</TableHead>
                     <TableHead>Tanggal Input</TableHead>
                     <TableHead>Petugas</TableHead>
-                    {(isSuperAdmin || isAdmin) && <TableHead>Aksi</TableHead>}
+                    {canEditMeter && <TableHead>Aksi</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -297,11 +321,18 @@ export default function MeteranAir() {
                         <TableCell>{format(new Date(wm.billing_month), "MMMM yyyy", { locale: localeId })}</TableCell>
                         <TableCell>{format(new Date(wm.created_at), "dd/MM/yyyy HH:mm", { locale: localeId })}</TableCell>
                         <TableCell>{wm.recorded_by_name || "-"}</TableCell>
-                        {(isSuperAdmin || isAdmin) && (
+                        {canEditMeter && (
                           <TableCell>
-                            <Button variant="ghost" size="icon" onClick={() => { if (confirm("Hapus data meteran ini?")) remove(wm.id); }} className="text-destructive hover:text-destructive">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="icon" onClick={() => setEditTarget(wm)} title="Edit meteran">
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              {(isSuperAdmin || isAdmin) && (
+                                <Button variant="ghost" size="icon" onClick={() => { if (confirm("Hapus data meteran ini?")) remove(wm.id); }} className="text-destructive hover:text-destructive">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         )}
                       </TableRow>
@@ -321,6 +352,7 @@ export default function MeteranAir() {
           {viewPhoto && <img src={viewPhoto} alt="Foto Meteran" className="w-full h-auto rounded-lg" />}
         </ViewDialogContent>
       </ViewDialog>
+      <EditMeteranDialog open={!!editTarget} onOpenChange={(v) => !v && setEditTarget(null)} meter={editTarget} />
     </MainLayout>
   );
 }

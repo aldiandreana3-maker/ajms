@@ -1,6 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { calcWaterNominal } from "./useWaterTariff";
+
+async function getCurrentTariff(): Promise<{ abonemen: number; price_per_m3: number }> {
+  const { data } = await (supabase as any)
+    .from("water_tariff_settings")
+    .select("abonemen, price_per_m3")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return {
+    abonemen: Number(data?.abonemen ?? 17000),
+    price_per_m3: Number(data?.price_per_m3 ?? 12600),
+  };
+}
 
 export interface WaterMeter {
   id: string;
@@ -72,9 +86,14 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
 
   const createMutation = useMutation({
     mutationFn: async (input: WaterMeterInput) => {
+      const usagePre = Math.max(0, input.meter_end - input.meter_start);
+      const isBaseline = input.meter_start === 0 && input.meter_end === 0;
+      const tariffPre = await getCurrentTariff();
+      const nominalPre = isBaseline ? 0 : calcWaterNominal(usagePre, tariffPre.abonemen, tariffPre.price_per_m3);
+
       const { data: wmData, error: wmError } = await (supabase as any)
         .from("water_meters")
-        .insert(input)
+        .insert({ ...input, usage_m3: usagePre, nominal: nominalPre })
         .select()
         .single();
 
@@ -85,12 +104,13 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
         throw wmError;
       }
 
-      // Auto-create water bill (skip jika tidak ada pemakaian / baseline awal)
-      const usage = input.meter_end - input.meter_start;
-      const nominal = usage * 17000;
-      if (usage <= 0) {
+      // Auto-create water bill: abonemen + (usage × price). Skip jika baseline awal (start=end=0)
+      const usage = usagePre;
+      if (isBaseline) {
         return wmData;
       }
+      const tariff = tariffPre;
+      const nominal = nominalPre;
       const billingDate = new Date(input.billing_month);
       const dueDate = new Date(billingDate);
       dueDate.setMonth(dueDate.getMonth() + 1);
@@ -122,7 +142,7 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
           payment_status: "unpaid" as const,
           is_auto_generated: true,
           quarter_label: periodLabel,
-          notes: `Pemakaian air: ${usage} m³ (Meteran ${input.meter_start} → ${input.meter_end})`,
+          notes: `Pemakaian air: ${usage} m³ (Meteran ${input.meter_start} → ${input.meter_end}). Abonemen Rp ${tariff.abonemen.toLocaleString("id-ID")} + ${usage} × Rp ${tariff.price_per_m3.toLocaleString("id-ID")}`,
         });
 
       if (billError) {
@@ -156,11 +176,35 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, ...patch }: { id: string; meter_start?: number; meter_end?: number; photo_start_url?: string | null; photo_end_url?: string | null }) => {
+      const updates: any = { ...patch, updated_at: new Date().toISOString() };
+      if (patch.meter_start !== undefined || patch.meter_end !== undefined) {
+        const { data: existing } = await (supabase as any).from("water_meters").select("meter_start, meter_end").eq("id", id).single();
+        const ms = patch.meter_start ?? Number(existing?.meter_start ?? 0);
+        const me = patch.meter_end ?? Number(existing?.meter_end ?? 0);
+        const usage = Math.max(0, me - ms);
+        const tariff = await getCurrentTariff();
+        updates.usage_m3 = usage;
+        updates.nominal = (ms === 0 && me === 0) ? 0 : calcWaterNominal(usage, tariff.abonemen, tariff.price_per_m3);
+      }
+      const { error } = await (supabase as any).from("water_meters").update(updates).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["water-meters"] });
+      toast.success("Data meteran air berhasil diperbarui.");
+    },
+    onError: (e: Error) => toast.error("Gagal memperbarui: " + e.message),
+  });
+
   return {
     data: query.data || [],
     isLoading: query.isLoading,
     create: createMutation.mutateAsync,
     isCreating: createMutation.isPending,
+    update: updateMutation.mutateAsync,
+    isUpdating: updateMutation.isPending,
     remove: deleteMutation.mutateAsync,
     getPreviousMeter: async (unit_number: string, billing_month: string): Promise<number | null> => {
       const { data, error } = await (supabase as any)

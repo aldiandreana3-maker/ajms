@@ -3152,6 +3152,33 @@ export type Database = {
           },
         ]
       }
+      water_tariff_settings: {
+        Row: {
+          abonemen: number
+          created_at: string
+          id: string
+          price_per_m3: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          abonemen?: number
+          created_at?: string
+          id?: string
+          price_per_m3?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          abonemen?: number
+          created_at?: string
+          id?: string
+          price_per_m3?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       work_orders: {
         Row: {
           assigned_to: string | null
