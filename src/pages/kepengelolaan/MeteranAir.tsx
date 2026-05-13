@@ -119,8 +119,9 @@ export default function MeteranAir() {
     if (found) { setPenghuniName(found.name); setUnitId(found.unitId); } else { setPenghuniName(""); setUnitId(null); }
   };
 
-  const usage = meterEnd && meterStart ? Math.max(0, Number(meterEnd) - Number(meterStart)) : 0;
-  const nominal = usage * 17000;
+  const usage = meterEnd !== "" && meterStart !== "" ? Math.max(0, Number(meterEnd) - Number(meterStart)) : 0;
+  const isBaseline = Number(meterStart) === 0 && Number(meterEnd) === 0;
+  const nominal = isBaseline ? 0 : calcWaterNominal(usage, tariff.abonemen, tariff.price_per_m3);
 
   const resetForm = () => {
     setUnitNumber(""); setUnitId(null); setPenghuniName(""); setMeterStart(""); setMeterEnd("");
