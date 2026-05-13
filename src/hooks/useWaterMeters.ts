@@ -111,10 +111,9 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
       }
       const tariff = tariffPre;
       const nominal = nominalPre;
+      // Pencatatan meter tgl 15, tagihan terbit tgl 5 bulan berikutnya
       const billingDate = new Date(input.billing_month);
-      const dueDate = new Date(billingDate);
-      dueDate.setMonth(dueDate.getMonth() + 1);
-      dueDate.setDate(15);
+      const dueDate = new Date(billingDate.getFullYear(), billingDate.getMonth() + 1, 5);
 
       const { data: penghuniData } = await supabase
         .from("penghuni")
