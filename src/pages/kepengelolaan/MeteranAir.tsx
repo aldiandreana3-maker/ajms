@@ -352,6 +352,7 @@ export default function MeteranAir() {
           {viewPhoto && <img src={viewPhoto} alt="Foto Meteran" className="w-full h-auto rounded-lg" />}
         </ViewDialogContent>
       </ViewDialog>
+      <EditMeteranDialog open={!!editTarget} onOpenChange={(v) => !v && setEditTarget(null)} meter={editTarget} />
     </MainLayout>
   );
 }
