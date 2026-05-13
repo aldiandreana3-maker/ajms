@@ -62,7 +62,9 @@ export default function MeteranAir() {
   const { data: waterMeters, isLoading, create, isCreating, remove, getPreviousMeter } = useWaterMeters({ search, month: filterMonth, year: filterYear });
   const { penghuni } = usePenghuni();
   const { uploadFile, uploading } = useFileUpload({ folder: "water-meters" });
+  const { tariff } = useWaterTariff();
   const [loadingPrev, setLoadingPrev] = useState(false);
+  const [editTarget, setEditTarget] = useState<WaterMeter | null>(null);
 
   // Auto-load meter awal dari meter akhir bulan sebelumnya
   useEffect(() => {
