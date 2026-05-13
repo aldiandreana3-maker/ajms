@@ -129,7 +129,7 @@ export default function MeteranAir() {
   };
 
   const handleSubmit = async () => {
-    if (!unitNumber || !meterStart || !meterEnd) return;
+    if (!unitNumber || meterEnd === "") return;
     let photoStartUrl: string | null = null;
     let photoEndUrl: string | null = null;
     if (photoStartFile) photoStartUrl = await uploadFile(photoStartFile);
@@ -137,7 +137,7 @@ export default function MeteranAir() {
     await create({
       unit_number: unitNumber, unit_id: unitId, penghuni_name: penghuniName || null,
       photo_start_url: photoStartUrl, photo_end_url: photoEndUrl,
-      meter_start: Number(meterStart), meter_end: Number(meterEnd),
+      meter_start: Number(meterStart) || 0, meter_end: Number(meterEnd) || 0,
       billing_month: `${billingMonth}-01`, recorded_by: user?.id, recorded_by_name: user?.email || null,
     });
     resetForm(); setDialogOpen(false);
