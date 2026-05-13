@@ -20,12 +20,22 @@ export function EditMeteranDialog({ open, onOpenChange, meter }: Props) {
   const { update, isUpdating } = useWaterMeters();
   const { tariff } = useWaterTariff();
   const { uploadFile, uploading } = useFileUpload({ folder: "water-meters" });
+  const { user } = useAuth();
   const [start, setStart] = useState("0");
   const [end, setEnd] = useState("0");
   const [photoStart, setPhotoStart] = useState<File | null>(null);
   const [photoEnd, setPhotoEnd] = useState<File | null>(null);
   const [previewStart, setPreviewStart] = useState<string | null>(null);
   const [previewEnd, setPreviewEnd] = useState<string | null>(null);
+  const [editorName, setEditorName] = useState<string>("");
+
+  useEffect(() => {
+    if (user?.id) {
+      supabase.from("profiles").select("full_name").eq("id", user.id).single().then(({ data }) => {
+        setEditorName(data?.full_name || user.email || "Petugas");
+      });
+    }
+  }, [user]);
 
   useEffect(() => {
     if (meter) {
@@ -33,7 +43,6 @@ export function EditMeteranDialog({ open, onOpenChange, meter }: Props) {
       setEnd(String(meter.meter_end ?? 0));
       setPhotoStart(null);
       setPhotoEnd(null);
-      // load existing photo previews via signed url
       const loadSigned = async (path: string | null, set: (v: string | null) => void) => {
         if (!path) return set(null);
         const { data } = await supabase.storage.from("kepenghunian-files").createSignedUrl(path, 3600);
@@ -52,7 +61,13 @@ export function EditMeteranDialog({ open, onOpenChange, meter }: Props) {
   const nominal = ms === 0 && me === 0 ? 0 : calcWaterNominal(usage, tariff.abonemen, tariff.price_per_m3);
 
   const handleSave = async () => {
-    const patch: any = { id: meter.id, meter_start: ms, meter_end: me };
+    const patch: any = {
+      id: meter.id,
+      meter_start: ms,
+      meter_end: me,
+      recorded_by: user?.id || null,
+      recorded_by_name: editorName || user?.email || "Petugas",
+    };
     if (photoStart) {
       const path = await uploadFile(photoStart);
       if (path) patch.photo_start_url = path;
