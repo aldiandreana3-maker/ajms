@@ -127,7 +127,9 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
       const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
       const periodLabel = `${monthNames[billingDate.getMonth()]} ${billingDate.getFullYear()}`;
 
-      const { error: billError } = await supabase
+      const notesText = `Tagihan Air - Pemakaian: ${usage} m³ (Meteran Awal ${input.meter_start} → Meteran Akhir ${input.meter_end}). Abonemen Rp ${tariff.abonemen.toLocaleString("id-ID")} + ${usage} m³ × Rp ${tariff.price_per_m3.toLocaleString("id-ID")} = Rp ${nominal.toLocaleString("id-ID")}`;
+
+      const { data: billRow, error: billError } = await supabase
         .from("bills")
         .insert({
           unit_id: input.unit_id,
@@ -141,12 +143,26 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
           payment_status: "unpaid" as const,
           is_auto_generated: true,
           quarter_label: periodLabel,
-          notes: `Pemakaian air: ${usage} m³ (Meteran ${input.meter_start} → ${input.meter_end}). Abonemen Rp ${tariff.abonemen.toLocaleString("id-ID")} + ${usage} × Rp ${tariff.price_per_m3.toLocaleString("id-ID")}`,
-        });
+          notes: notesText,
+        })
+        .select()
+        .single();
 
       if (billError) {
         console.warn("Gagal membuat tagihan otomatis:", billError);
         toast.warning("Data meteran tersimpan, tapi gagal membuat tagihan otomatis.");
+      } else if (billRow) {
+        // Buat 1 baris bill_payments agar tagihan air bisa ditagih di Sistem Kasir
+        const { error: bpError } = await supabase.from("bill_payments").insert({
+          bill_id: billRow.id,
+          month_number: 1,
+          month_label: `Tagihan Air ${periodLabel}`,
+          month_date: input.billing_month,
+          sc_amount: 0,
+          sf_amount: 0,
+          total_amount: nominal,
+        });
+        if (bpError) console.warn("Gagal membuat bill_payments air:", bpError);
       }
 
       return wmData;
