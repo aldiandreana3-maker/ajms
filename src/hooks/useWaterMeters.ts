@@ -1,6 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { calcWaterNominal } from "./useWaterTariff";
+
+async function getCurrentTariff(): Promise<{ abonemen: number; price_per_m3: number }> {
+  const { data } = await (supabase as any)
+    .from("water_tariff_settings")
+    .select("abonemen, price_per_m3")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  return {
+    abonemen: Number(data?.abonemen ?? 17000),
+    price_per_m3: Number(data?.price_per_m3 ?? 12600),
+  };
+}
 
 export interface WaterMeter {
   id: string;
