@@ -232,28 +232,41 @@ export default function MeteranAir() {
                     </div>
                     <Card className="border-dashed bg-muted/30">
                       <CardContent className="pt-4 space-y-2">
-                        <Label className="text-base font-semibold">Meteran Awal (Otomatis)</Label>
-                        <p className="text-xs text-muted-foreground">Diambil otomatis dari meteran akhir periode sebelumnya. Tidak perlu input ulang.</p>
-                        <Input type="number" value={loadingPrev ? "Memuat..." : meterStart} disabled readOnly />
+                        <Label className="text-base font-semibold">Meteran Awal {canEditMeter ? "(Bisa diubah manual)" : "(Otomatis)"}</Label>
+                        <p className="text-xs text-muted-foreground">
+                          {canEditMeter
+                            ? "Diambil dari meteran akhir periode sebelumnya. Anda boleh mengubah jika diperlukan koreksi."
+                            : "Diambil otomatis dari meteran akhir periode sebelumnya."}
+                        </p>
+                        <Input
+                          type="number"
+                          value={loadingPrev ? "" : meterStart}
+                          placeholder={loadingPrev ? "Memuat..." : "0"}
+                          onChange={(e) => setMeterStart(e.target.value)}
+                          disabled={!canEditMeter || loadingPrev}
+                          readOnly={!canEditMeter}
+                        />
                       </CardContent>
                     </Card>
                     <Card className="border-dashed">
                       <CardContent className="pt-4 space-y-3">
-                        <Label className="text-base font-semibold">Meteran Akhir *</Label>
-                        <PhotoUpload label="Foto Meteran Akhir (real-time)" value={photoEndFile} onChange={setPhotoEndFile} />
+                        <Label className="text-base font-semibold">Meteran Akhir</Label>
+                        <p className="text-xs text-muted-foreground">Boleh diisi 0 jika belum ada pencatatan akhir. Bisa diperbarui kemudian.</p>
+                        <PhotoUpload label="Foto Meteran Akhir (real-time, opsional)" value={photoEndFile} onChange={setPhotoEndFile} />
                         <div><Label>Angka Meteran Akhir</Label><Input type="number" value={meterEnd} onChange={(e) => setMeterEnd(e.target.value)} placeholder="0" /></div>
                       </CardContent>
                     </Card>
-                    {meterStart && meterEnd && (
-                      <Card className="bg-muted/50">
-                        <CardContent className="pt-4 space-y-2">
-                          <div className="flex justify-between text-sm"><span>Pemakaian</span><span className="font-semibold">{usage} m³</span></div>
-                          <div className="flex justify-between text-sm"><span>Nominal</span><span className="font-semibold text-primary">Rp {nominal.toLocaleString("id-ID")}</span></div>
-                        </CardContent>
-                      </Card>
-                    )}
-                    <Button onClick={handleSubmit} disabled={!unitNumber || !meterEnd || Number(meterEnd) < Number(meterStart) || isCreating || uploading} className="w-full">
-                      {isCreating || uploading ? "Menyimpan..." : "Simpan & Buat Tagihan"}
+                    <Card className="bg-muted/50">
+                      <CardContent className="pt-4 space-y-2">
+                        <div className="flex justify-between text-sm"><span>Pemakaian</span><span className="font-semibold">{usage} m³</span></div>
+                        <div className="flex justify-between text-sm"><span>Abonemen</span><span>Rp {tariff.abonemen.toLocaleString("id-ID")}</span></div>
+                        <div className="flex justify-between text-sm"><span>Pemakaian × Tarif</span><span>Rp {(usage * tariff.price_per_m3).toLocaleString("id-ID")}</span></div>
+                        <div className="flex justify-between text-sm border-t pt-2"><span>Total Tagihan</span><span className="font-semibold text-primary">Rp {nominal.toLocaleString("id-ID")}</span></div>
+                        {isBaseline && <p className="text-xs text-muted-foreground">Baseline (0 → 0): tidak akan membuat tagihan.</p>}
+                      </CardContent>
+                    </Card>
+                    <Button onClick={handleSubmit} disabled={!unitNumber || meterEnd === "" || Number(meterEnd) < Number(meterStart) || isCreating || uploading} className="w-full">
+                      {isCreating || uploading ? "Menyimpan..." : isBaseline ? "Simpan Baseline" : "Simpan & Buat Tagihan"}
                     </Button>
                   </div>
                 </DialogContent>
