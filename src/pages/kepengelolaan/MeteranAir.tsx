@@ -228,10 +228,17 @@ export default function MeteranAir() {
                         <div><Label>Angka Meteran Awal</Label><Input type="number" value={meterStart} onChange={(e) => setMeterStart(e.target.value)} placeholder="0" /></div>
                       </CardContent>
                     </Card>
+                    <Card className="border-dashed bg-muted/30">
+                      <CardContent className="pt-4 space-y-2">
+                        <Label className="text-base font-semibold">Meteran Awal (Otomatis)</Label>
+                        <p className="text-xs text-muted-foreground">Diambil otomatis dari meteran akhir periode sebelumnya. Tidak perlu input ulang.</p>
+                        <Input type="number" value={loadingPrev ? "Memuat..." : meterStart} disabled readOnly />
+                      </CardContent>
+                    </Card>
                     <Card className="border-dashed">
                       <CardContent className="pt-4 space-y-3">
                         <Label className="text-base font-semibold">Meteran Akhir *</Label>
-                        <PhotoUpload label="Foto Meteran Akhir" value={photoEndFile} onChange={setPhotoEndFile} />
+                        <PhotoUpload label="Foto Meteran Akhir (real-time)" value={photoEndFile} onChange={setPhotoEndFile} />
                         <div><Label>Angka Meteran Akhir</Label><Input type="number" value={meterEnd} onChange={(e) => setMeterEnd(e.target.value)} placeholder="0" /></div>
                       </CardContent>
                     </Card>
@@ -243,7 +250,7 @@ export default function MeteranAir() {
                         </CardContent>
                       </Card>
                     )}
-                    <Button onClick={handleSubmit} disabled={!unitNumber || !meterStart || !meterEnd || isCreating || uploading} className="w-full">
+                    <Button onClick={handleSubmit} disabled={!unitNumber || !meterEnd || Number(meterEnd) < Number(meterStart) || isCreating || uploading} className="w-full">
                       {isCreating || uploading ? "Menyimpan..." : "Simpan & Buat Tagihan"}
                     </Button>
                   </div>
