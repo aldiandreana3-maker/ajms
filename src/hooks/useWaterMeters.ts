@@ -176,8 +176,10 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, ...patch }: { id: string; meter_start?: number; meter_end?: number; photo_start_url?: string | null; photo_end_url?: string | null }) => {
+    mutationFn: async ({ id, recorded_by, recorded_by_name, ...patch }: { id: string; recorded_by?: string | null; recorded_by_name?: string | null; meter_start?: number; meter_end?: number; photo_start_url?: string | null; photo_end_url?: string | null }) => {
       const updates: any = { ...patch, updated_at: new Date().toISOString() };
+      if (recorded_by !== undefined) updates.recorded_by = recorded_by;
+      if (recorded_by_name !== undefined) updates.recorded_by_name = recorded_by_name;
       if (patch.meter_start !== undefined || patch.meter_end !== undefined) {
         const { data: existing } = await (supabase as any).from("water_meters").select("meter_start, meter_end").eq("id", id).single();
         const ms = patch.meter_start ?? Number(existing?.meter_start ?? 0);
