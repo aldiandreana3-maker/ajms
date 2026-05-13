@@ -36,8 +36,10 @@ function PhotoThumb({ path, signedUrls, onView }: { path: string | null; signedU
 
 export default function MeteranAir() {
   const navigate = useNavigate();
-  const { isSuperAdmin, isAdmin, isStaff, isLimitedAccess, user } = useAuth();
+  const { isSuperAdmin, isAdmin, isStaff, isLimitedAccess, role, user } = useAuth();
+  const isEngineering = role === "staff_engineering";
   const canAccess = (isSuperAdmin || isAdmin || isStaff) && !isLimitedAccess;
+  const canEditMeter = isSuperAdmin || isAdmin || isEngineering;
 
   const [search, setSearch] = useState("");
   const [filterMonth, setFilterMonth] = useState("");
