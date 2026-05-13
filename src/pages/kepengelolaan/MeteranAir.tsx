@@ -221,13 +221,6 @@ export default function MeteranAir() {
                       <Label>Bulan Tagihan *</Label>
                       <Input type="month" value={billingMonth} onChange={(e) => setBillingMonth(e.target.value)} />
                     </div>
-                    <Card className="border-dashed">
-                      <CardContent className="pt-4 space-y-3">
-                        <Label className="text-base font-semibold">Meteran Awal *</Label>
-                        <PhotoUpload label="Foto Meteran Awal" value={photoStartFile} onChange={setPhotoStartFile} />
-                        <div><Label>Angka Meteran Awal</Label><Input type="number" value={meterStart} onChange={(e) => setMeterStart(e.target.value)} placeholder="0" /></div>
-                      </CardContent>
-                    </Card>
                     <Card className="border-dashed bg-muted/30">
                       <CardContent className="pt-4 space-y-2">
                         <Label className="text-base font-semibold">Meteran Awal (Otomatis)</Label>
