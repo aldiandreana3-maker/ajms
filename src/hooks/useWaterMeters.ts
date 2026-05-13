@@ -93,7 +93,7 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
 
       const { data: wmData, error: wmError } = await (supabase as any)
         .from("water_meters")
-        .insert({ ...input, usage_m3: usagePre, nominal: nominalPre })
+        .insert({ ...input })
         .select()
         .single();
 
