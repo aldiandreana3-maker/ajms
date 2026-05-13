@@ -10,7 +10,7 @@ import { Link } from "react-router-dom";
 
 export default function SistemTagihan() {
   const { user } = useAuth();
-  const { data: counts } = useBillStatusCounts();
+  const { data: counts } = useBillStatusCounts("air");
 
   if (!user) {
     return (
@@ -37,8 +37,8 @@ export default function SistemTagihan() {
             <Receipt className="w-6 h-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Sistem Tagihan</h1>
-            <p className="text-muted-foreground">Tagihan unit Anda</p>
+            <h1 className="text-2xl font-bold text-foreground">Tagihan Air Saya</h1>
+            <p className="text-muted-foreground">Tagihan pemakaian air unit Anda</p>
           </div>
         </div>
 
@@ -52,16 +52,16 @@ export default function SistemTagihan() {
                 <TabsTrigger value="all">Semua ({counts?.all ?? 0})</TabsTrigger>
               </TabsList>
               <TabsContent value="unpaid" className="mt-4">
-                <ServerBillTable status="unpaid" showInvoice />
+                <ServerBillTable status="unpaid" showInvoice billType="air" />
               </TabsContent>
               <TabsContent value="partial" className="mt-4">
-                <ServerBillTable status="partial" showInvoice />
+                <ServerBillTable status="partial" showInvoice billType="air" />
               </TabsContent>
               <TabsContent value="paid" className="mt-4">
-                <ServerBillTable status="paid" showInvoice />
+                <ServerBillTable status="paid" showInvoice billType="air" />
               </TabsContent>
               <TabsContent value="all" className="mt-4">
-                <ServerBillTable status="all" showInvoice />
+                <ServerBillTable status="all" showInvoice billType="air" />
               </TabsContent>
             </Tabs>
           </CardContent>
