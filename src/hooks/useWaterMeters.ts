@@ -172,11 +172,26 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, ...patch }: { id: string; meter_start?: number; meter_end?: number; photo_start_url?: string | null; photo_end_url?: string | null }) => {
+      const updates: any = { ...patch, updated_at: new Date().toISOString() };
+      const { error } = await (supabase as any).from("water_meters").update(updates).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["water-meters"] });
+      toast.success("Data meteran air berhasil diperbarui.");
+    },
+    onError: (e: Error) => toast.error("Gagal memperbarui: " + e.message),
+  });
+
   return {
     data: query.data || [],
     isLoading: query.isLoading,
     create: createMutation.mutateAsync,
     isCreating: createMutation.isPending,
+    update: updateMutation.mutateAsync,
+    isUpdating: updateMutation.isPending,
     remove: deleteMutation.mutateAsync,
     getPreviousMeter: async (unit_number: string, billing_month: string): Promise<number | null> => {
       const { data, error } = await (supabase as any)
