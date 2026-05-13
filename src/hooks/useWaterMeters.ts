@@ -93,7 +93,7 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
 
       const { data: wmData, error: wmError } = await (supabase as any)
         .from("water_meters")
-        .insert({ ...input, usage_m3: usagePre, nominal: nominalPre })
+        .insert({ ...input })
         .select()
         .single();
 
@@ -180,17 +180,9 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
       const updates: any = { ...patch, updated_at: new Date().toISOString() };
       if (recorded_by !== undefined) updates.recorded_by = recorded_by;
       if (recorded_by_name !== undefined) updates.recorded_by_name = recorded_by_name;
-      if (patch.meter_start !== undefined || patch.meter_end !== undefined) {
-        const { data: existing } = await (supabase as any).from("water_meters").select("meter_start, meter_end").eq("id", id).single();
-        const ms = patch.meter_start ?? Number(existing?.meter_start ?? 0);
-        const me = patch.meter_end ?? Number(existing?.meter_end ?? 0);
-        const usage = Math.max(0, me - ms);
-        const tariff = await getCurrentTariff();
-        // usage_m3 adalah generated column - tidak boleh di-update manual
-        updates.nominal = (ms === 0 && me === 0) ? 0 : calcWaterNominal(usage, tariff.abonemen, tariff.price_per_m3);
-      }
-      // Hapus usage_m3 jika ada di patch agar tidak bentrok dengan generated column
-      delete updates.usage_m3;
+      // usage_m3 dan nominal adalah generated columns - tidak boleh di-update manual
+      delete (updates as any).usage_m3;
+      delete (updates as any).nominal;
       const { error } = await (supabase as any).from("water_meters").update(updates).eq("id", id);
       if (error) throw error;
     },
