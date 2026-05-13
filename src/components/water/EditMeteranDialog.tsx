@@ -8,6 +8,7 @@ import { useWaterTariff, calcWaterNominal } from "@/hooks/useWaterTariff";
 import { CameraCapture } from "@/components/shared/CameraCapture";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Props {
   open: boolean;
