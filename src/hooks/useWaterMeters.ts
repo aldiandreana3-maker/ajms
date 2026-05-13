@@ -99,12 +99,14 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
         throw wmError;
       }
 
-      // Auto-create water bill (skip jika tidak ada pemakaian / baseline awal)
-      const usage = input.meter_end - input.meter_start;
-      const nominal = usage * 17000;
-      if (usage <= 0) {
+      // Auto-create water bill: abonemen + (usage × price). Skip jika baseline awal (meter_start = meter_end = 0)
+      const usage = Math.max(0, input.meter_end - input.meter_start);
+      const isBaselineZero = input.meter_start === 0 && input.meter_end === 0;
+      if (isBaselineZero) {
         return wmData;
       }
+      const tariff = await getCurrentTariff();
+      const nominal = calcWaterNominal(usage, tariff.abonemen, tariff.price_per_m3);
       const billingDate = new Date(input.billing_month);
       const dueDate = new Date(billingDate);
       dueDate.setMonth(dueDate.getMonth() + 1);
@@ -136,7 +138,7 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
           payment_status: "unpaid" as const,
           is_auto_generated: true,
           quarter_label: periodLabel,
-          notes: `Pemakaian air: ${usage} m³ (Meteran ${input.meter_start} → ${input.meter_end})`,
+          notes: `Pemakaian air: ${usage} m³ (Meteran ${input.meter_start} → ${input.meter_end}). Abonemen Rp ${tariff.abonemen.toLocaleString("id-ID")} + ${usage} × Rp ${tariff.price_per_m3.toLocaleString("id-ID")}`,
         });
 
       if (billError) {
