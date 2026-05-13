@@ -53,9 +53,23 @@ export default function MeteranAir() {
   const [photoEndFile, setPhotoEndFile] = useState<File | null>(null);
   const [billingMonth, setBillingMonth] = useState(new Date().toISOString().slice(0, 7));
 
-  const { data: waterMeters, isLoading, create, isCreating, remove } = useWaterMeters({ search, month: filterMonth, year: filterYear });
+  const { data: waterMeters, isLoading, create, isCreating, remove, getPreviousMeter } = useWaterMeters({ search, month: filterMonth, year: filterYear });
   const { penghuni } = usePenghuni();
   const { uploadFile, uploading } = useFileUpload({ folder: "water-meters" });
+  const [loadingPrev, setLoadingPrev] = useState(false);
+
+  // Auto-load meter awal dari meter akhir bulan sebelumnya
+  useEffect(() => {
+    if (!unitNumber || !billingMonth) return;
+    let cancelled = false;
+    setLoadingPrev(true);
+    getPreviousMeter(unitNumber, `${billingMonth}-01`).then((prev) => {
+      if (cancelled) return;
+      setMeterStart(prev !== null ? String(prev) : "0");
+      setLoadingPrev(false);
+    });
+    return () => { cancelled = true; };
+  }, [unitNumber, billingMonth]);
 
   useEffect(() => {
     const resolveUrls = async () => {
@@ -207,17 +221,17 @@ export default function MeteranAir() {
                       <Label>Bulan Tagihan *</Label>
                       <Input type="month" value={billingMonth} onChange={(e) => setBillingMonth(e.target.value)} />
                     </div>
-                    <Card className="border-dashed">
-                      <CardContent className="pt-4 space-y-3">
-                        <Label className="text-base font-semibold">Meteran Awal *</Label>
-                        <PhotoUpload label="Foto Meteran Awal" value={photoStartFile} onChange={setPhotoStartFile} />
-                        <div><Label>Angka Meteran Awal</Label><Input type="number" value={meterStart} onChange={(e) => setMeterStart(e.target.value)} placeholder="0" /></div>
+                    <Card className="border-dashed bg-muted/30">
+                      <CardContent className="pt-4 space-y-2">
+                        <Label className="text-base font-semibold">Meteran Awal (Otomatis)</Label>
+                        <p className="text-xs text-muted-foreground">Diambil otomatis dari meteran akhir periode sebelumnya. Tidak perlu input ulang.</p>
+                        <Input type="number" value={loadingPrev ? "Memuat..." : meterStart} disabled readOnly />
                       </CardContent>
                     </Card>
                     <Card className="border-dashed">
                       <CardContent className="pt-4 space-y-3">
                         <Label className="text-base font-semibold">Meteran Akhir *</Label>
-                        <PhotoUpload label="Foto Meteran Akhir" value={photoEndFile} onChange={setPhotoEndFile} />
+                        <PhotoUpload label="Foto Meteran Akhir (real-time)" value={photoEndFile} onChange={setPhotoEndFile} />
                         <div><Label>Angka Meteran Akhir</Label><Input type="number" value={meterEnd} onChange={(e) => setMeterEnd(e.target.value)} placeholder="0" /></div>
                       </CardContent>
                     </Card>
@@ -229,7 +243,7 @@ export default function MeteranAir() {
                         </CardContent>
                       </Card>
                     )}
-                    <Button onClick={handleSubmit} disabled={!unitNumber || !meterStart || !meterEnd || isCreating || uploading} className="w-full">
+                    <Button onClick={handleSubmit} disabled={!unitNumber || !meterEnd || Number(meterEnd) < Number(meterStart) || isCreating || uploading} className="w-full">
                       {isCreating || uploading ? "Menyimpan..." : "Simpan & Buat Tagihan"}
                     </Button>
                   </div>

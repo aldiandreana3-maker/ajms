@@ -85,9 +85,12 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
         throw wmError;
       }
 
-      // Auto-create water bill
+      // Auto-create water bill (skip jika tidak ada pemakaian / baseline awal)
       const usage = input.meter_end - input.meter_start;
       const nominal = usage * 17000;
+      if (usage <= 0) {
+        return wmData;
+      }
       const billingDate = new Date(input.billing_month);
       const dueDate = new Date(billingDate);
       dueDate.setMonth(dueDate.getMonth() + 1);
@@ -159,5 +162,17 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
     create: createMutation.mutateAsync,
     isCreating: createMutation.isPending,
     remove: deleteMutation.mutateAsync,
+    getPreviousMeter: async (unit_number: string, billing_month: string): Promise<number | null> => {
+      const { data, error } = await (supabase as any)
+        .from("water_meters")
+        .select("meter_end")
+        .eq("unit_number", unit_number)
+        .lt("billing_month", billing_month)
+        .order("billing_month", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error || !data) return null;
+      return Number(data.meter_end);
+    },
   };
 }
