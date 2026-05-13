@@ -16,10 +16,14 @@ import { PhotoUpload } from "@/components/shared/PhotoUpload";
 import { Dialog as ViewDialog, DialogContent as ViewDialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { TablePagination } from "@/components/shared/TablePagination";
-import { ArrowLeft, Droplets, Plus, ShieldAlert, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, Droplets, Plus, ShieldAlert, Search, Trash2, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { Combobox } from "@/components/ui/combobox";
+import { WaterTariffCard } from "@/components/water/WaterTariffCard";
+import { EditMeteranDialog } from "@/components/water/EditMeteranDialog";
+import { useWaterTariff, calcWaterNominal } from "@/hooks/useWaterTariff";
+import type { WaterMeter } from "@/hooks/useWaterMeters";
 
 function PhotoThumb({ path, signedUrls, onView }: { path: string | null; signedUrls: Record<string, string>; onView: (url: string) => void }) {
   if (!path) return <span className="text-muted-foreground text-xs">-</span>;
