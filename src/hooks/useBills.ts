@@ -46,17 +46,18 @@ export interface QuarterlyBill {
   bill_payments?: BillPayment[];
 }
 
-export function useBillStatusCounts() {
+export function useBillStatusCounts(billType?: string) {
   return useQuery({
-    queryKey: ["bills-status-counts"],
+    queryKey: ["bills-status-counts", billType || "all"],
     queryFn: async () => {
       const statuses = ["unpaid", "partial", "paid"] as const;
-      const results = await Promise.all([
-        supabase.from("bills").select("id", { count: "exact", head: true }),
-        ...statuses.map((s) =>
-          supabase.from("bills").select("id", { count: "exact", head: true }).eq("payment_status", s)
-        ),
-      ]);
+      const build = (s?: typeof statuses[number]) => {
+        let q = supabase.from("bills").select("id", { count: "exact", head: true });
+        if (s) q = q.eq("payment_status", s);
+        if (billType) q = q.eq("bill_type", billType as any);
+        return q;
+      };
+      const results = await Promise.all([build(), ...statuses.map((s) => build(s))]);
       return {
         all: results[0].count || 0,
         unpaid: results[1].count || 0,
@@ -72,10 +73,11 @@ export function useBillsPaginated(params: {
   page: number;
   pageSize: number;
   search?: string;
+  billType?: string;
 }) {
-  const { status = "all", page, pageSize, search = "" } = params;
+  const { status = "all", page, pageSize, search = "", billType } = params;
   return useQuery({
-    queryKey: ["bills-paginated", status, page, pageSize, search],
+    queryKey: ["bills-paginated", status, page, pageSize, search, billType || "all"],
     placeholderData: (prev) => prev,
     queryFn: async (): Promise<{ bills: QuarterlyBill[]; total: number }> => {
       let query = supabase
@@ -87,6 +89,7 @@ export function useBillsPaginated(params: {
         .order("created_at", { ascending: false });
 
       if (status !== "all") query = query.eq("payment_status", status);
+      if (billType) query = query.eq("bill_type", billType as any);
       if (search.trim()) {
         const s = `%${search.trim()}%`;
         query = query.or(
@@ -101,7 +104,6 @@ export function useBillsPaginated(params: {
 
       const bills = (data || []) as unknown as QuarterlyBill[];
 
-      // Fetch bill_payments only for the current page
       if (bills.length > 0) {
         const ids = bills.map((b) => b.id);
         const { data: payments } = await supabase

@@ -201,9 +201,83 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
       delete (updates as any).nominal;
       const { error } = await (supabase as any).from("water_meters").update(updates).eq("id", id);
       if (error) throw error;
+
+      // Setelah update: cek apakah perlu generate tagihan air (jika belum ada & usage > 0)
+      const { data: wm } = await (supabase as any)
+        .from("water_meters")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (!wm) return;
+      const usage = Math.max(0, Number(wm.meter_end) - Number(wm.meter_start));
+      if (usage <= 0) return;
+
+      // Cek apakah tagihan air untuk unit & periode ini sudah ada
+      const { data: existingBills } = await supabase
+        .from("bills")
+        .select("id")
+        .eq("unit_number", wm.unit_number)
+        .eq("bill_type", "air" as const)
+        .eq("billing_period", wm.billing_month)
+        .limit(1);
+      if (existingBills && existingBills.length > 0) return;
+
+      const tariff = await getCurrentTariff();
+      const nominal = calcWaterNominal(usage, tariff.abonemen, tariff.price_per_m3);
+      const billingDate = new Date(wm.billing_month);
+      const dueDate = new Date(billingDate.getFullYear(), billingDate.getMonth() + 1, 5);
+      const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+      const periodLabel = `${monthNames[billingDate.getMonth()]} ${billingDate.getFullYear()}`;
+
+      const { data: penghuniData } = await supabase
+        .from("penghuni")
+        .select("id")
+        .eq("unit_number", wm.unit_number)
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle();
+
+      const notesText = `Tagihan Air - Pemakaian: ${usage} m³ (Meteran Awal ${wm.meter_start} → Meteran Akhir ${wm.meter_end}). Abonemen Rp ${tariff.abonemen.toLocaleString("id-ID")} + ${usage} m³ × Rp ${tariff.price_per_m3.toLocaleString("id-ID")} = Rp ${nominal.toLocaleString("id-ID")}`;
+
+      const { data: billRow, error: billError } = await supabase
+        .from("bills")
+        .insert({
+          unit_id: wm.unit_id,
+          unit_number: wm.unit_number,
+          penghuni_id: penghuniData?.id || null,
+          bill_type: "air" as const,
+          amount: nominal,
+          total_amount: nominal,
+          billing_period: wm.billing_month,
+          due_date: dueDate.toISOString().split("T")[0],
+          payment_status: "unpaid" as const,
+          is_auto_generated: true,
+          quarter_label: periodLabel,
+          notes: notesText,
+        })
+        .select()
+        .single();
+
+      if (billError) {
+        console.warn("Gagal membuat tagihan otomatis (update):", billError);
+        return;
+      }
+      if (billRow) {
+        const { error: bpError } = await supabase.from("bill_payments").insert({
+          bill_id: billRow.id,
+          month_number: 1,
+          month_label: `Tagihan Air ${periodLabel}`,
+          month_date: wm.billing_month,
+          sc_amount: 0,
+          sf_amount: 0,
+          total_amount: nominal,
+        });
+        if (bpError) console.warn("Gagal membuat bill_payments air (update):", bpError);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["water-meters"] });
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
       toast.success("Data meteran air berhasil diperbarui.");
     },
     onError: (e: Error) => toast.error("Gagal memperbarui: " + e.message),

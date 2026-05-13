@@ -25,9 +25,11 @@ const statusLabels: Record<string, string> = {
 export function ServerBillTable({
   status = "all",
   showInvoice = false,
+  billType,
 }: {
   status?: "all" | "unpaid" | "partial" | "paid";
   showInvoice?: boolean;
+  billType?: string;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -41,6 +43,7 @@ export function ServerBillTable({
     page: currentPage,
     pageSize,
     search: searchQuery,
+    billType,
   });
 
   const bills = data?.bills || [];
