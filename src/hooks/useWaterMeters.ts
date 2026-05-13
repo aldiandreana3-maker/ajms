@@ -186,9 +186,11 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
         const me = patch.meter_end ?? Number(existing?.meter_end ?? 0);
         const usage = Math.max(0, me - ms);
         const tariff = await getCurrentTariff();
-        updates.usage_m3 = usage;
+        // usage_m3 adalah generated column - tidak boleh di-update manual
         updates.nominal = (ms === 0 && me === 0) ? 0 : calcWaterNominal(usage, tariff.abonemen, tariff.price_per_m3);
       }
+      // Hapus usage_m3 jika ada di patch agar tidak bentrok dengan generated column
+      delete updates.usage_m3;
       const { error } = await (supabase as any).from("water_meters").update(updates).eq("id", id);
       if (error) throw error;
     },
