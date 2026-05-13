@@ -292,7 +292,7 @@ export default function MeteranAir() {
                     <TableHead>Bulan</TableHead>
                     <TableHead>Tanggal Input</TableHead>
                     <TableHead>Petugas</TableHead>
-                    {(isSuperAdmin || isAdmin) && <TableHead>Aksi</TableHead>}
+                    {canEditMeter && <TableHead>Aksi</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
