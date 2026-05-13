@@ -321,11 +321,18 @@ export default function MeteranAir() {
                         <TableCell>{format(new Date(wm.billing_month), "MMMM yyyy", { locale: localeId })}</TableCell>
                         <TableCell>{format(new Date(wm.created_at), "dd/MM/yyyy HH:mm", { locale: localeId })}</TableCell>
                         <TableCell>{wm.recorded_by_name || "-"}</TableCell>
-                        {(isSuperAdmin || isAdmin) && (
+                        {canEditMeter && (
                           <TableCell>
-                            <Button variant="ghost" size="icon" onClick={() => { if (confirm("Hapus data meteran ini?")) remove(wm.id); }} className="text-destructive hover:text-destructive">
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="icon" onClick={() => setEditTarget(wm)} title="Edit meteran">
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                              {(isSuperAdmin || isAdmin) && (
+                                <Button variant="ghost" size="icon" onClick={() => { if (confirm("Hapus data meteran ini?")) remove(wm.id); }} className="text-destructive hover:text-destructive">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         )}
                       </TableRow>
