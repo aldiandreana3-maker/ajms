@@ -184,6 +184,8 @@ export default function MeteranAir() {
           </div>
         </div>
 
+        <WaterTariffCard />
+
         <Card>
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row gap-4 items-end">
