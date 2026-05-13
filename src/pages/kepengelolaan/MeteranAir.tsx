@@ -53,9 +53,23 @@ export default function MeteranAir() {
   const [photoEndFile, setPhotoEndFile] = useState<File | null>(null);
   const [billingMonth, setBillingMonth] = useState(new Date().toISOString().slice(0, 7));
 
-  const { data: waterMeters, isLoading, create, isCreating, remove } = useWaterMeters({ search, month: filterMonth, year: filterYear });
+  const { data: waterMeters, isLoading, create, isCreating, remove, getPreviousMeter } = useWaterMeters({ search, month: filterMonth, year: filterYear });
   const { penghuni } = usePenghuni();
   const { uploadFile, uploading } = useFileUpload({ folder: "water-meters" });
+  const [loadingPrev, setLoadingPrev] = useState(false);
+
+  // Auto-load meter awal dari meter akhir bulan sebelumnya
+  useEffect(() => {
+    if (!unitNumber || !billingMonth) return;
+    let cancelled = false;
+    setLoadingPrev(true);
+    getPreviousMeter(unitNumber, `${billingMonth}-01`).then((prev) => {
+      if (cancelled) return;
+      setMeterStart(prev !== null ? String(prev) : "0");
+      setLoadingPrev(false);
+    });
+    return () => { cancelled = true; };
+  }, [unitNumber, billingMonth]);
 
   useEffect(() => {
     const resolveUrls = async () => {
