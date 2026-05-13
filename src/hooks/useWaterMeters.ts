@@ -104,14 +104,13 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
         throw wmError;
       }
 
-      // Auto-create water bill: abonemen + (usage × price). Skip jika baseline awal (meter_start = meter_end = 0)
-      const usage = Math.max(0, input.meter_end - input.meter_start);
-      const isBaselineZero = input.meter_start === 0 && input.meter_end === 0;
-      if (isBaselineZero) {
+      // Auto-create water bill: abonemen + (usage × price). Skip jika baseline awal (start=end=0)
+      const usage = usagePre;
+      if (isBaseline) {
         return wmData;
       }
-      const tariff = await getCurrentTariff();
-      const nominal = calcWaterNominal(usage, tariff.abonemen, tariff.price_per_m3);
+      const tariff = tariffPre;
+      const nominal = nominalPre;
       const billingDate = new Date(input.billing_month);
       const dueDate = new Date(billingDate);
       dueDate.setMonth(dueDate.getMonth() + 1);
