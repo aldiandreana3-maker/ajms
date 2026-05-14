@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { UserCheck, Palmtree, Clock, FileText } from "lucide-react";
+import { UserCheck, Palmtree, Clock, FileText, CalendarClock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -27,6 +27,12 @@ const employeeServices = [
     title: "Izin",
     color: "bg-info",
     path: "/karyawan/izin",
+  },
+  {
+    icon: CalendarClock,
+    title: "Jadwal Saya",
+    color: "bg-accent",
+    path: "/karyawan/jadwal-saya",
   },
 ];
 

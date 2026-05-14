@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShieldAlert, UserCog, ArrowLeft, ArrowRight, ClipboardList, Receipt, Users } from "lucide-react";
+import { ShieldAlert, UserCog, ArrowLeft, ArrowRight, ClipboardList, Receipt, Users, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +28,13 @@ const hrdServices = [
     color: "info",
     path: "/kepengelolaan/hrd-ga/data-karyawan",
   },
+  {
+    icon: CalendarClock,
+    title: "Jadwal Kerja",
+    description: "Atur shift, rotasi, dan kalender kerja karyawan",
+    color: "warning",
+    path: "/kepengelolaan/hrd-ga/jadwal-kerja",
+  },
 ];
 
 const colorStyles: Record<string, { icon: string; hover: string }> = {
@@ -42,6 +49,10 @@ const colorStyles: Record<string, { icon: string; hover: string }> = {
   info: {
     icon: "bg-blue-600 text-white",
     hover: "hover:border-blue-600/50",
+  },
+  warning: {
+    icon: "bg-warning text-white",
+    hover: "hover:border-warning/50",
   },
 };
 

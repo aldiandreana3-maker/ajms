@@ -105,12 +105,33 @@ export function useCheckIn() {
         .getPublicUrl(fileName);
 
       const today = new Date().toISOString().split("T")[0];
+      const now = new Date();
+
+      // Cek jadwal shift hari ini
+      let shiftId: string | null = null;
+      let status = now.getHours() > 8 ? "terlambat" : "hadir";
+      const { data: schedule } = await supabase
+        .from("employee_shift_schedules")
+        .select("shift_id, shift:shift_definitions(start_time, late_tolerance_minutes)")
+        .eq("user_id", user.id)
+        .eq("schedule_date", today)
+        .maybeSingle();
+      if (schedule?.shift_id && (schedule as any).shift) {
+        shiftId = schedule.shift_id;
+        const sh: any = (schedule as any).shift;
+        const [h, m] = String(sh.start_time).split(":").map(Number);
+        const limit = new Date(now);
+        limit.setHours(h, m + (sh.late_tolerance_minutes ?? 0), 0, 0);
+        status = now > limit ? "terlambat" : "hadir";
+      }
+
       const { error } = await supabase.from("employee_attendance").insert({
         user_id: user.id,
         attendance_date: today,
-        check_in_time: new Date().toISOString(),
+        check_in_time: now.toISOString(),
         check_in_photo_url: publicUrl,
-        status: new Date().getHours() > 8 ? "terlambat" : "hadir",
+        status,
+        shift_id: shiftId,
         check_in_latitude: latitude,
         check_in_longitude: longitude,
       });

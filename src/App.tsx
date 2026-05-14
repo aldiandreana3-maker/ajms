@@ -74,6 +74,8 @@ import Absen from "./pages/karyawan/Absen";
 import Cuti from "./pages/karyawan/Cuti";
 import Lembur from "./pages/karyawan/Lembur";
 import Izin from "./pages/karyawan/Izin";
+import JadwalKerja from "./pages/kepengelolaan/hrd-ga/JadwalKerja";
+import JadwalSaya from "./pages/karyawan/JadwalSaya";
 import LiveChatAdmin from "./pages/LiveChatAdmin";
 import { LiveChatWidget } from "./components/chat/LiveChatWidget";
 import NotFound from "./pages/NotFound";
@@ -146,6 +148,8 @@ const App = () => (
               <Route path="/kepengelolaan/hrd-ga/rekap" element={guarded(<RekapKaryawan />)} />
               <Route path="/kepengelolaan/hrd-ga/slip-gaji" element={guarded(<SlipGaji />)} />
               <Route path="/kepengelolaan/hrd-ga/data-karyawan" element={guarded(<DataKaryawan />)} />
+              <Route path="/kepengelolaan/hrd-ga/jadwal-kerja" element={guarded(<JadwalKerja />)} />
+              <Route path="/karyawan/jadwal-saya" element={guarded(<JadwalSaya />)} />
               <Route path="/kepengelolaan/engineering" element={guarded(<Engineering />)} />
               <Route path="/kepengelolaan/purchasing" element={guarded(<Purchasing />)} />
               <Route path="/kepengelolaan/purchasing/supplier" element={guarded(<PurchasingSuppliers />)} />

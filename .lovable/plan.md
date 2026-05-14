@@ -1,71 +1,59 @@
+## Tambah Fitur Pengaturan Jadwal Kerja (Shift) di HRD & GA
 
-# Rencana Perbaikan: Data Paket Terbatas 1000
+Menu baru "Jadwal Kerja" pada dashboard HRD & GA untuk mengelola shift karyawan dengan kalender view, integrasi ke absensi, dan notifikasi otomatis.
 
-## Ringkasan Masalah
-Data paket Anda saat ini berjumlah **4.471 entri** di database, tetapi hanya **1.000** yang bisa ditampilkan. Ini disebabkan oleh batasan default dari sistem database yang membatasi query maksimal 1.000 baris.
+### 1. Database (migration)
 
-## Solusi yang Akan Diterapkan
-Mengubah cara pengambilan data dari **mengambil semua sekaligus** menjadi **mengambil per halaman** (server-side pagination). Dengan cara ini, data akan diambil sesuai kebutuhan halaman yang sedang dilihat.
+**Tabel baru:**
 
-## Keuntungan Solusi Ini
-- Data lebih dari 1.000 bisa diakses
-- Performa lebih cepat karena hanya mengambil data yang diperlukan
-- Tidak ada batasan jumlah data
+- `shift_definitions` — master shift
+  - `name` (Pagi/Siang/Malam/custom), `start_time`, `end_time`, `late_tolerance_minutes` (default 15), `working_days` (int[] 0-6, Min-Sab), `color` (hex token), `is_default`, `is_active`, `created_by`
+  - Seed: Pagi (07:00–15:00, biru), Siang (15:00–23:00, oranye), Malam (23:00–07:00, ungu)
 
----
+- `employee_shift_schedules` — assignment per karyawan per tanggal
+  - `user_id`, `employee_name`, `shift_id`, `schedule_date`, `notes`, `created_by`
+  - Unique (`user_id`, `schedule_date`)
 
-## Detail Teknis
+- `shift_rotation_rules` — rotasi otomatis (opsional)
+  - `user_ids` (uuid[]), `shift_ids` (uuid[]), `start_date`, `end_date`, `rotation_type` (daily/weekly/monthly), `cycle_days`, `is_active`
 
-### 1. Modifikasi Hook usePackages
-**File:** `src/hooks/usePackages.ts`
+**RLS:**
+- Admin/HRD (`is_admin_or_above` atau `staff_hrd_ga`): full manage
+- Staff lain: hanya SELECT jadwal milik sendiri (`user_id = auth.uid()`)
 
-Mengubah fungsi `usePackages` untuk mendukung server-side pagination:
+**Notifikasi:** trigger AFTER INSERT/UPDATE pada `employee_shift_schedules` → insert ke `broadcast_messages` (target_type=`user`, target_value=[user_id]) dengan judul "Perubahan Jadwal Shift".
 
-```text
-Perubahan:
-┌─────────────────────────────────────────────────────────────┐
-│ SEBELUM (mengambil semua data):                             │
-│ - Query tanpa limit → Default Supabase: 1000 baris          │
-│ - Pagination dilakukan di frontend (client-side)            │
-├─────────────────────────────────────────────────────────────┤
-│ SESUDAH (mengambil per halaman):                            │
-│ - Query dengan range() → Mengambil sesuai halaman           │
-│ - Query count terpisah → Menghitung total data              │
-│ - Pagination dilakukan di server (server-side)              │
-└─────────────────────────────────────────────────────────────┘
-```
+**Integrasi absensi:** kolom `shift_id` ditambahkan ke `employee_attendance`. Saat check-in, sistem cari jadwal hari itu, hitung status (`hadir`/`terlambat`) berdasarkan `start_time + late_tolerance` shift tersebut.
 
-**Fungsi baru yang akan ditambahkan:**
-- `usePackagesPaginated(page, pageSize, search?, dateFilter?)` - Mengambil data per halaman
-- Query dengan `.range(from, to)` untuk membatasi data yang diambil
-- Query terpisah untuk menghitung total data
+### 2. Halaman & Komponen Baru
 
-### 2. Modifikasi Halaman Pelayanan Paket
-**File:** `src/pages/kepenghunian/PelayananPaket.tsx`
+- `src/pages/kepengelolaan/hrd-ga/JadwalKerja.tsx` — halaman utama (Admin/HRD only) dengan 3 tab:
+  1. **Kalender** — calendar view bulanan (pakai `react-day-picker` yg sudah ada), tiap sel menampilkan badge berwarna shift per karyawan; klik sel → dialog assign/edit
+  2. **Pengaturan Shift** — CRUD `shift_definitions` (form: nama, jam masuk/pulang, toleransi, hari kerja multi-select, color picker)
+  3. **Rotasi & Assignment** — assign shift batch (pilih karyawan + range tanggal + pola: harian/mingguan/bulanan + rotasi auto)
 
-Mengubah halaman untuk menggunakan pagination dari server:
+- `src/pages/karyawan/JadwalSaya.tsx` — read-only calendar untuk karyawan lihat shift sendiri (kartu di EmployeeGrid)
 
-**Perubahan utama:**
-- Menggunakan hook `usePackagesPaginated` yang baru
-- Filter pencarian dan tanggal dilakukan di server (bukan client)
-- Menampilkan total data yang akurat dari server
+- Komponen pendukung di `src/components/shift/`:
+  - `ShiftFormDialog.tsx`
+  - `ShiftCalendarView.tsx`
+  - `AssignShiftDialog.tsx`
+  - `ShiftBadge.tsx` (pill berwarna per shift)
 
-### 3. Optimasi Filter (Server-Side)
-Filter pencarian dan tanggal akan dijalankan di server:
+- Hooks: `src/hooks/useShifts.ts`, `src/hooks/useShiftSchedules.ts`
 
-```text
-┌───────────────────────────────────────────────────────────┐
-│ Filter Server-Side:                                       │
-│ - Pencarian: owner_name, unit_number, courier, item_type  │
-│ - Filter Tanggal: today, week, month, year, all           │
-│ - Sorting: created_at descending                          │
-└───────────────────────────────────────────────────────────┘
-```
+### 3. Integrasi UI
 
----
+- Tambah card "Jadwal Kerja" (icon `CalendarClock`, warna warning) di `src/pages/kepengelolaan/HrdGa.tsx` → route `/kepengelolaan/hrd-ga/jadwal-kerja`
+- Tambah card "Jadwal Saya" di `EmployeeGrid.tsx` (visible untuk semua staff) → route `/karyawan/jadwal-saya`
+- Routes baru di `src/App.tsx` (ProtectedRoute)
+- Sidebar: tambah submenu jadwal kerja jika ada submenu HRD
 
-## Hasil yang Diharapkan
-1. Semua **4.471+ paket** dapat diakses melalui navigasi halaman
-2. Performa lebih baik karena hanya mengambil 10/50/100 data per halaman
-3. Filter pencarian dan tanggal tetap berfungsi normal
-4. Tidak ada lagi batasan 1.000 data
+### 4. Integrasi Absensi (update `useEmployeeAttendance.ts`)
+
+Pada `useCheckIn`: query `employee_shift_schedules` untuk user+today, ambil `shift.start_time + late_tolerance`, set status `terlambat` jika check-in > batas, simpan `shift_id` ke attendance row. Fallback ke logika lama jika tidak ada jadwal.
+
+### Catatan Teknis
+- Warna shift disimpan sebagai HSL token-friendly hex; rendering pakai inline style background untuk badge (sudah pola yang ada)
+- Rotasi otomatis: dihitung client-side saat assign batch lalu insert banyak baris ke `employee_shift_schedules` (idempotent via upsert on conflict user_id+date)
+- Lembur tetap independen; tampilkan jadwal sebagai konteks di rekap karyawan (read-only join nanti)
