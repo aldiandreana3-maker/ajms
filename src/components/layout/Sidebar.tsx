@@ -29,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminConversations } from "@/hooks/useLiveChat";
+import { canAccessPath, isFullAccessRole, type AppRole } from "@/lib/rolePermissions";
 import {
   Collapsible,
   CollapsibleContent,
