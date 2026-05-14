@@ -1,16 +1,4 @@
 project_id = "yeehwobmpknqagcolkbo"
 
-[functions.generate-monthly-bills]
-verify_jwt = false
-
-[functions.reset-user-password]
-verify_jwt = false
-
-[functions.create-doku-transaction]
-verify_jwt = false
-
-[functions.notify-parking-expiring]
-verify_jwt = false
-
-[functions.wa-blast-worker]
+[functions.bulk-create-engineering]
 verify_jwt = false
