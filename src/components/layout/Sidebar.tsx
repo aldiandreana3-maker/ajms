@@ -77,9 +77,12 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const [kepengelolaanOpen, setKepengelolaanOpen] = useState(
     location.pathname.startsWith("/kepengelolaan")
   );
-  
-  // Hide kepengelolaan from penghuni and agent, except Finance
-  const canAccessKepengelolaan = ((isSuperAdmin || isAdmin) && !isLimitedAccess) || role === "staff_purchasing";
+
+  const r = role as AppRole | null;
+  const fullAccess = isFullAccessRole(r);
+  // Filter kepengelolaan items by role permissions
+  const visibleKepengelolaan = kepengelolaanItems.filter((it) => canAccessPath(r, it.path));
+  const canAccessKepengelolaan = fullAccess || role === "staff_purchasing" || visibleKepengelolaan.length > 0;
   const canAccessFinance = !!user; // All logged-in users can access Finance
 
   // Live Chat unread badge for admins
