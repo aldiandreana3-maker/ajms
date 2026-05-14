@@ -173,7 +173,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             )}
             {collapsed ? (
               // Collapsed view - show icons only
-              kepengelolaanItems.map((item) => {
+              (fullAccess ? kepengelolaanItems : visibleKepengelolaan).map((item) => {
                 const isActive = location.pathname.startsWith(item.path);
                 return (
                   <NavLink
