@@ -1,4 +1,1 @@
 project_id = "yeehwobmpknqagcolkbo"
-
-[functions.bulk-create-engineering]
-verify_jwt = false
