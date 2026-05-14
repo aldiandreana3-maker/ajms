@@ -135,7 +135,11 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
         {menuItems
-          .filter((item) => !item.staffOnly || isStaff)
+          .filter((item) => {
+            if (item.path === "/") return true;
+            if (item.staffOnly && !isStaff) return false;
+            return canAccessPath(r, item.path);
+          })
           .map((item) => {
           const isActive = location.pathname === item.path;
           return (
