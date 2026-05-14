@@ -129,14 +129,13 @@ Deno.serve(async (req) => {
         .eq("status", "sent")
         .gte("sent_at", startOfDayWib.toISOString());
 
-      const remainingToday = camp.daily_cap - (sentToday ?? 0);
-      if (remainingToday <= 0) {
-        log.campaigns.push({ id: camp.id, skipped: "daily_cap_reached", sentToday });
-        continue;
-      }
+      // NOTE: daily_cap is informational only — kirim tetap berjalan setelah cap
+      // tercapai dengan delay/jeda yang sama (safe mode konsisten) agar tidak ada
+      // hard stop. Counter sentToday tetap dilog untuk monitoring.
+      const overCap = (sentToday ?? 0) >= camp.daily_cap;
 
-      // Pick a small batch this minute (max 2 per cron tick to spread evenly)
-      const batchSize = Math.min(2, remainingToday);
+      // Tetap pakai batch kecil (max 2 per tick) supaya pola pengiriman natural
+      const batchSize = 2;
       const { data: items, error: itemsErr } = await supabase
         .from("wa_blast_queue")
         .select("*")
@@ -226,7 +225,7 @@ Deno.serve(async (req) => {
           .eq("id", camp.id);
       }
 
-      log.campaigns.push({ id: camp.id, sent, failed, sentToday: (sentToday ?? 0) + sent });
+      log.campaigns.push({ id: camp.id, sent, failed, sentToday: (sentToday ?? 0) + sent, overCap });
     }
 
     return new Response(JSON.stringify({ success: true, ...log }), {
