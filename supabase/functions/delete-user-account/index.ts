@@ -27,22 +27,32 @@ Deno.serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: { user: currentUser }, error: userError } = await userClient.auth.getUser();
-    if (userError || !currentUser) {
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const currentUser = { id: claimsData.claims.sub as string };
 
-    // Check role - only master_dev or super_admin
-    const { data: roleData } = await userClient
+    // Check role - only master_dev or super_admin (user may have multiple roles)
+    const adminClientForRole = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: rolesData } = await adminClientForRole
       .from("user_roles")
       .select("role")
-      .eq("user_id", currentUser.id)
-      .maybeSingle();
+      .eq("user_id", currentUser.id);
 
-    if (!roleData || (roleData.role !== "super_admin" && roleData.role !== "master_dev")) {
+    const roles = (rolesData ?? []).map((r: any) => r.role);
+    const callerRole = roles.includes("master_dev")
+      ? "master_dev"
+      : roles.includes("super_admin")
+      ? "super_admin"
+      : null;
+    const roleData = callerRole ? { role: callerRole } : null;
+
+    if (!roleData) {
       return new Response(
         JSON.stringify({ error: "Hanya Master Development dan Super Admin yang bisa menghapus user" }),
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
