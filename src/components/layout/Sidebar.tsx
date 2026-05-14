@@ -29,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminConversations } from "@/hooks/useLiveChat";
+import { canAccessPath, isFullAccessRole, type AppRole } from "@/lib/rolePermissions";
 import {
   Collapsible,
   CollapsibleContent,
@@ -76,9 +77,12 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const [kepengelolaanOpen, setKepengelolaanOpen] = useState(
     location.pathname.startsWith("/kepengelolaan")
   );
-  
-  // Hide kepengelolaan from penghuni and agent, except Finance
-  const canAccessKepengelolaan = ((isSuperAdmin || isAdmin) && !isLimitedAccess) || role === "staff_purchasing";
+
+  const r = role as AppRole | null;
+  const fullAccess = isFullAccessRole(r);
+  // Filter kepengelolaan items by role permissions
+  const visibleKepengelolaan = kepengelolaanItems.filter((it) => canAccessPath(r, it.path));
+  const canAccessKepengelolaan = fullAccess || role === "staff_purchasing" || visibleKepengelolaan.length > 0;
   const canAccessFinance = !!user; // All logged-in users can access Finance
 
   // Live Chat unread badge for admins
@@ -131,7 +135,11 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
         {menuItems
-          .filter((item) => !item.staffOnly || isStaff)
+          .filter((item) => {
+            if (item.path === "/") return true;
+            if (item.staffOnly && !isStaff) return false;
+            return canAccessPath(r, item.path);
+          })
           .map((item) => {
           const isActive = location.pathname === item.path;
           return (
@@ -165,7 +173,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             )}
             {collapsed ? (
               // Collapsed view - show icons only
-              kepengelolaanItems.map((item) => {
+              (fullAccess ? kepengelolaanItems : visibleKepengelolaan).map((item) => {
                 const isActive = location.pathname.startsWith(item.path);
                 return (
                   <NavLink
@@ -191,7 +199,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   <ChevronDown className={cn("w-4 h-4 transition-transform", kepengelolaanOpen && "rotate-180")} />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pl-4">
-                  {kepengelolaanItems.map((item) => {
+                  {(fullAccess ? kepengelolaanItems : visibleKepengelolaan).map((item) => {
                     const isActive = location.pathname.startsWith(item.path);
                     return (
                       <NavLink
