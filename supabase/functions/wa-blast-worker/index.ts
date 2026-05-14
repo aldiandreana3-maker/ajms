@@ -225,7 +225,7 @@ Deno.serve(async (req) => {
           .eq("id", camp.id);
       }
 
-      log.campaigns.push({ id: camp.id, sent, failed, sentToday: (sentToday ?? 0) + sent });
+      log.campaigns.push({ id: camp.id, sent, failed, sentToday: (sentToday ?? 0) + sent, overCap });
     }
 
     return new Response(JSON.stringify({ success: true, ...log }), {
