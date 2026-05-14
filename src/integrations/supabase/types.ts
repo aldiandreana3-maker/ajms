@@ -1169,6 +1169,7 @@ export type Database = {
           created_at: string
           id: string
           notes: string | null
+          shift_id: string | null
           status: string
           updated_at: string
           user_id: string
@@ -1188,6 +1189,7 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          shift_id?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -1207,11 +1209,20 @@ export type Database = {
           created_at?: string
           id?: string
           notes?: string | null
+          shift_id?: string | null
           status?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "employee_attendance_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shift_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       employee_biodata: {
         Row: {
@@ -1458,6 +1469,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      employee_shift_schedules: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          employee_name: string | null
+          id: string
+          notes: string | null
+          schedule_date: string
+          shift_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          employee_name?: string | null
+          id?: string
+          notes?: string | null
+          schedule_date: string
+          shift_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          employee_name?: string | null
+          id?: string
+          notes?: string | null
+          schedule_date?: string
+          shift_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_shift_schedules_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shift_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expenses: {
         Row: {
@@ -2695,6 +2750,51 @@ export type Database = {
           photo_url?: string | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      shift_definitions: {
+        Row: {
+          color: string
+          created_at: string
+          created_by: string | null
+          end_time: string
+          id: string
+          is_active: boolean
+          is_default: boolean
+          late_tolerance_minutes: number
+          name: string
+          start_time: string
+          updated_at: string
+          working_days: number[]
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          end_time: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          late_tolerance_minutes?: number
+          name: string
+          start_time: string
+          updated_at?: string
+          working_days?: number[]
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          created_by?: string | null
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          late_tolerance_minutes?: number
+          name?: string
+          start_time?: string
+          updated_at?: string
+          working_days?: number[]
         }
         Relationships: []
       }
