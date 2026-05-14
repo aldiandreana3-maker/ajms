@@ -199,7 +199,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   <ChevronDown className={cn("w-4 h-4 transition-transform", kepengelolaanOpen && "rotate-180")} />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pl-4">
-                  {kepengelolaanItems.map((item) => {
+                  {(fullAccess ? kepengelolaanItems : visibleKepengelolaan).map((item) => {
                     const isActive = location.pathname.startsWith(item.path);
                     return (
                       <NavLink
