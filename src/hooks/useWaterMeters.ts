@@ -103,11 +103,8 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
         throw wmError;
       }
 
-      // Auto-create water bill: abonemen + (usage × price). Skip jika baseline awal (start=end=0)
+      // Auto-create water bill: abonemen + (usage × price). Tanpa pemakaian tetap kena abonemen.
       const usage = usagePre;
-      if (isBaseline) {
-        return wmData;
-      }
       const tariff = tariffPre;
       const nominal = nominalPre;
       // Pencatatan meter tgl 15, tagihan terbit tgl 5 bulan berikutnya
