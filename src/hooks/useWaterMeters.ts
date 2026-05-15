@@ -78,9 +78,19 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
         }
       }
 
-      const { data, error } = await q;
-      if (error) throw error;
-      return data as WaterMeter[];
+      // Fetch ALL rows by paging in batches of 1000 (Supabase default cap per request)
+      const all: WaterMeter[] = [];
+      const pageSize = 1000;
+      let from = 0;
+      while (true) {
+        const { data, error } = await q.range(from, from + pageSize - 1);
+        if (error) throw error;
+        const batch = (data || []) as WaterMeter[];
+        all.push(...batch);
+        if (batch.length < pageSize) break;
+        from += pageSize;
+      }
+      return all;
     },
   });
 
