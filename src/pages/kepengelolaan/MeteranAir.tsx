@@ -225,6 +225,51 @@ export default function MeteranAir() {
                   </SelectContent>
                 </Select>
               </div>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={async () => {
+                  if (!waterMeters.length) { toast.info("Tidak ada data untuk diekspor"); return; }
+                  toast.loading("Menyiapkan file Excel...", { id: "exp-wm" });
+                  try {
+                    const paths = new Set<string>();
+                    waterMeters.forEach((wm) => {
+                      const ps = wm.photo_start_url || wm.photo_url;
+                      if (ps) paths.add(ps);
+                      if (wm.photo_end_url) paths.add(wm.photo_end_url);
+                    });
+                    const urlMap: Record<string, string> = { ...signedUrls };
+                    for (const p of paths) {
+                      if (urlMap[p]) continue;
+                      if (p.startsWith("http")) { urlMap[p] = p; continue; }
+                      const { data } = await supabase.storage.from("kepenghunian-files").createSignedUrl(p, 3600);
+                      if (data?.signedUrl) urlMap[p] = data.signedUrl;
+                    }
+                    const rows = waterMeters.map((wm) => {
+                      const ps = wm.photo_start_url || wm.photo_url;
+                      return {
+                        unit_number: wm.unit_number,
+                        penghuni_name: (wm as any).penghuni_name,
+                        meter_start: wm.meter_start,
+                        meter_end: wm.meter_end,
+                        usage_m3: wm.usage_m3,
+                        nominal: Number(wm.nominal),
+                        billing_month: wm.billing_month,
+                        created_at: wm.created_at,
+                        recorded_by_name: wm.recorded_by_name,
+                        photo_start_signed: ps ? urlMap[ps] || null : null,
+                        photo_end_signed: wm.photo_end_url ? urlMap[wm.photo_end_url] || null : null,
+                      };
+                    });
+                    await exportWaterMetersToExcel(rows);
+                    toast.success("Excel berhasil diunduh", { id: "exp-wm" });
+                  } catch (e: any) {
+                    toast.error("Gagal export: " + (e?.message || "error"), { id: "exp-wm" });
+                  }
+                }}
+              >
+                <Download className="w-4 h-4" /> Export Excel
+              </Button>
               <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogTrigger asChild>
                   <Button className="gap-2"><Plus className="w-4 h-4" /> Input Meteran</Button>
