@@ -198,7 +198,7 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
       const { error } = await (supabase as any).from("water_meters").update(updates).eq("id", id);
       if (error) throw error;
 
-      // Setelah update: cek apakah perlu generate tagihan air (jika belum ada & usage > 0)
+      // Setelah update: cek apakah perlu generate tagihan air (jika belum ada). Tanpa pemakaian tetap kena abonemen.
       const { data: wm } = await (supabase as any)
         .from("water_meters")
         .select("*")
@@ -206,7 +206,6 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
         .single();
       if (!wm) return;
       const usage = Math.max(0, Number(wm.meter_end) - Number(wm.meter_start));
-      if (usage <= 0) return;
 
       // Cek apakah tagihan air untuk unit & periode ini sudah ada
       const { data: existingBills } = await supabase
