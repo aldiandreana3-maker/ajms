@@ -128,8 +128,7 @@ export default function MeteranAir() {
   };
 
   const usage = meterEnd !== "" && meterStart !== "" ? Math.max(0, Number(meterEnd) - Number(meterStart)) : 0;
-  const isBaseline = Number(meterStart) === 0 && Number(meterEnd) === 0;
-  const nominal = isBaseline ? 0 : calcWaterNominal(usage, tariff.abonemen, tariff.price_per_m3);
+  const nominal = calcWaterNominal(usage, tariff.abonemen, tariff.price_per_m3);
 
   const resetForm = () => {
     setUnitNumber(""); setUnitId(null); setPenghuniName(""); setMeterStart(""); setMeterEnd("");
@@ -146,7 +145,7 @@ export default function MeteranAir() {
       unit_number: unitNumber, unit_id: unitId, penghuni_name: penghuniName || null,
       photo_start_url: photoStartUrl, photo_end_url: photoEndUrl,
       meter_start: Number(meterStart) || 0, meter_end: Number(meterEnd) || 0,
-      billing_month: `${billingMonth}-01`, recorded_by: user?.id, recorded_by_name: user?.email || null,
+      billing_month: `${billingMonth}-01`, recorded_by: user?.id, recorded_by_name: petugasName || user?.email || null,
     });
     resetForm(); setDialogOpen(false);
   };
