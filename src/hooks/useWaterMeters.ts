@@ -87,9 +87,8 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
   const createMutation = useMutation({
     mutationFn: async (input: WaterMeterInput) => {
       const usagePre = Math.max(0, input.meter_end - input.meter_start);
-      const isBaseline = input.meter_start === 0 && input.meter_end === 0;
       const tariffPre = await getCurrentTariff();
-      const nominalPre = isBaseline ? 0 : calcWaterNominal(usagePre, tariffPre.abonemen, tariffPre.price_per_m3);
+      const nominalPre = calcWaterNominal(usagePre, tariffPre.abonemen, tariffPre.price_per_m3);
 
       const { data: wmData, error: wmError } = await (supabase as any)
         .from("water_meters")
@@ -104,11 +103,8 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
         throw wmError;
       }
 
-      // Auto-create water bill: abonemen + (usage × price). Skip jika baseline awal (start=end=0)
+      // Auto-create water bill: abonemen + (usage × price). Tanpa pemakaian tetap kena abonemen.
       const usage = usagePre;
-      if (isBaseline) {
-        return wmData;
-      }
       const tariff = tariffPre;
       const nominal = nominalPre;
       // Pencatatan meter tgl 15, tagihan terbit tgl 5 bulan berikutnya
@@ -202,7 +198,7 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
       const { error } = await (supabase as any).from("water_meters").update(updates).eq("id", id);
       if (error) throw error;
 
-      // Setelah update: cek apakah perlu generate tagihan air (jika belum ada & usage > 0)
+      // Setelah update: cek apakah perlu generate tagihan air (jika belum ada). Tanpa pemakaian tetap kena abonemen.
       const { data: wm } = await (supabase as any)
         .from("water_meters")
         .select("*")
@@ -210,7 +206,6 @@ export function useWaterMeters(filters?: { search?: string; month?: string; year
         .single();
       if (!wm) return;
       const usage = Math.max(0, Number(wm.meter_end) - Number(wm.meter_start));
-      if (usage <= 0) return;
 
       // Cek apakah tagihan air untuk unit & periode ini sudah ada
       const { data: existingBills } = await supabase
