@@ -65,6 +65,14 @@ export default function MeteranAir() {
   const { tariff } = useWaterTariff();
   const [loadingPrev, setLoadingPrev] = useState(false);
   const [editTarget, setEditTarget] = useState<WaterMeter | null>(null);
+  const [petugasName, setPetugasName] = useState<string>("");
+
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from("profiles").select("full_name").eq("id", user.id).single().then(({ data }) => {
+      setPetugasName(data?.full_name?.trim() || user.email || "Petugas");
+    });
+  }, [user?.id]);
 
   // Auto-load meter awal dari meter akhir bulan sebelumnya
   useEffect(() => {
