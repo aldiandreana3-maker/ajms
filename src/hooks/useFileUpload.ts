@@ -7,10 +7,13 @@ interface UseFileUploadOptions {
   bucket?: string;
   folder?: string;
   compressImages?: boolean;
+  maxWidth?: number;
+  maxHeight?: number;
+  quality?: number;
 }
 
 export function useFileUpload(options: UseFileUploadOptions = {}) {
-  const { bucket = "kepenghunian-files", folder = "", compressImages = true } = options;
+  const { bucket = "kepenghunian-files", folder = "", compressImages = true, maxWidth, maxHeight, quality } = options;
   const [uploading, setUploading] = useState(false);
 
   const uploadFile = async (file: File): Promise<string | null> => {
@@ -27,7 +30,7 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
       let fileToUpload = file;
       if (compressImages && file.type.startsWith("image/")) {
         try {
-          fileToUpload = await compressImage(file);
+          fileToUpload = await compressImage(file, maxWidth, maxHeight, quality);
         } catch (compressionError) {
           console.warn("Image compression failed, using original:", compressionError);
         }
