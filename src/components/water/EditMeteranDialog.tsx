@@ -19,7 +19,7 @@ interface Props {
 export function EditMeteranDialog({ open, onOpenChange, meter }: Props) {
   const { update, isUpdating } = useWaterMeters();
   const { tariff } = useWaterTariff();
-  const { uploadFile, uploading } = useFileUpload({ folder: "water-meters" });
+  const { uploadFile, uploading } = useFileUpload({ folder: "water-meters", maxWidth: 800, maxHeight: 800, quality: 0.5 });
   const { user } = useAuth();
   const [start, setStart] = useState("0");
   const [end, setEnd] = useState("0");
@@ -30,11 +30,12 @@ export function EditMeteranDialog({ open, onOpenChange, meter }: Props) {
   const [editorName, setEditorName] = useState<string>("");
 
   useEffect(() => {
-    if (user?.id) {
-      supabase.from("profiles").select("full_name").eq("id", user.id).single().then(({ data }) => {
-        setEditorName(data?.full_name || user.email || "Petugas");
-      });
-    }
+    if (!user?.id) return;
+    const metaName = (user.user_metadata as any)?.full_name?.trim();
+    supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle().then(({ data }) => {
+      const profileName = data?.full_name?.trim();
+      setEditorName(profileName || metaName || (user.email ? user.email.split("@")[0] : "Petugas"));
+    });
   }, [user]);
 
   useEffect(() => {
@@ -66,7 +67,7 @@ export function EditMeteranDialog({ open, onOpenChange, meter }: Props) {
       meter_start: ms,
       meter_end: me,
       recorded_by: user?.id || null,
-      recorded_by_name: editorName || user?.email || "Petugas",
+      recorded_by_name: editorName || (user?.email ? user.email.split("@")[0] : "Petugas"),
     };
     if (photoStart) {
       const path = await uploadFile(photoStart);
