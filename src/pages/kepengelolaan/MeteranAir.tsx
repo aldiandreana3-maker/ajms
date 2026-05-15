@@ -63,7 +63,7 @@ export default function MeteranAir() {
 
   const { data: waterMeters, isLoading, create, isCreating, remove, getPreviousMeter } = useWaterMeters({ search, month: filterMonth, year: filterYear });
   const { penghuni } = usePenghuni();
-  const { uploadFile, uploading } = useFileUpload({ folder: "water-meters" });
+  const { uploadFile, uploading } = useFileUpload({ folder: "water-meters", maxWidth: 800, maxHeight: 800, quality: 0.5 });
   const { tariff } = useWaterTariff();
   const [loadingPrev, setLoadingPrev] = useState(false);
   const [editTarget, setEditTarget] = useState<WaterMeter | null>(null);
@@ -71,8 +71,10 @@ export default function MeteranAir() {
 
   useEffect(() => {
     if (!user?.id) return;
-    supabase.from("profiles").select("full_name").eq("id", user.id).single().then(({ data }) => {
-      setPetugasName(data?.full_name?.trim() || user.email || "Petugas");
+    const metaName = (user.user_metadata as any)?.full_name?.trim();
+    supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle().then(({ data }) => {
+      const profileName = data?.full_name?.trim();
+      setPetugasName(profileName || metaName || (user.email ? user.email.split("@")[0] : "Petugas"));
     });
   }, [user?.id]);
 
@@ -147,7 +149,7 @@ export default function MeteranAir() {
       unit_number: unitNumber, unit_id: unitId, penghuni_name: penghuniName || null,
       photo_start_url: photoStartUrl, photo_end_url: photoEndUrl,
       meter_start: Number(meterStart) || 0, meter_end: Number(meterEnd) || 0,
-      billing_month: `${billingMonth}-01`, recorded_by: user?.id, recorded_by_name: petugasName || user?.email || null,
+      billing_month: `${billingMonth}-01`, recorded_by: user?.id, recorded_by_name: petugasName || (user?.email ? user.email.split("@")[0] : null),
     });
     resetForm(); setDialogOpen(false);
   };
