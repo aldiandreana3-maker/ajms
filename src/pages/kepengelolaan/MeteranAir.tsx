@@ -271,11 +271,11 @@ export default function MeteranAir() {
                         <div className="flex justify-between text-sm"><span>Abonemen</span><span>Rp {tariff.abonemen.toLocaleString("id-ID")}</span></div>
                         <div className="flex justify-between text-sm"><span>Pemakaian × Tarif</span><span>Rp {(usage * tariff.price_per_m3).toLocaleString("id-ID")}</span></div>
                         <div className="flex justify-between text-sm border-t pt-2"><span>Total Tagihan</span><span className="font-semibold text-primary">Rp {nominal.toLocaleString("id-ID")}</span></div>
-                        {isBaseline && <p className="text-xs text-muted-foreground">Baseline (0 → 0): tidak akan membuat tagihan.</p>}
+                        <p className="text-xs text-muted-foreground">Tanpa pemakaian tetap dikenakan abonemen Rp {tariff.abonemen.toLocaleString("id-ID")}.</p>
                       </CardContent>
                     </Card>
                     <Button onClick={handleSubmit} disabled={!unitNumber || meterEnd === "" || Number(meterEnd) < Number(meterStart) || isCreating || uploading} className="w-full">
-                      {isCreating || uploading ? "Menyimpan..." : isBaseline ? "Simpan Baseline" : "Simpan & Buat Tagihan"}
+                      {isCreating || uploading ? "Menyimpan..." : "Simpan & Buat Tagihan"}
                     </Button>
                   </div>
                 </DialogContent>
