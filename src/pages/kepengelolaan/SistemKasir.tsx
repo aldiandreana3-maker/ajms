@@ -804,8 +804,10 @@ export default function SistemKasir() {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
+                                <SelectItem value="cash">💵 Tunai (Cash)</SelectItem>
                                 <SelectItem value="transfer">🏦 Transfer</SelectItem>
                                 <SelectItem value="qris">📱 QRIS</SelectItem>
+                                <SelectItem value="debit">💳 Kartu Debit</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
