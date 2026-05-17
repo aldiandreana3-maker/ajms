@@ -87,6 +87,24 @@ export default function BukuBesar() {
 
   const paginatedLines = usePagination(linesWithBalance, itemsPerPage, currentPage);
 
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Group accounts by type, with Piutang highlighted as a separate group
+  const groupedAccounts = useMemo(() => {
+    const piutang = accounts.filter((a) =>
+      a.account_name.toLowerCase().includes("piutang") || (a.account_code || "").startsWith("1.1.3")
+    );
+    const piutangIds = new Set(piutang.map((a) => a.id));
+    const others = accounts.filter((a) => !piutangIds.has(a.id));
+    const groups: Record<string, typeof accounts> = {};
+    for (const a of others) {
+      const t = a.account_type || "LAINNYA";
+      if (!groups[t]) groups[t] = [];
+      groups[t].push(a);
+    }
+    return { piutang, groups };
+  }, [accounts]);
+
   return (
     <MainLayout>
       <div className="space-y-6 animate-fade-in">
