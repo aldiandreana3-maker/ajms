@@ -481,25 +481,35 @@ export function useCashier() {
       // Reverse journal entry if exists
       const journalId = (tx as any).journal_entry_id;
       if (journalId) {
-        const { data: lines } = await supabase
-          .from("journal_entry_lines" as any)
-          .select("*")
-          .eq("journal_entry_id", journalId);
-        for (const line of ((lines as any[]) || [])) {
-          const { data: acc } = await supabase
-            .from("chart_of_accounts" as any)
-            .select("current_balance, normal_balance")
-            .eq("id", line.account_id)
-            .single();
-          if (!acc) continue;
-          const a: any = acc;
-          let newBal = Number(a.current_balance);
-          if (a.normal_balance === "debit") newBal -= (Number(line.debit_amount) - Number(line.credit_amount));
-          else newBal -= (Number(line.credit_amount) - Number(line.debit_amount));
-          await supabase
-            .from("chart_of_accounts" as any)
-            .update({ current_balance: newBal } as any)
-            .eq("id", line.account_id);
+        // Check if posted - only reverse balances if posted
+        const { data: jEntry } = await supabase
+          .from("journal_entries" as any)
+          .select("is_posted")
+          .eq("id", journalId)
+          .single();
+        const wasPosted = (jEntry as any)?.is_posted;
+
+        if (wasPosted) {
+          const { data: lines } = await supabase
+            .from("journal_entry_lines" as any)
+            .select("*")
+            .eq("journal_entry_id", journalId);
+          for (const line of ((lines as any[]) || [])) {
+            const { data: acc } = await supabase
+              .from("chart_of_accounts" as any)
+              .select("current_balance, normal_balance")
+              .eq("id", line.account_id)
+              .single();
+            if (!acc) continue;
+            const a: any = acc;
+            let newBal = Number(a.current_balance);
+            if (a.normal_balance === "debit") newBal -= (Number(line.debit_amount) - Number(line.credit_amount));
+            else newBal -= (Number(line.credit_amount) - Number(line.debit_amount));
+            await supabase
+              .from("chart_of_accounts" as any)
+              .update({ current_balance: newBal } as any)
+              .eq("id", line.account_id);
+          }
         }
         await supabase.from("journal_entry_lines" as any).delete().eq("journal_entry_id", journalId);
         await supabase.from("journal_entries" as any).delete().eq("id", journalId);
