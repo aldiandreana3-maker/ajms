@@ -95,7 +95,7 @@ function printInvoiceReceipt(data: {
   const now = new Date(data.created_at);
   const dateStr = format(now, "dd MMMM yyyy", { locale: idLocale });
   const timeStr = format(now, "HH:mm:ss") + " WIB";
-  const methodLabel = data.paymentMethod === "transfer" ? "Transfer" : "QRIS";
+  const methodLabel = paymentMethodLabel(data.paymentMethod);
 
   const rowsHtml = data.payments.map((p) => `
     <tr>
