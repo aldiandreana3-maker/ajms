@@ -383,7 +383,7 @@ export default function SistemKasir() {
                   data: filteredTx.map((tx) => ({
                     ...tx,
                     total_formatted: formatRupiah(Number(tx.total_amount)),
-                    method_label: tx.payment_method === "transfer" ? "Transfer" : "QRIS",
+                    method_label: paymentMethodLabel(tx.payment_method),
                     waktu: format(new Date(tx.created_at), "dd/MM/yyyy HH:mm"),
                     coa_label: coaNameFor(tx.coa_account_id),
                   })),
