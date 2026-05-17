@@ -45,6 +45,16 @@ function billTypeLabel(type: string) {
   return map[type] || type.toUpperCase();
 }
 
+const PAYMENT_METHOD_LABEL: Record<string, string> = {
+  cash: "Tunai (Cash)",
+  transfer: "Transfer",
+  qris: "QRIS",
+  debit: "Kartu Debit",
+};
+function paymentMethodLabel(m: string) {
+  return PAYMENT_METHOD_LABEL[m] || m.toUpperCase();
+}
+
 interface UnitOption { label: string; value: string; }
 function generateAllUnits(): UnitOption[] {
   const units: UnitOption[] = [];
