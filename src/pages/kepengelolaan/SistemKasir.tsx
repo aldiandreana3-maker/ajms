@@ -235,6 +235,7 @@ export default function SistemKasir() {
   const [paymentMethod, setPaymentMethod] = useState("transfer");
   const [receiptDialog, setReceiptDialog] = useState(false);
   const [lastReceipt, setLastReceipt] = useState<any>(null);
+  const [detailTxId, setDetailTxId] = useState<string | null>(null);
 
   const filteredUnits = useMemo(() => {
     if (!unitSearch) return ALL_UNITS.slice(0, 50);
