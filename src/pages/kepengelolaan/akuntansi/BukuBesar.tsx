@@ -2,11 +2,13 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { useChartOfAccounts } from "@/hooks/useChartOfAccounts";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, BookOpen, Loader2 } from "lucide-react";
+import { ArrowLeft, BookOpen, Loader2, ChevronsUpDown, Check } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -85,6 +87,24 @@ export default function BukuBesar() {
 
   const paginatedLines = usePagination(linesWithBalance, itemsPerPage, currentPage);
 
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Group accounts by type, with Piutang highlighted as a separate group
+  const groupedAccounts = useMemo(() => {
+    const piutang = accounts.filter((a) =>
+      a.account_name.toLowerCase().includes("piutang") || (a.account_code || "").startsWith("1.1.3")
+    );
+    const piutangIds = new Set(piutang.map((a) => a.id));
+    const others = accounts.filter((a) => !piutangIds.has(a.id));
+    const groups: Record<string, typeof accounts> = {};
+    for (const a of others) {
+      const t = a.account_type || "LAINNYA";
+      if (!groups[t]) groups[t] = [];
+      groups[t].push(a);
+    }
+    return { piutang, groups };
+  }, [accounts]);
+
   return (
     <MainLayout>
       <div className="space-y-6 animate-fade-in">
@@ -102,14 +122,50 @@ export default function BukuBesar() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Select value={selectedAccount} onValueChange={setSelectedAccount}>
-            <SelectTrigger className="w-full sm:w-[350px]"><SelectValue placeholder="Pilih akun untuk dilihat" /></SelectTrigger>
-            <SelectContent>
-              {accounts.map((a) => (
-                <SelectItem key={a.id} value={a.id}>{a.account_code} - {a.account_name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" role="combobox" className="w-full sm:w-[400px] justify-between font-normal">
+                {account ? `${account.account_code} - ${account.account_name}` : "Pilih akun (cari Piutang, Kas, dll)..."}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Cari akun (ketik 'piutang' untuk akun piutang)..." />
+                <CommandList>
+                  <CommandEmpty>Akun tidak ditemukan</CommandEmpty>
+                  {groupedAccounts.piutang.length > 0 && (
+                    <CommandGroup heading="📌 Piutang">
+                      {groupedAccounts.piutang.map((a) => (
+                        <CommandItem
+                          key={a.id}
+                          value={`${a.account_code} ${a.account_name} piutang`}
+                          onSelect={() => { setSelectedAccount(a.id); setPickerOpen(false); }}
+                        >
+                          <Check className={cn("mr-2 h-4 w-4", selectedAccount === a.id ? "opacity-100" : "opacity-0")} />
+                          <span className="font-mono mr-2">{a.account_code}</span> {a.account_name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  )}
+                  {Object.entries(groupedAccounts.groups).map(([type, accs]) => (
+                    <CommandGroup key={type} heading={type}>
+                      {accs.map((a) => (
+                        <CommandItem
+                          key={a.id}
+                          value={`${a.account_code} ${a.account_name} ${type}`}
+                          onSelect={() => { setSelectedAccount(a.id); setPickerOpen(false); }}
+                        >
+                          <Check className={cn("mr-2 h-4 w-4", selectedAccount === a.id ? "opacity-100" : "opacity-0")} />
+                          <span className="font-mono mr-2">{a.account_code}</span> {a.account_name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  ))}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
           {selectedAccount && account && (
             <ExportExcelButton
               filename={`buku-besar-${account.account_code}-${new Date().toISOString().slice(0, 10)}`}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useJournalEntries } from "@/hooks/useJournalEntries";
@@ -11,6 +12,7 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 import { ExportExcelButton } from "@/components/akuntansi/AccountingExcelTools";
+import { toast } from "sonner";
 
 const formatRp = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
@@ -27,9 +29,48 @@ export default function PostingData() {
   const [unpostedPerPage, setUnpostedPerPage] = useState(10);
   const [postedPage, setPostedPage] = useState(1);
   const [postedPerPage, setPostedPerPage] = useState(10);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkPosting, setBulkPosting] = useState(false);
 
   const paginatedUnposted = usePagination(unposted, unpostedPerPage, unpostedPage);
   const paginatedPosted = usePagination(posted, postedPerPage, postedPage);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllPage = () => {
+    const allSelected = paginatedUnposted.length > 0 && paginatedUnposted.every((e) => selectedIds.has(e.id));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allSelected) paginatedUnposted.forEach((e) => next.delete(e.id));
+      else paginatedUnposted.forEach((e) => next.add(e.id));
+      return next;
+    });
+  };
+
+  const handleBulkPost = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkPosting(true);
+    let success = 0;
+    let failed = 0;
+    for (const id of Array.from(selectedIds)) {
+      try {
+        await postEntry.mutateAsync(id);
+        success++;
+      } catch {
+        failed++;
+      }
+    }
+    setBulkPosting(false);
+    setSelectedIds(new Set());
+    toast.success(`${success} jurnal diposting${failed > 0 ? `, ${failed} gagal` : ""}`);
+  };
 
   return (
     <MainLayout>
@@ -73,7 +114,19 @@ export default function PostingData() {
           />
         </div>
 
-        <h2 className="text-lg font-semibold">Jurnal Belum Diposting ({unposted.length})</h2>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <h2 className="text-lg font-semibold">Jurnal Belum Diposting ({unposted.length})</h2>
+          {canManage && (
+            <Button
+              onClick={handleBulkPost}
+              disabled={selectedIds.size === 0 || bulkPosting}
+              className="gap-2"
+            >
+              {bulkPosting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              Posting Terpilih ({selectedIds.size})
+            </Button>
+          )}
+        </div>
         {isLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
         ) : (
@@ -82,6 +135,14 @@ export default function PostingData() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {canManage && (
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={paginatedUnposted.length > 0 && paginatedUnposted.every((e) => selectedIds.has(e.id))}
+                          onCheckedChange={toggleSelectAllPage}
+                        />
+                      </TableHead>
+                    )}
                     <TableHead>No. Jurnal</TableHead>
                     <TableHead>Tanggal</TableHead>
                     <TableHead>Deskripsi</TableHead>
@@ -92,9 +153,17 @@ export default function PostingData() {
                 </TableHeader>
                 <TableBody>
                   {paginatedUnposted.length === 0 ? (
-                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Semua jurnal sudah diposting</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Semua jurnal sudah diposting</TableCell></TableRow>
                   ) : paginatedUnposted.map((e) => (
-                    <TableRow key={e.id}>
+                    <TableRow key={e.id} className={selectedIds.has(e.id) ? "bg-primary/5" : ""}>
+                      {canManage && (
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIds.has(e.id)}
+                            onCheckedChange={() => toggleSelect(e.id)}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell className="font-mono font-medium">{e.entry_number}</TableCell>
                       <TableCell>{format(new Date(e.entry_date), "dd MMM yyyy", { locale: idLocale })}</TableCell>
                       <TableCell>{e.description}</TableCell>
@@ -102,7 +171,7 @@ export default function PostingData() {
                       <TableCell className="text-right font-mono">{formatRp(e.total_credit)}</TableCell>
                       {canManage && (
                         <TableCell className="text-right">
-                          <Button size="sm" onClick={() => postEntry.mutate(e.id)} disabled={postEntry.isPending}>
+                          <Button size="sm" variant="outline" onClick={() => postEntry.mutate(e.id)} disabled={postEntry.isPending}>
                             {postEntry.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4 mr-1" />Posting</>}
                           </Button>
                         </TableCell>

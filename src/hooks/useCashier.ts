@@ -318,7 +318,7 @@ export function useCashier() {
           .eq("id", queueId);
       }
 
-      // Auto-create journal entry if COA selected
+      // Auto-create journal entry (DRAFT - belum diposting) sesuai metode pembayaran
       let journalEntryId: string | null = null;
       if (coaAccountId && totalAmount > 0) {
         try {
@@ -335,24 +335,39 @@ export function useCashier() {
           // Get the chosen (cash/bank) account
           const { data: cashAccount } = await supabase
             .from("chart_of_accounts" as any)
-            .select("id, current_balance, normal_balance, account_type")
+            .select("id, account_name, current_balance, normal_balance, account_type")
             .eq("id", coaAccountId)
             .single();
 
           if (incomeAccount && cashAccount) {
-            const entryNumber = `KAS-${format(new Date(), "yyyyMMdd-HHmmss")}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
+            // Prefix nomor jurnal sesuai metode pembayaran
+            const methodPrefix: Record<string, string> = {
+              cash: "KAS",
+              transfer: "TRF",
+              qris: "QRIS",
+              debit: "DEBIT",
+            };
+            const methodLabel: Record<string, string> = {
+              cash: "Tunai (Cash)",
+              transfer: "Transfer Bank",
+              qris: "QRIS",
+              debit: "Kartu Debit",
+            };
+            const prefix = methodPrefix[paymentMethod] || "TRX";
+            const label = methodLabel[paymentMethod] || paymentMethod.toUpperCase();
+            const entryNumber = `${prefix}-${format(new Date(), "yyyyMMdd-HHmmss")}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
             const { data: entry, error: entryErr } = await supabase
               .from("journal_entries" as any)
               .insert({
                 entry_number: entryNumber,
                 entry_date: today(),
-                description: `Penerimaan kasir ${unitNumber} (${txId})`,
+                description: `Penerimaan ${label} - Unit ${unitNumber} (${txId})`,
                 reference_number: txId,
                 total_debit: totalAmount,
                 total_credit: totalAmount,
-                is_posted: true,
-                posted_at: new Date().toISOString(),
-                posted_by: user?.id || null,
+                is_posted: false,
+                posted_at: null,
+                posted_by: null,
                 created_by: user?.id || null,
               } as any)
               .select()
@@ -366,7 +381,7 @@ export function useCashier() {
                   account_id: coaAccountId,
                   debit_amount: totalAmount,
                   credit_amount: 0,
-                  description: `Penerimaan dari unit ${unitNumber}`,
+                  description: `Penerimaan ${label} dari unit ${unitNumber}`,
                 },
                 {
                   journal_entry_id: journalEntryId,
@@ -377,27 +392,7 @@ export function useCashier() {
                 },
               ] as any);
 
-              // Update account balances based on normal balance
-              const cashAcc: any = cashAccount;
-              const cashDelta = cashAcc.normal_balance === "debit" ? totalAmount : -totalAmount;
-              await supabase
-                .from("chart_of_accounts" as any)
-                .update({ current_balance: Number(cashAcc.current_balance) + cashDelta } as any)
-                .eq("id", coaAccountId);
-
-              const { data: incFresh } = await supabase
-                .from("chart_of_accounts" as any)
-                .select("current_balance, normal_balance")
-                .eq("id", incomeAccount.id)
-                .single();
-              const incAcc: any = incFresh;
-              const incDelta = incAcc.normal_balance === "credit" ? totalAmount : -totalAmount;
-              await supabase
-                .from("chart_of_accounts" as any)
-                .update({ current_balance: Number(incAcc.current_balance) + incDelta } as any)
-                .eq("id", incomeAccount.id);
-
-              // Link journal to transaction
+              // Link journal to transaction (saldo akun TIDAK diupdate sampai diposting manual)
               await supabase
                 .from("cashier_transactions")
                 .update({ journal_entry_id: journalEntryId } as any)
@@ -486,25 +481,35 @@ export function useCashier() {
       // Reverse journal entry if exists
       const journalId = (tx as any).journal_entry_id;
       if (journalId) {
-        const { data: lines } = await supabase
-          .from("journal_entry_lines" as any)
-          .select("*")
-          .eq("journal_entry_id", journalId);
-        for (const line of ((lines as any[]) || [])) {
-          const { data: acc } = await supabase
-            .from("chart_of_accounts" as any)
-            .select("current_balance, normal_balance")
-            .eq("id", line.account_id)
-            .single();
-          if (!acc) continue;
-          const a: any = acc;
-          let newBal = Number(a.current_balance);
-          if (a.normal_balance === "debit") newBal -= (Number(line.debit_amount) - Number(line.credit_amount));
-          else newBal -= (Number(line.credit_amount) - Number(line.debit_amount));
-          await supabase
-            .from("chart_of_accounts" as any)
-            .update({ current_balance: newBal } as any)
-            .eq("id", line.account_id);
+        // Check if posted - only reverse balances if posted
+        const { data: jEntry } = await supabase
+          .from("journal_entries" as any)
+          .select("is_posted")
+          .eq("id", journalId)
+          .single();
+        const wasPosted = (jEntry as any)?.is_posted;
+
+        if (wasPosted) {
+          const { data: lines } = await supabase
+            .from("journal_entry_lines" as any)
+            .select("*")
+            .eq("journal_entry_id", journalId);
+          for (const line of ((lines as any[]) || [])) {
+            const { data: acc } = await supabase
+              .from("chart_of_accounts" as any)
+              .select("current_balance, normal_balance")
+              .eq("id", line.account_id)
+              .single();
+            if (!acc) continue;
+            const a: any = acc;
+            let newBal = Number(a.current_balance);
+            if (a.normal_balance === "debit") newBal -= (Number(line.debit_amount) - Number(line.credit_amount));
+            else newBal -= (Number(line.credit_amount) - Number(line.debit_amount));
+            await supabase
+              .from("chart_of_accounts" as any)
+              .update({ current_balance: newBal } as any)
+              .eq("id", line.account_id);
+          }
         }
         await supabase.from("journal_entry_lines" as any).delete().eq("journal_entry_id", journalId);
         await supabase.from("journal_entries" as any).delete().eq("id", journalId);
