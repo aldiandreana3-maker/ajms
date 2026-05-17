@@ -488,7 +488,7 @@ export default function SistemKasir() {
                                 <TableHead>COA Penerima</TableHead>
                                 <TableHead className="text-right">Total</TableHead>
                                 <TableHead>Waktu</TableHead>
-                                {isAdmin && <TableHead className="text-right">Aksi</TableHead>}
+                                <TableHead className="text-right">Aksi</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
