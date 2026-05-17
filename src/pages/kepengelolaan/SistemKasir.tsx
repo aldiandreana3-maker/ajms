@@ -499,7 +499,7 @@ export default function SistemKasir() {
                                   <TableCell className="font-mono font-medium">{tx.customer_name}</TableCell>
                                   <TableCell>
                                     <Badge variant="secondary">
-                                      {tx.payment_method === "transfer" ? "Transfer" : "QRIS"}
+                                      {paymentMethodLabel(tx.payment_method)}
                                     </Badge>
                                   </TableCell>
                                   <TableCell className="text-xs">{coaNameFor(tx.coa_account_id)}</TableCell>
@@ -507,37 +507,47 @@ export default function SistemKasir() {
                                   <TableCell className="text-muted-foreground text-xs">
                                     {format(new Date(tx.created_at), "dd/MM/yyyy HH:mm")}
                                   </TableCell>
-                                  {isAdmin && (
-                                    <TableCell className="text-right">
-                                      <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                          <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive">
-                                            <Trash2 className="w-4 h-4" />
-                                          </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                          <AlertDialogHeader>
-                                            <AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle>
-                                            <AlertDialogDescription>
-                                              Pelunasan akan dibatalkan: tagihan kembali ke status belum terbayar,
-                                              jurnal terkait dihapus, dan saldo akun COA dikembalikan.
-                                              <br /><br />
-                                              <span className="font-mono text-xs">{tx.transaction_id}</span> — {tx.customer_name} — {formatRupiah(Number(tx.total_amount))}
-                                            </AlertDialogDescription>
-                                          </AlertDialogHeader>
-                                          <AlertDialogFooter>
-                                            <AlertDialogCancel>Batal</AlertDialogCancel>
-                                            <AlertDialogAction
-                                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                              onClick={() => cashier.deleteTransaction.mutate(tx.id)}
-                                            >
-                                              Ya, Hapus & Kembalikan
-                                            </AlertDialogAction>
-                                          </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                      </AlertDialog>
-                                    </TableCell>
-                                  )}
+                                  <TableCell className="text-right">
+                                    <div className="flex items-center justify-end gap-1">
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        title="Detail Transaksi"
+                                        onClick={() => setDetailTxId(tx.id)}
+                                      >
+                                        <Eye className="w-4 h-4" />
+                                      </Button>
+                                      {isAdmin && (
+                                        <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                            <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive">
+                                              <Trash2 className="w-4 h-4" />
+                                            </Button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>Hapus Transaksi?</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                Pelunasan akan dibatalkan: tagihan kembali ke status belum terbayar,
+                                                jurnal terkait dihapus, dan saldo akun COA dikembalikan.
+                                                <br /><br />
+                                                <span className="font-mono text-xs">{tx.transaction_id}</span> — {tx.customer_name} — {formatRupiah(Number(tx.total_amount))}
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel>Batal</AlertDialogCancel>
+                                              <AlertDialogAction
+                                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                onClick={() => cashier.deleteTransaction.mutate(tx.id)}
+                                              >
+                                                Ya, Hapus & Kembalikan
+                                              </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
+                                      )}
+                                    </div>
+                                  </TableCell>
                                 </TableRow>
                               ))}
                             </TableBody>
