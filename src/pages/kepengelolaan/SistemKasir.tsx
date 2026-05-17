@@ -20,7 +20,7 @@ import { DataFilterBar, DateFilterType, filterByDate } from "@/components/shared
 import { exportToExcel } from "@/lib/exportExcel";
 import {
   ArrowLeft, Megaphone, ShoppingCart, LayoutDashboard,
-  Printer, ShieldAlert, Volume2, DollarSign, Users, Clock, Search, ChevronsUpDown, Check, Loader2, Download, Trash2,
+  Printer, ShieldAlert, Volume2, DollarSign, Users, Clock, Search, ChevronsUpDown, Check, Loader2, Download, Trash2, Eye,
 } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
