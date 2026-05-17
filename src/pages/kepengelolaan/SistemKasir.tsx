@@ -956,6 +956,138 @@ export default function SistemKasir() {
           )}
         </DialogContent>
       </Dialog>
+
+      <TransactionDetailDialog
+        transactionId={detailTxId}
+        onClose={() => setDetailTxId(null)}
+        coaNameFor={(id) => {
+          if (!id) return "-";
+          const a = coaAccounts.find((x) => x.id === id);
+          return a ? `${a.account_code} - ${a.account_name}` : "-";
+        }}
+      />
     </MainLayout>
+  );
+}
+
+// ============= Transaction Detail Dialog =============
+import { useQuery } from "@tanstack/react-query";
+import { supabase as sb } from "@/integrations/supabase/client";
+
+function TransactionDetailDialog({
+  transactionId,
+  onClose,
+  coaNameFor,
+}: {
+  transactionId: string | null;
+  onClose: () => void;
+  coaNameFor: (id: string | null) => string;
+}) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["cashier-tx-detail", transactionId],
+    enabled: !!transactionId,
+    queryFn: async () => {
+      const { data: tx } = await sb.from("cashier_transactions").select("*").eq("id", transactionId!).single();
+      const { data: items } = await sb.from("cashier_transaction_items").select("*").eq("transaction_id", transactionId!);
+      let journal: any = null;
+      let lines: any[] = [];
+      if ((tx as any)?.journal_entry_id) {
+        const { data: j } = await sb.from("journal_entries" as any).select("*").eq("id", (tx as any).journal_entry_id).single();
+        journal = j;
+        const { data: l } = await sb.from("journal_entry_lines" as any).select("*").eq("journal_entry_id", (tx as any).journal_entry_id);
+        lines = (l as any[]) || [];
+      }
+      return { tx, items: items || [], journal, lines };
+    },
+  });
+
+  return (
+    <Dialog open={!!transactionId} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Detail Transaksi Kasir</DialogTitle>
+        </DialogHeader>
+        {isLoading ? (
+          <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>
+        ) : data?.tx ? (
+          <div className="space-y-4 text-sm">
+            <div className="grid grid-cols-2 gap-2 p-3 bg-muted/40 rounded-lg">
+              <div><span className="text-muted-foreground">ID:</span> <span className="font-mono">{(data.tx as any).transaction_id}</span></div>
+              <div><span className="text-muted-foreground">Antrian:</span> <strong>{(data.tx as any).queue_number}</strong></div>
+              <div><span className="text-muted-foreground">Unit:</span> <strong>{(data.tx as any).customer_name}</strong></div>
+              <div><span className="text-muted-foreground">Metode:</span> <Badge variant="secondary">{paymentMethodLabel((data.tx as any).payment_method)}</Badge></div>
+              <div><span className="text-muted-foreground">Tanggal:</span> {format(new Date((data.tx as any).created_at), "dd MMM yyyy HH:mm", { locale: idLocale })}</div>
+              <div><span className="text-muted-foreground">COA Penerima:</span> {coaNameFor((data.tx as any).coa_account_id)}</div>
+            </div>
+
+            <div>
+              <p className="font-semibold mb-2">Rincian Item</p>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Item</TableHead>
+                    <TableHead className="text-right">Qty</TableHead>
+                    <TableHead className="text-right">Harga</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.items.map((it: any) => (
+                    <TableRow key={it.id}>
+                      <TableCell>{it.item_name}</TableCell>
+                      <TableCell className="text-right">{it.quantity}</TableCell>
+                      <TableCell className="text-right font-mono">{formatRupiah(Number(it.price))}</TableCell>
+                      <TableCell className="text-right font-mono">{formatRupiah(Number(it.total))}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow className="bg-muted/50 font-bold">
+                    <TableCell colSpan={3}>TOTAL</TableCell>
+                    <TableCell className="text-right font-mono">{formatRupiah(Number((data.tx as any).total_amount))}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+
+            {data.journal && (
+              <div>
+                <p className="font-semibold mb-2">
+                  Jurnal Terkait{" "}
+                  {(data.journal as any).is_posted ? (
+                    <Badge className="ml-1 bg-green-600">Terposting</Badge>
+                  ) : (
+                    <Badge variant="secondary" className="ml-1">Draft (Belum Diposting)</Badge>
+                  )}
+                </p>
+                <div className="text-xs text-muted-foreground mb-2">
+                  No. Jurnal: <span className="font-mono">{(data.journal as any).entry_number}</span>
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Akun</TableHead>
+                      <TableHead>Keterangan</TableHead>
+                      <TableHead className="text-right">Debit</TableHead>
+                      <TableHead className="text-right">Kredit</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data.lines.map((ln: any) => (
+                      <TableRow key={ln.id}>
+                        <TableCell>{coaNameFor(ln.account_id)}</TableCell>
+                        <TableCell className="text-xs">{ln.description}</TableCell>
+                        <TableCell className="text-right font-mono">{Number(ln.debit_amount) > 0 ? formatRupiah(Number(ln.debit_amount)) : "-"}</TableCell>
+                        <TableCell className="text-right font-mono">{Number(ln.credit_amount) > 0 ? formatRupiah(Number(ln.credit_amount)) : "-"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-center text-muted-foreground py-8">Data tidak ditemukan</p>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
