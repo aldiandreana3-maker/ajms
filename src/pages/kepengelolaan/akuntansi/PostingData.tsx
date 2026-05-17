@@ -114,7 +114,19 @@ export default function PostingData() {
           />
         </div>
 
-        <h2 className="text-lg font-semibold">Jurnal Belum Diposting ({unposted.length})</h2>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <h2 className="text-lg font-semibold">Jurnal Belum Diposting ({unposted.length})</h2>
+          {canManage && (
+            <Button
+              onClick={handleBulkPost}
+              disabled={selectedIds.size === 0 || bulkPosting}
+              className="gap-2"
+            >
+              {bulkPosting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              Posting Terpilih ({selectedIds.size})
+            </Button>
+          )}
+        </div>
         {isLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
         ) : (
@@ -123,6 +135,14 @@ export default function PostingData() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {canManage && (
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={paginatedUnposted.length > 0 && paginatedUnposted.every((e) => selectedIds.has(e.id))}
+                          onCheckedChange={toggleSelectAllPage}
+                        />
+                      </TableHead>
+                    )}
                     <TableHead>No. Jurnal</TableHead>
                     <TableHead>Tanggal</TableHead>
                     <TableHead>Deskripsi</TableHead>
@@ -133,9 +153,17 @@ export default function PostingData() {
                 </TableHeader>
                 <TableBody>
                   {paginatedUnposted.length === 0 ? (
-                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Semua jurnal sudah diposting</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Semua jurnal sudah diposting</TableCell></TableRow>
                   ) : paginatedUnposted.map((e) => (
-                    <TableRow key={e.id}>
+                    <TableRow key={e.id} className={selectedIds.has(e.id) ? "bg-primary/5" : ""}>
+                      {canManage && (
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedIds.has(e.id)}
+                            onCheckedChange={() => toggleSelect(e.id)}
+                          />
+                        </TableCell>
+                      )}
                       <TableCell className="font-mono font-medium">{e.entry_number}</TableCell>
                       <TableCell>{format(new Date(e.entry_date), "dd MMM yyyy", { locale: idLocale })}</TableCell>
                       <TableCell>{e.description}</TableCell>
@@ -143,7 +171,7 @@ export default function PostingData() {
                       <TableCell className="text-right font-mono">{formatRp(e.total_credit)}</TableCell>
                       {canManage && (
                         <TableCell className="text-right">
-                          <Button size="sm" onClick={() => postEntry.mutate(e.id)} disabled={postEntry.isPending}>
+                          <Button size="sm" variant="outline" onClick={() => postEntry.mutate(e.id)} disabled={postEntry.isPending}>
                             {postEntry.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4 mr-1" />Posting</>}
                           </Button>
                         </TableCell>
