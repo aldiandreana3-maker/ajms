@@ -29,9 +29,48 @@ export default function PostingData() {
   const [unpostedPerPage, setUnpostedPerPage] = useState(10);
   const [postedPage, setPostedPage] = useState(1);
   const [postedPerPage, setPostedPerPage] = useState(10);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkPosting, setBulkPosting] = useState(false);
 
   const paginatedUnposted = usePagination(unposted, unpostedPerPage, unpostedPage);
   const paginatedPosted = usePagination(posted, postedPerPage, postedPage);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllPage = () => {
+    const allSelected = paginatedUnposted.length > 0 && paginatedUnposted.every((e) => selectedIds.has(e.id));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (allSelected) paginatedUnposted.forEach((e) => next.delete(e.id));
+      else paginatedUnposted.forEach((e) => next.add(e.id));
+      return next;
+    });
+  };
+
+  const handleBulkPost = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkPosting(true);
+    let success = 0;
+    let failed = 0;
+    for (const id of Array.from(selectedIds)) {
+      try {
+        await postEntry.mutateAsync(id);
+        success++;
+      } catch {
+        failed++;
+      }
+    }
+    setBulkPosting(false);
+    setSelectedIds(new Set());
+    toast.success(`${success} jurnal diposting${failed > 0 ? `, ${failed} gagal` : ""}`);
+  };
 
   return (
     <MainLayout>
