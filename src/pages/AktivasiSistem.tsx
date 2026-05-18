@@ -222,6 +222,8 @@ function printPaymentReceipt(p: any) {
   if (!w) return;
   w.document.write(html);
   w.document.close();
+}
+
 
 export default function AktivasiSistem() {
   const { isSuperAdmin, isAdmin, isStaff, role, isLoading: authLoading, isMasterDev } = useAuth();
