@@ -442,6 +442,7 @@ export default function TamuAsing() {
                         <TableCell>
                           <PhotoCell
                             photos={[{ url: g.passport_photo_url, label: "Paspor" }]}
+                            showThumbnail
                           />
                         </TableCell>
                         <TableCell>{format(new Date(g.check_in_date), "dd/MM/yyyy")}</TableCell>
