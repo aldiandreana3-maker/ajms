@@ -537,7 +537,7 @@ export default function AktivasiSistem() {
                       <TableHead>Nominal</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Catatan</TableHead>
-                      {isMasterDev && <TableHead className="w-[100px]">Aksi</TableHead>}
+                      {(isMasterDev || canDownloadReceipt) && <TableHead className="w-[140px]">Aksi</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
