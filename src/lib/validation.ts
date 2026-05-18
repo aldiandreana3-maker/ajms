@@ -32,7 +32,7 @@ export const CreateForeignGuestSchema = z.object({
   nationality: z.string().min(1).max(100),
   passport_number: z.string().min(5).max(20),
   passport_expiry: z.string().regex(dateRegex),
-  passport_photo_url: z.string().url().max(2000).optional(),
+  passport_photo_url: z.string().max(2000).optional(),
   check_in_date: z.string().regex(dateRegex),
   check_out_date: z.string().regex(dateRegex),
   unit_number: z.string().max(20).optional(),
