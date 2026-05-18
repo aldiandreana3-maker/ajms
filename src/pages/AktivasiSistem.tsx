@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSystemStatus, useToggleSystemStatus, useSystemPayments, useDeletePayment, useUpdatePaymentStatus } from "@/hooks/useSystemActivation";
-import { Power, PowerOff, CheckCircle2, XCircle, Clock, Loader2, CreditCard, History, Trash2, Info, CheckCircle, Server, Shield, Bell, MoreHorizontal } from "lucide-react";
+import { Power, PowerOff, CheckCircle2, XCircle, Clock, Loader2, CreditCard, History, Trash2, Info, CheckCircle, Server, Shield, Bell, MoreHorizontal, Download } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -146,6 +146,85 @@ async function sendBulananNotification() {
   });
 }
 
+function printPaymentReceipt(p: any) {
+  const fmt = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
+  const tgl = format(new Date(p.tanggal_bayar), "dd MMMM yyyy", { locale: idLocale });
+  const jenis = p.jenis_pembayaran === "aktivasi" ? "Aktivasi Tahunan Sistem AJMS" : "Operasional Bulanan Sistem AJMS";
+  const statusLabel = p.status === "berhasil" ? "BERHASIL / LUNAS" : p.status === "pending" ? "PENDING" : "GAGAL";
+  const refNo = `AJMS-${String(p.id).slice(0, 8).toUpperCase()}`;
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Bukti Pembayaran ${refNo}</title>
+  <style>
+    *{box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif;}
+    body{padding:32px;color:#0f172a;max-width:720px;margin:0 auto;}
+    .header{display:flex;justify-content:space-between;align-items:start;border-bottom:3px solid #0f1b3d;padding-bottom:16px;margin-bottom:24px;}
+    .brand{font-size:22px;font-weight:bold;color:#0f1b3d;}
+    .brand small{display:block;font-size:11px;color:#64748b;font-weight:normal;margin-top:4px;}
+    .title{text-align:right;}
+    .title h1{margin:0;font-size:20px;color:#0f1b3d;letter-spacing:1px;}
+    .title p{margin:4px 0 0;font-size:12px;color:#64748b;}
+    .status{display:inline-block;padding:6px 14px;border-radius:6px;font-weight:bold;font-size:12px;letter-spacing:1px;}
+    .status.ok{background:#dcfce7;color:#166534;border:1px solid #86efac;}
+    .status.pending{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;}
+    .status.fail{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;}
+    table{width:100%;border-collapse:collapse;margin-top:16px;}
+    td{padding:10px 12px;font-size:13px;border-bottom:1px solid #e2e8f0;vertical-align:top;}
+    td.label{color:#64748b;width:200px;}
+    td.value{font-weight:600;}
+    .total-box{margin-top:24px;padding:18px;background:#f1f5f9;border-left:5px solid #0f1b3d;border-radius:4px;}
+    .total-box .lbl{font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:1px;}
+    .total-box .amt{font-size:28px;font-weight:bold;color:#0f1b3d;margin-top:4px;}
+    .footer{margin-top:40px;padding-top:16px;border-top:1px dashed #cbd5e1;font-size:11px;color:#64748b;text-align:center;line-height:1.6;}
+    .signature{margin-top:48px;display:flex;justify-content:flex-end;}
+    .signature .box{text-align:center;width:220px;}
+    .signature .box p{margin:0;font-size:12px;}
+    .signature .box .line{margin-top:60px;border-top:1px solid #0f172a;padding-top:6px;font-weight:600;}
+    @media print{body{padding:16px;}}
+  </style></head><body>
+    <div class="header">
+      <div class="brand">AJMS<small>Apartemen Jarrdin Management System<br/>The Jarrdin Cihampelas, Bandung</small></div>
+      <div class="title"><h1>BUKTI PEMBAYARAN</h1><p>No. Ref: ${refNo}</p><p>Tanggal: ${tgl}</p></div>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <span class="status ${p.status === "berhasil" ? "ok" : p.status === "pending" ? "pending" : "fail"}">${statusLabel}</span>
+    </div>
+
+    <table>
+      <tr><td class="label">Jenis Pembayaran</td><td class="value">${jenis}</td></tr>
+      <tr><td class="label">Periode</td><td class="value">${p.jenis_pembayaran === "aktivasi" ? "1 Tahun" : "1 Bulan"}</td></tr>
+      <tr><td class="label">Tanggal Bayar</td><td class="value">${tgl}</td></tr>
+      <tr><td class="label">Metode</td><td class="value">Midtrans Payment Gateway (AndreaPrint)</td></tr>
+      <tr><td class="label">Status</td><td class="value">${statusLabel}</td></tr>
+      <tr><td class="label">Catatan</td><td class="value">${p.notes || "-"}</td></tr>
+    </table>
+
+    <div class="total-box">
+      <div class="lbl">Total Pembayaran</div>
+      <div class="amt">${fmt(Number(p.nominal))}</div>
+    </div>
+
+    <div class="signature">
+      <div class="box">
+        <p>Bandung, ${tgl}</p>
+        <p>Hormat kami,</p>
+        <div class="line">Badan Pengelola AJMS</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Dokumen ini merupakan bukti pembayaran sah yang dihasilkan secara otomatis oleh sistem AJMS.<br/>
+      Untuk verifikasi, hubungi Badan Pengelola The Jarrdin Cihampelas.
+    </div>
+
+    <script>window.onload=function(){setTimeout(function(){window.print();},300);}</script>
+  </body></html>`;
+  const w = window.open("", "_blank", "width=900,height=700");
+  if (!w) return;
+  w.document.write(html);
+  w.document.close();
+}
+
+
 export default function AktivasiSistem() {
   const { isSuperAdmin, isAdmin, isStaff, role, isLoading: authLoading, isMasterDev } = useAuth();
   const { data: systemStatus, isLoading } = useSystemStatus();
@@ -168,6 +247,7 @@ export default function AktivasiSistem() {
   }
 
   const canAccessPayment = isSuperAdmin || isAdmin || role === "staff_tro" || role === "staff_finance";
+  const canDownloadReceipt = isMasterDev || isSuperAdmin || isAdmin || role === "staff_finance";
 
   if (!canAccessPayment) {
     return <Navigate to="/" replace />;
@@ -457,7 +537,7 @@ export default function AktivasiSistem() {
                       <TableHead>Nominal</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Catatan</TableHead>
-                      {isMasterDev && <TableHead className="w-[100px]">Aksi</TableHead>}
+                      {(isMasterDev || canDownloadReceipt) && <TableHead className="w-[140px]">Aksi</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -470,57 +550,72 @@ export default function AktivasiSistem() {
                         <TableCell className="font-medium">{formatCurrency(Number(p.nominal))}</TableCell>
                         <TableCell>{statusBadge(p.status)}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{p.notes || "-"}</TableCell>
-                        {isMasterDev && (
+                        {(isMasterDev || canDownloadReceipt) && (
                           <TableCell>
                             <div className="flex items-center gap-1">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    <MoreHorizontal className="w-4 h-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  {p.status !== "berhasil" && (
-                                    <DropdownMenuItem onClick={() => updatePaymentStatus.mutate({ id: p.id, status: "berhasil" })}>
-                                      <CheckCircle2 className="w-4 h-4 mr-2 text-primary" /> Ubah ke Berhasil
-                                    </DropdownMenuItem>
-                                  )}
-                                  {p.status !== "pending" && (
-                                    <DropdownMenuItem onClick={() => updatePaymentStatus.mutate({ id: p.id, status: "pending" })}>
-                                      <Clock className="w-4 h-4 mr-2 text-yellow-500" /> Ubah ke Pending
-                                    </DropdownMenuItem>
-                                  )}
-                                  {p.status !== "gagal" && (
-                                    <DropdownMenuItem onClick={() => updatePaymentStatus.mutate({ id: p.id, status: "gagal" })}>
-                                      <XCircle className="w-4 h-4 mr-2 text-destructive" /> Ubah ke Gagal
-                                    </DropdownMenuItem>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Hapus Pembayaran?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Data pembayaran ini akan dihapus permanen. Apakah Anda yakin?
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Batal</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => deletePayment.mutate(p.id)}
-                                      className="bg-destructive hover:bg-destructive/90"
-                                    >
-                                      Ya, Hapus
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                              {canDownloadReceipt && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8"
+                                  onClick={() => printPaymentReceipt(p)}
+                                  title="Download / Cetak Bukti Pembayaran"
+                                >
+                                  <Download className="w-4 h-4 mr-1" /> Bukti
+                                </Button>
+                              )}
+                              {isMasterDev && (
+                                <>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                                        <MoreHorizontal className="w-4 h-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      {p.status !== "berhasil" && (
+                                        <DropdownMenuItem onClick={() => updatePaymentStatus.mutate({ id: p.id, status: "berhasil" })}>
+                                          <CheckCircle2 className="w-4 h-4 mr-2 text-primary" /> Ubah ke Berhasil
+                                        </DropdownMenuItem>
+                                      )}
+                                      {p.status !== "pending" && (
+                                        <DropdownMenuItem onClick={() => updatePaymentStatus.mutate({ id: p.id, status: "pending" })}>
+                                          <Clock className="w-4 h-4 mr-2 text-yellow-500" /> Ubah ke Pending
+                                        </DropdownMenuItem>
+                                      )}
+                                      {p.status !== "gagal" && (
+                                        <DropdownMenuItem onClick={() => updatePaymentStatus.mutate({ id: p.id, status: "gagal" })}>
+                                          <XCircle className="w-4 h-4 mr-2 text-destructive" /> Ubah ke Gagal
+                                        </DropdownMenuItem>
+                                      )}
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Hapus Pembayaran?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Data pembayaran ini akan dihapus permanen. Apakah Anda yakin?
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => deletePayment.mutate(p.id)}
+                                          className="bg-destructive hover:bg-destructive/90"
+                                        >
+                                          Ya, Hapus
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </>
+                              )}
                             </div>
                           </TableCell>
                         )}
