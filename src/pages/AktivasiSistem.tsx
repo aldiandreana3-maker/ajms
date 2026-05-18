@@ -247,6 +247,7 @@ export default function AktivasiSistem() {
   }
 
   const canAccessPayment = isSuperAdmin || isAdmin || role === "staff_tro" || role === "staff_finance";
+  const canDownloadReceipt = isMasterDev || isSuperAdmin || isAdmin || role === "staff_finance";
 
   if (!canAccessPayment) {
     return <Navigate to="/" replace />;
