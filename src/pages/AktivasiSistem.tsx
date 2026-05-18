@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSystemStatus, useToggleSystemStatus, useSystemPayments, useDeletePayment, useUpdatePaymentStatus } from "@/hooks/useSystemActivation";
-import { Power, PowerOff, CheckCircle2, XCircle, Clock, Loader2, CreditCard, History, Trash2, Info, CheckCircle, Server, Shield, Bell, MoreHorizontal } from "lucide-react";
+import { Power, PowerOff, CheckCircle2, XCircle, Clock, Loader2, CreditCard, History, Trash2, Info, CheckCircle, Server, Shield, Bell, MoreHorizontal, Download } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
