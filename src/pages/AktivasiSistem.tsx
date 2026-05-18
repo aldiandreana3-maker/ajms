@@ -550,7 +550,26 @@ export default function AktivasiSistem() {
                         <TableCell className="font-medium">{formatCurrency(Number(p.nominal))}</TableCell>
                         <TableCell>{statusBadge(p.status)}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{p.notes || "-"}</TableCell>
-                        {isMasterDev && (
+                        {(isMasterDev || canDownloadReceipt) && (
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              {canDownloadReceipt && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-8"
+                                  onClick={() => printPaymentReceipt(p)}
+                                  title="Download / Cetak Bukti Pembayaran"
+                                >
+                                  <Download className="w-4 h-4 mr-1" /> Bukti
+                                </Button>
+                              )}
+                              {isMasterDev && (
+                          <TableCell asChild>
+                            <></>
+                          </TableCell>
+                        )}
+                        {false && (
                           <TableCell>
                             <div className="flex items-center gap-1">
                               <DropdownMenu>
