@@ -63,12 +63,17 @@ export function usePenghuniPaginated(
           units:unit_id(unit_number, area_sqm, type)
         `, { count: "exact" });
 
+      if (!includeHidden) {
+        query = query.eq("is_hidden", false);
+      }
+
       if (search.trim()) {
         const searchTerm = `%${search.trim()}%`;
         query = query.or(
           `full_name.ilike.${searchTerm},phone.ilike.${searchTerm},email.ilike.${searchTerm},ktp_number.ilike.${searchTerm},unit_number.ilike.${searchTerm}`
         );
       }
+
 
       query = query
         .order("full_name", { ascending: true })
