@@ -19,10 +19,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Search, Pencil, Trash2, Users, Download, Upload, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Users, Download, Upload, ChevronLeft, ChevronRight, Eye, EyeOff } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { usePenghuniPaginated, usePenghuni } from "@/hooks/usePenghuni";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+
 import {
   Select,
   SelectContent,
