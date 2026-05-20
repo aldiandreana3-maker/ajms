@@ -12,9 +12,11 @@ export interface Penghuni {
   ktp_number: string | null;
   is_owner: boolean | null;
   is_active: boolean | null;
+  is_hidden: boolean | null;
   move_in_date: string | null;
   move_out_date: string | null;
   created_at: string | null;
+
   updated_at: string | null;
   units?: { unit_number: string; area_sqm: number | null; type: string | null } | null;
 }
@@ -44,10 +46,12 @@ export interface PaginatedPenghuniResult {
 export function usePenghuniPaginated(
   page: number,
   pageSize: number,
-  search: string = ""
+  search: string = "",
+  includeHidden: boolean = false
 ) {
   return useQuery({
-    queryKey: ["penghuni-paginated", page, pageSize, search],
+    queryKey: ["penghuni-paginated", page, pageSize, search, includeHidden],
+
     queryFn: async (): Promise<PaginatedPenghuniResult> => {
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
@@ -59,12 +63,17 @@ export function usePenghuniPaginated(
           units:unit_id(unit_number, area_sqm, type)
         `, { count: "exact" });
 
+      if (!includeHidden) {
+        query = query.eq("is_hidden", false);
+      }
+
       if (search.trim()) {
         const searchTerm = `%${search.trim()}%`;
         query = query.or(
           `full_name.ilike.${searchTerm},phone.ilike.${searchTerm},email.ilike.${searchTerm},ktp_number.ilike.${searchTerm},unit_number.ilike.${searchTerm}`
         );
       }
+
 
       query = query
         .order("full_name", { ascending: true })
@@ -198,6 +207,20 @@ export function usePenghuni() {
     },
   });
 
+  const toggleHidden = useMutation({
+    mutationFn: async ({ id, is_hidden }: { id: string; is_hidden: boolean }) => {
+      const { error } = await supabase
+        .from("penghuni")
+        .update({ is_hidden })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["penghuni"] });
+      queryClient.invalidateQueries({ queryKey: ["penghuni-paginated"] });
+    },
+  });
+
   return {
     penghuni: query.data,
     isLoading: query.isLoading,
@@ -206,5 +229,7 @@ export function usePenghuni() {
     createPenghuni,
     updatePenghuni,
     deletePenghuni,
+    toggleHidden,
   };
 }
+

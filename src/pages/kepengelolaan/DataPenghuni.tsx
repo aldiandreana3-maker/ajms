@@ -19,10 +19,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Search, Pencil, Trash2, Users, Download, Upload, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, Users, Download, Upload, ChevronLeft, ChevronRight, Eye, EyeOff } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { usePenghuniPaginated, usePenghuni } from "@/hooks/usePenghuni";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+
 import {
   Select,
   SelectContent,
@@ -54,7 +56,7 @@ const penghuniExportColumns = [
 ];
 
 export default function DataPenghuni() {
-  const { isSuperAdmin, isAdmin } = useAuth();
+  const { isSuperAdmin, isAdmin, isMasterDev } = useAuth();
   const canManage = isSuperAdmin || isAdmin;
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -64,6 +66,8 @@ export default function DataPenghuni() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPenghuni, setEditingPenghuni] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showHidden, setShowHidden] = useState(false);
+
 
   // Debounce search
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -77,14 +81,15 @@ export default function DataPenghuni() {
   };
 
   // Server-side paginated query
-  const { data: paginatedResult, isLoading } = usePenghuniPaginated(currentPage, pageSize, debouncedSearch);
+  const { data: paginatedResult, isLoading } = usePenghuniPaginated(currentPage, pageSize, debouncedSearch, isMasterDev && showHidden);
   const penghuniList = paginatedResult?.data || [];
   const totalCount = paginatedResult?.totalCount || 0;
   const totalPages = Math.ceil(totalCount / pageSize);
 
   // Legacy hook for mutations only
-  const { createPenghuni, updatePenghuni, deletePenghuni } = usePenghuni();
+  const { createPenghuni, updatePenghuni, deletePenghuni, toggleHidden } = usePenghuni();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   const [formData, setFormData] = useState({
     full_name: "",
@@ -426,7 +431,7 @@ export default function DataPenghuni() {
 
         {/* Search */}
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-6 space-y-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
@@ -436,8 +441,19 @@ export default function DataPenghuni() {
                 className="pl-10"
               />
             </div>
+            {isMasterDev && (
+              <div className="flex items-center justify-between rounded-md border border-dashed border-primary/40 bg-primary/5 px-3 py-2">
+                <div className="flex items-center gap-2 text-sm">
+                  {showHidden ? <Eye className="w-4 h-4 text-primary" /> : <EyeOff className="w-4 h-4 text-muted-foreground" />}
+                  <span className="font-medium">Tampilkan data tersembunyi</span>
+                  <span className="text-xs text-muted-foreground">(Master Developer)</span>
+                </div>
+                <Switch checked={showHidden} onCheckedChange={(v) => { setShowHidden(v); setCurrentPage(1); }} />
+              </div>
+            )}
           </CardContent>
         </Card>
+
 
         {/* Table */}
         <Card>
@@ -469,9 +485,16 @@ export default function DataPenghuni() {
                   </TableHeader>
                   <TableBody>
                     {filteredPenghuni.map((p) => (
-                      <TableRow key={p.id}>
+                      <TableRow key={p.id} className={p.is_hidden ? "opacity-60 bg-muted/30" : ""}>
                         <TableCell className="font-medium">
-                          {p.unit_number || p.units?.unit_number || "-"}
+                          <div className="flex items-center gap-2">
+                            {p.unit_number || p.units?.unit_number || "-"}
+                            {p.is_hidden && (
+                              <span title="Data tersembunyi">
+                                <EyeOff className="w-3.5 h-3.5 text-muted-foreground" />
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>{p.full_name}</TableCell>
                         <TableCell>{p.phone || "-"}</TableCell>
@@ -483,6 +506,23 @@ export default function DataPenghuni() {
                         {canManage && (
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
+                              {isMasterDev && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  title={p.is_hidden ? "Tampilkan data" : "Sembunyikan data"}
+                                  onClick={async () => {
+                                    try {
+                                      await toggleHidden.mutateAsync({ id: p.id, is_hidden: !p.is_hidden });
+                                      toast.success(p.is_hidden ? "Data ditampilkan" : "Data disembunyikan");
+                                    } catch (e: any) {
+                                      toast.error(e.message || "Gagal mengubah status");
+                                    }
+                                  }}
+                                >
+                                  {p.is_hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                                </Button>
+                              )}
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -490,6 +530,7 @@ export default function DataPenghuni() {
                               >
                                 <Pencil className="w-4 h-4" />
                               </Button>
+
                               <Button
                                 variant="outline"
                                 size="sm"

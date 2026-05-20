@@ -2375,6 +2375,7 @@ export type Database = {
           full_name: string
           id: string
           is_active: boolean | null
+          is_hidden: boolean
           is_owner: boolean | null
           ktp_number: string | null
           move_in_date: string | null
@@ -2392,6 +2393,7 @@ export type Database = {
           full_name: string
           id?: string
           is_active?: boolean | null
+          is_hidden?: boolean
           is_owner?: boolean | null
           ktp_number?: string | null
           move_in_date?: string | null
@@ -2409,6 +2411,7 @@ export type Database = {
           full_name?: string
           id?: string
           is_active?: boolean | null
+          is_hidden?: boolean
           is_owner?: boolean | null
           ktp_number?: string | null
           move_in_date?: string | null
