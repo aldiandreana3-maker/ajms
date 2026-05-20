@@ -56,7 +56,7 @@ const penghuniExportColumns = [
 ];
 
 export default function DataPenghuni() {
-  const { isSuperAdmin, isAdmin } = useAuth();
+  const { isSuperAdmin, isAdmin, isMasterDev } = useAuth();
   const canManage = isSuperAdmin || isAdmin;
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -66,6 +66,8 @@ export default function DataPenghuni() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPenghuni, setEditingPenghuni] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showHidden, setShowHidden] = useState(false);
+
 
   // Debounce search
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
