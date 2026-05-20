@@ -46,10 +46,12 @@ export interface PaginatedPenghuniResult {
 export function usePenghuniPaginated(
   page: number,
   pageSize: number,
-  search: string = ""
+  search: string = "",
+  includeHidden: boolean = false
 ) {
   return useQuery({
-    queryKey: ["penghuni-paginated", page, pageSize, search],
+    queryKey: ["penghuni-paginated", page, pageSize, search, includeHidden],
+
     queryFn: async (): Promise<PaginatedPenghuniResult> => {
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
