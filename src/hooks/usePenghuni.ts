@@ -12,9 +12,11 @@ export interface Penghuni {
   ktp_number: string | null;
   is_owner: boolean | null;
   is_active: boolean | null;
+  is_hidden: boolean | null;
   move_in_date: string | null;
   move_out_date: string | null;
   created_at: string | null;
+
   updated_at: string | null;
   units?: { unit_number: string; area_sqm: number | null; type: string | null } | null;
 }
