@@ -431,7 +431,7 @@ export default function DataPenghuni() {
 
         {/* Search */}
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-6 space-y-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
@@ -441,8 +441,19 @@ export default function DataPenghuni() {
                 className="pl-10"
               />
             </div>
+            {isMasterDev && (
+              <div className="flex items-center justify-between rounded-md border border-dashed border-primary/40 bg-primary/5 px-3 py-2">
+                <div className="flex items-center gap-2 text-sm">
+                  {showHidden ? <Eye className="w-4 h-4 text-primary" /> : <EyeOff className="w-4 h-4 text-muted-foreground" />}
+                  <span className="font-medium">Tampilkan data tersembunyi</span>
+                  <span className="text-xs text-muted-foreground">(Master Developer)</span>
+                </div>
+                <Switch checked={showHidden} onCheckedChange={(v) => { setShowHidden(v); setCurrentPage(1); }} />
+              </div>
+            )}
           </CardContent>
         </Card>
+
 
         {/* Table */}
         <Card>
