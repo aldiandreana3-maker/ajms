@@ -81,14 +81,15 @@ export default function DataPenghuni() {
   };
 
   // Server-side paginated query
-  const { data: paginatedResult, isLoading } = usePenghuniPaginated(currentPage, pageSize, debouncedSearch);
+  const { data: paginatedResult, isLoading } = usePenghuniPaginated(currentPage, pageSize, debouncedSearch, isMasterDev && showHidden);
   const penghuniList = paginatedResult?.data || [];
   const totalCount = paginatedResult?.totalCount || 0;
   const totalPages = Math.ceil(totalCount / pageSize);
 
   // Legacy hook for mutations only
-  const { createPenghuni, updatePenghuni, deletePenghuni } = usePenghuni();
+  const { createPenghuni, updatePenghuni, deletePenghuni, toggleHidden } = usePenghuni();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   const [formData, setFormData] = useState({
     full_name: "",
