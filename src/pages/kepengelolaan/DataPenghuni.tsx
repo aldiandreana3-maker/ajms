@@ -485,9 +485,16 @@ export default function DataPenghuni() {
                   </TableHeader>
                   <TableBody>
                     {filteredPenghuni.map((p) => (
-                      <TableRow key={p.id}>
+                      <TableRow key={p.id} className={p.is_hidden ? "opacity-60 bg-muted/30" : ""}>
                         <TableCell className="font-medium">
-                          {p.unit_number || p.units?.unit_number || "-"}
+                          <div className="flex items-center gap-2">
+                            {p.unit_number || p.units?.unit_number || "-"}
+                            {p.is_hidden && (
+                              <span title="Data tersembunyi">
+                                <EyeOff className="w-3.5 h-3.5 text-muted-foreground" />
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>{p.full_name}</TableCell>
                         <TableCell>{p.phone || "-"}</TableCell>
@@ -499,6 +506,23 @@ export default function DataPenghuni() {
                         {canManage && (
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
+                              {isMasterDev && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  title={p.is_hidden ? "Tampilkan data" : "Sembunyikan data"}
+                                  onClick={async () => {
+                                    try {
+                                      await toggleHidden.mutateAsync({ id: p.id, is_hidden: !p.is_hidden });
+                                      toast.success(p.is_hidden ? "Data ditampilkan" : "Data disembunyikan");
+                                    } catch (e: any) {
+                                      toast.error(e.message || "Gagal mengubah status");
+                                    }
+                                  }}
+                                >
+                                  {p.is_hidden ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                                </Button>
+                              )}
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -506,6 +530,7 @@ export default function DataPenghuni() {
                               >
                                 <Pencil className="w-4 h-4" />
                               </Button>
+
                               <Button
                                 variant="outline"
                                 size="sm"
