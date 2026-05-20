@@ -207,6 +207,20 @@ export function usePenghuni() {
     },
   });
 
+  const toggleHidden = useMutation({
+    mutationFn: async ({ id, is_hidden }: { id: string; is_hidden: boolean }) => {
+      const { error } = await supabase
+        .from("penghuni")
+        .update({ is_hidden })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["penghuni"] });
+      queryClient.invalidateQueries({ queryKey: ["penghuni-paginated"] });
+    },
+  });
+
   return {
     penghuni: query.data,
     isLoading: query.isLoading,
@@ -215,5 +229,7 @@ export function usePenghuni() {
     createPenghuni,
     updatePenghuni,
     deletePenghuni,
+    toggleHidden,
   };
 }
+
