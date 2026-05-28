@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useParkingSubscriptions, useCreateParkingSubscription, useExtendParkingSubscription, useDeleteParkingSubscription, useUpdateParkingVerification, useCancelExtensionParkingSubscription, useUpdateParkingMeta } from "@/hooks/useParkingSubscriptions";
 import { Textarea } from "@/components/ui/textarea";
 import { PermissionButton } from "@/components/ui/permission-button";
@@ -161,7 +162,47 @@ export default function AbonemenParkir() {
     return filtered;
   }, [subscriptions, searchValue, dateFilter]);
 
-  const paginatedData = usePagination(filteredData, itemsPerPage, currentPage);
+  // ===== Pengelompokan per Bulan =====
+  // - Bulan berjalan = tabel utama / aktif (di bawah)
+  // - Bulan-bulan sebelumnya (riwayat) = di atas, accordion
+  // - Data tanpa end_date → masuk ke bulan berjalan supaya bisa diperpanjang
+  const now = new Date();
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const monthLabel = (key: string) => {
+    const [y, m] = key.split("-").map(Number);
+    return new Date(y, m - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  };
+  const getMonthKey = (sub: any) => {
+    if (!sub.end_date) return currentMonthKey;
+    const d = new Date(sub.end_date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  };
+
+  const { pastGroups, currentAndFutureData } = useMemo(() => {
+    const past: Record<string, any[]> = {};
+    const cur: any[] = [];
+    for (const sub of filteredData) {
+      const key = getMonthKey(sub);
+      if (key < currentMonthKey) {
+        (past[key] = past[key] || []).push(sub);
+      } else {
+        cur.push(sub);
+      }
+    }
+    const pastEntries = Object.entries(past).sort(([a], [b]) => b.localeCompare(a));
+    return { pastGroups: pastEntries, currentAndFutureData: cur };
+  }, [filteredData, currentMonthKey]);
+
+  const paginatedData = usePagination(currentAndFutureData, itemsPerPage, currentPage);
+
+  // 1-klik Perpanjang: extend ke tanggal 5 bulan berjalan (atau bulan berikutnya bila sudah lewat tgl 5)
+  const handleQuickRenew = (id: string) => {
+    const target = new Date();
+    target.setHours(0, 0, 0, 0);
+    if (target.getDate() > 5) target.setMonth(target.getMonth() + 1);
+    target.setDate(5);
+    extendMutation.mutate({ id, customEndDate: target.toISOString().split("T")[0] });
+  };
 
   // ===== Notifikasi Pengingat Perpanjangan Abonemen Parkir =====
   // - Penghuni/Agent: hanya melihat abonemen miliknya (created_by = userId atau penghuni terkait)
@@ -664,6 +705,15 @@ export default function AbonemenParkir() {
                             {canVerify && (
                               <TableCell className="py-2 text-right">
                                 <div className="flex justify-end gap-1 flex-wrap">
+                                  <Button
+                                    size="sm"
+                                    className="h-7 text-xs bg-success hover:bg-success/90 text-success-foreground"
+                                    disabled={extendMutation.isPending}
+                                    onClick={() => handleQuickRenew(sub.id)}
+                                    title={`Perpanjang ke bulan ${monthLabel(currentMonthKey)} (jatuh tempo tgl 5)`}
+                                  >
+                                    Perpanjang
+                                  </Button>
                                   <Select
                                     disabled={extendMutation.isPending}
                                     onValueChange={(v) => {
@@ -675,7 +725,6 @@ export default function AbonemenParkir() {
                                           toast.error("Jumlah hari tidak valid");
                                           return;
                                         }
-                                        // Snap ke tgl 5 berikutnya
                                         const target = new Date();
                                         target.setHours(0, 0, 0, 0);
                                         target.setDate(target.getDate() + days);
@@ -684,13 +733,12 @@ export default function AbonemenParkir() {
                                         extendMutation.mutate({ id: sub.id, customEndDate: target.toISOString().split("T")[0] });
                                       } else {
                                         const months = parseInt(v, 10);
-                                        // Patokan: dari hari ini (bukan dari end_date lama yang sudah expired)
                                         extendMutation.mutate({ id: sub.id, months, currentEndDate: null });
                                       }
                                     }}
                                   >
-                                    <SelectTrigger className="h-7 w-[150px] text-xs bg-success text-success-foreground border-success hover:bg-success/90">
-                                      <SelectValue placeholder="Perpanjang Sekarang" />
+                                    <SelectTrigger className="h-7 w-[130px] text-xs">
+                                      <SelectValue placeholder="Opsi lain…" />
                                     </SelectTrigger>
                                     <SelectContent>
                                       <SelectItem value="manual_days">Manual (Hari)…</SelectItem>
@@ -739,6 +787,57 @@ export default function AbonemenParkir() {
               onDateFilterChange={handleDateFilterChange}
               searchPlaceholder="Cari plat, unit, nama, kartu member..."
             />
+
+            {/* Riwayat per Bulan (bulan-bulan yang sudah berlalu) */}
+            {pastGroups.length > 0 && (
+              <Accordion type="multiple" className="mb-4 rounded-md border bg-muted/30">
+                {pastGroups.map(([key, items]) => (
+                  <AccordionItem key={key} value={key} className="border-b last:border-b-0 px-3">
+                    <AccordionTrigger className="text-sm py-2 hover:no-underline">
+                      <span className="flex items-center gap-2">
+                        <span className="font-medium">Riwayat {monthLabel(key)}</span>
+                        <Badge variant="secondary" className="text-xs">{items.length}</Badge>
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="overflow-x-auto rounded-md border bg-background">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="h-9">Unit</TableHead>
+                              <TableHead className="h-9">Nama</TableHead>
+                              <TableHead className="h-9">Plat</TableHead>
+                              <TableHead className="h-9">Kendaraan</TableHead>
+                              <TableHead className="h-9">Berakhir</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {items.map((sub: any) => (
+                              <TableRow key={sub.id}>
+                                <TableCell className="py-2">{sub.unit_number || sub.units?.unit_number || "-"}</TableCell>
+                                <TableCell className="py-2">{sub.penghuni_name || "-"}</TableCell>
+                                <TableCell className="py-2 font-mono text-xs">{sub.vehicle_number}</TableCell>
+                                <TableCell className="py-2 capitalize text-sm">{sub.vehicle_type}</TableCell>
+                                <TableCell className="py-2 text-xs whitespace-nowrap">
+                                  {sub.end_date ? format(new Date(sub.end_date), "dd/MM/yyyy") : "-"}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            )}
+
+            <div className="mb-2 flex items-center gap-2">
+              <Badge variant="default" className="bg-success text-success-foreground">Aktif</Badge>
+              <span className="text-sm font-medium">Tabel Bulan Berjalan — {monthLabel(currentMonthKey)}</span>
+              <Badge variant="secondary" className="text-xs">{currentAndFutureData.length}</Badge>
+            </div>
+
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
