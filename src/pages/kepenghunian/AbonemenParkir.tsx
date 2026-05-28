@@ -704,6 +704,15 @@ export default function AbonemenParkir() {
                             {canVerify && (
                               <TableCell className="py-2 text-right">
                                 <div className="flex justify-end gap-1 flex-wrap">
+                                  <Button
+                                    size="sm"
+                                    className="h-7 text-xs bg-success hover:bg-success/90 text-success-foreground"
+                                    disabled={extendMutation.isPending}
+                                    onClick={() => handleQuickRenew(sub.id)}
+                                    title={`Perpanjang ke bulan ${monthLabel(currentMonthKey)} (jatuh tempo tgl 5)`}
+                                  >
+                                    Perpanjang
+                                  </Button>
                                   <Select
                                     disabled={extendMutation.isPending}
                                     onValueChange={(v) => {
@@ -715,7 +724,6 @@ export default function AbonemenParkir() {
                                           toast.error("Jumlah hari tidak valid");
                                           return;
                                         }
-                                        // Snap ke tgl 5 berikutnya
                                         const target = new Date();
                                         target.setHours(0, 0, 0, 0);
                                         target.setDate(target.getDate() + days);
@@ -724,13 +732,12 @@ export default function AbonemenParkir() {
                                         extendMutation.mutate({ id: sub.id, customEndDate: target.toISOString().split("T")[0] });
                                       } else {
                                         const months = parseInt(v, 10);
-                                        // Patokan: dari hari ini (bukan dari end_date lama yang sudah expired)
                                         extendMutation.mutate({ id: sub.id, months, currentEndDate: null });
                                       }
                                     }}
                                   >
-                                    <SelectTrigger className="h-7 w-[150px] text-xs bg-success text-success-foreground border-success hover:bg-success/90">
-                                      <SelectValue placeholder="Perpanjang Sekarang" />
+                                    <SelectTrigger className="h-7 w-[130px] text-xs">
+                                      <SelectValue placeholder="Opsi lain…" />
                                     </SelectTrigger>
                                     <SelectContent>
                                       <SelectItem value="manual_days">Manual (Hari)…</SelectItem>
