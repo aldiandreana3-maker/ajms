@@ -59,6 +59,34 @@ export function useToggleSystemStatus() {
   });
 }
 
+export function useToggleMonthlyNotification() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const { data: current } = await supabase
+        .from("system_activation")
+        .select("id")
+        .limit(1)
+        .single();
+      if (!current) throw new Error("System activation record not found");
+      const { error } = await supabase
+        .from("system_activation")
+        .update({ monthly_notification_enabled: enabled, updated_at: new Date().toISOString() } as never)
+        .eq("id", current.id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, enabled) => {
+      queryClient.invalidateQueries({ queryKey: ["system-activation"] });
+      toast({ title: enabled ? "Notifikasi pembayaran bulanan diaktifkan" : "Notifikasi pembayaran bulanan dinonaktifkan" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Gagal memperbarui pengaturan", description: error.message, variant: "destructive" });
+    },
+  });
+}
+
 export function useSystemPayments() {
   return useQuery({
     queryKey: ["system-payments"],
