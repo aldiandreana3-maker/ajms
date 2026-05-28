@@ -772,7 +772,7 @@ export default function AbonemenParkir() {
                         ))}
                         {filteredNotifRows.length === 0 && (
                           <TableRow>
-                            <TableCell colSpan={canVerify ? 6 : 5} className="text-center text-muted-foreground py-4 text-sm">
+                            <TableCell colSpan={(canVerify || isAuthenticated) ? 6 : 5} className="text-center text-muted-foreground py-4 text-sm">
                               Tidak ada notifikasi yang sesuai filter.
                             </TableCell>
                           </TableRow>
