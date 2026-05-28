@@ -416,6 +416,9 @@ export default function AktivasiSistem() {
                   )}
                 </div>
         )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Pengaturan Notifikasi Pembayaran Bulanan - HANYA Master Developer */}
         {isMasterDev && (
@@ -468,9 +471,6 @@ export default function AktivasiSistem() {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-            </CardContent>
-          </Card>
-        )}
             </CardContent>
           </Card>
         )}
