@@ -415,7 +415,62 @@ export default function AktivasiSistem() {
                     <div>Terakhir dinonaktifkan: {format(new Date(systemStatus.deactivated_at), "dd MMM yyyy HH:mm", { locale: idLocale })}</div>
                   )}
                 </div>
-              )}
+        )}
+
+        {/* Pengaturan Notifikasi Pembayaran Bulanan - HANYA Master Developer */}
+        {isMasterDev && (
+          <Card className="border-primary/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Bell className="w-5 h-5 text-primary" />
+                Kontrol Notifikasi Pembayaran
+              </CardTitle>
+              <CardDescription>
+                Pengaturan ini hanya dapat diakses oleh <strong>Master Developer</strong>.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-start justify-between gap-4 p-4 rounded-lg border bg-muted/30">
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-foreground text-sm">
+                    Aktifkan Notifikasi Pembayaran Bulanan
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Menampilkan peringatan kepada pengguna jika biaya operasional bulanan AJMS
+                    belum dibayar, lewat jatuh tempo, atau sistem ditangguhkan.
+                  </p>
+                  <ul className="text-xs text-muted-foreground mt-2 space-y-0.5">
+                    <li>✔ Master Developer → Bisa aktifkan / nonaktifkan</li>
+                    <li>❌ Super Admin → Tidak memiliki akses</li>
+                    <li>❌ Admin → Tidak memiliki akses</li>
+                  </ul>
+                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Switch
+                          checked={!!(systemStatus as { monthly_notification_enabled?: boolean } | null)?.monthly_notification_enabled}
+                          disabled={toggleMonthlyNotif.isPending}
+                          onCheckedChange={(v) => toggleMonthlyNotif.mutate(v)}
+                        />
+                        <span className="text-xs font-medium text-muted-foreground w-8">
+                          {(systemStatus as { monthly_notification_enabled?: boolean } | null)?.monthly_notification_enabled ? "ON" : "OFF"}
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-xs">
+                      <p className="text-xs">
+                        <strong>ON</strong> → Notifikasi pembayaran tampil otomatis ke pengguna.<br />
+                        <strong>OFF</strong> → Notifikasi pembayaran disembunyikan.
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </CardContent>
+          </Card>
+        )}
             </CardContent>
           </Card>
         )}
