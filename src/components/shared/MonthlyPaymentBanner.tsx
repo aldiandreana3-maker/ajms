@@ -22,7 +22,7 @@ export function MonthlyPaymentBanner() {
   if (!monthlyStatus || monthlyStatus === "normal") return null;
 
   const canPay =
-    isMasterDev || isSuperAdmin || isAdmin || role === "staff_finance" || role === "staff_tro";
+    isMasterDev || isSuperAdmin || isAdmin || role === "staff_finance";
 
   const config = {
     peringatan: {
