@@ -161,7 +161,47 @@ export default function AbonemenParkir() {
     return filtered;
   }, [subscriptions, searchValue, dateFilter]);
 
-  const paginatedData = usePagination(filteredData, itemsPerPage, currentPage);
+  // ===== Pengelompokan per Bulan =====
+  // - Bulan berjalan = tabel utama / aktif (di bawah)
+  // - Bulan-bulan sebelumnya (riwayat) = di atas, accordion
+  // - Data tanpa end_date → masuk ke bulan berjalan supaya bisa diperpanjang
+  const now = new Date();
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const monthLabel = (key: string) => {
+    const [y, m] = key.split("-").map(Number);
+    return new Date(y, m - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  };
+  const getMonthKey = (sub: any) => {
+    if (!sub.end_date) return currentMonthKey;
+    const d = new Date(sub.end_date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  };
+
+  const { pastGroups, currentAndFutureData } = useMemo(() => {
+    const past: Record<string, any[]> = {};
+    const cur: any[] = [];
+    for (const sub of filteredData) {
+      const key = getMonthKey(sub);
+      if (key < currentMonthKey) {
+        (past[key] = past[key] || []).push(sub);
+      } else {
+        cur.push(sub);
+      }
+    }
+    const pastEntries = Object.entries(past).sort(([a], [b]) => b.localeCompare(a));
+    return { pastGroups: pastEntries, currentAndFutureData: cur };
+  }, [filteredData, currentMonthKey]);
+
+  const paginatedData = usePagination(currentAndFutureData, itemsPerPage, currentPage);
+
+  // 1-klik Perpanjang: extend ke tanggal 5 bulan berjalan (atau bulan berikutnya bila sudah lewat tgl 5)
+  const handleQuickRenew = (id: string) => {
+    const target = new Date();
+    target.setHours(0, 0, 0, 0);
+    if (target.getDate() > 5) target.setMonth(target.getMonth() + 1);
+    target.setDate(5);
+    extendMutation.mutate({ id, customEndDate: target.toISOString().split("T")[0] });
+  };
 
   // ===== Notifikasi Pengingat Perpanjangan Abonemen Parkir =====
   // - Penghuni/Agent: hanya melihat abonemen miliknya (created_by = userId atau penghuni terkait)
