@@ -786,6 +786,57 @@ export default function AbonemenParkir() {
               onDateFilterChange={handleDateFilterChange}
               searchPlaceholder="Cari plat, unit, nama, kartu member..."
             />
+
+            {/* Riwayat per Bulan (bulan-bulan yang sudah berlalu) */}
+            {pastGroups.length > 0 && (
+              <Accordion type="multiple" className="mb-4 rounded-md border bg-muted/30">
+                {pastGroups.map(([key, items]) => (
+                  <AccordionItem key={key} value={key} className="border-b last:border-b-0 px-3">
+                    <AccordionTrigger className="text-sm py-2 hover:no-underline">
+                      <span className="flex items-center gap-2">
+                        <span className="font-medium">Riwayat {monthLabel(key)}</span>
+                        <Badge variant="secondary" className="text-xs">{items.length}</Badge>
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="overflow-x-auto rounded-md border bg-background">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="h-9">Unit</TableHead>
+                              <TableHead className="h-9">Nama</TableHead>
+                              <TableHead className="h-9">Plat</TableHead>
+                              <TableHead className="h-9">Kendaraan</TableHead>
+                              <TableHead className="h-9">Berakhir</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {items.map((sub: any) => (
+                              <TableRow key={sub.id}>
+                                <TableCell className="py-2">{sub.unit_number || sub.units?.unit_number || "-"}</TableCell>
+                                <TableCell className="py-2">{sub.penghuni_name || "-"}</TableCell>
+                                <TableCell className="py-2 font-mono text-xs">{sub.vehicle_number}</TableCell>
+                                <TableCell className="py-2 capitalize text-sm">{sub.vehicle_type}</TableCell>
+                                <TableCell className="py-2 text-xs whitespace-nowrap">
+                                  {sub.end_date ? format(new Date(sub.end_date), "dd/MM/yyyy") : "-"}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            )}
+
+            <div className="mb-2 flex items-center gap-2">
+              <Badge variant="default" className="bg-success text-success-foreground">Aktif</Badge>
+              <span className="text-sm font-medium">Tabel Bulan Berjalan — {monthLabel(currentMonthKey)}</span>
+              <Badge variant="secondary" className="text-xs">{currentAndFutureData.length}</Badge>
+            </div>
+
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
