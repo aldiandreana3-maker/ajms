@@ -1,48 +1,31 @@
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, CreditCard, AlertCircle, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useSystemStatus, useSystemPayments } from "@/hooks/useSystemActivation";
+import { useSystemStatus } from "@/hooks/useSystemActivation";
 import { useAuth } from "@/contexts/AuthContext";
-
-type BannerState = "belum_bayar" | "terlambat" | "dibatasi" | null;
 
 /**
  * Banner peringatan pembayaran bulanan AJMS.
- * - Hanya muncul jika monthly_notification_enabled = true (diatur Master Dev)
- * - 3 state: belum_bayar (kuning) / terlambat (oranye) / dibatasi (merah)
- * - Ditentukan dari latest system_payments(jenis='bulanan') + system_status
+ * State dikendalikan manual oleh Master Developer via field monthly_status
+ * pada tabel system_activation: normal | peringatan | terlambat | dibatasi.
  */
 export function MonthlyPaymentBanner() {
   const { data: systemStatus } = useSystemStatus();
-  const { data: payments } = useSystemPayments();
-  const { user, isSuperAdmin, isAdmin, role } = useAuth();
+  const { user, isSuperAdmin, isAdmin, isMasterDev, role } = useAuth();
   const navigate = useNavigate();
 
   if (!user) return null;
-  const enabled = (systemStatus as { monthly_notification_enabled?: boolean } | null | undefined)
-    ?.monthly_notification_enabled;
-  if (enabled === false) return null;
 
-  const latestBulanan = payments?.find((p) => p.jenis_pembayaran === "bulanan");
-  // Jika belum ada record bulanan sama sekali, atau record terakhir belum berhasil → ada tunggakan
-  const isPaid = latestBulanan?.status === "berhasil";
-  if (isPaid) return null;
-  if (!latestBulanan) return null; // belum ada tagihan bulanan terdaftar
+  const monthlyStatus = (systemStatus as { monthly_status?: string } | null | undefined)
+    ?.monthly_status as "normal" | "peringatan" | "terlambat" | "dibatasi" | undefined;
 
-  const now = new Date();
-  const dueDate = latestBulanan.due_date ? new Date(latestBulanan.due_date) : null;
-  const isInactive = systemStatus?.system_status === "tidak_aktif";
-  const isOverdue = dueDate ? now > dueDate : false;
-
-  let state: BannerState = "belum_bayar";
-  if (isInactive) state = "dibatasi";
-  else if (isOverdue) state = "terlambat";
+  if (!monthlyStatus || monthlyStatus === "normal") return null;
 
   const canPay =
-    isSuperAdmin || isAdmin || role === "staff_finance" || role === "staff_tro" || role === "master_dev";
+    isMasterDev || isSuperAdmin || isAdmin || role === "staff_finance" || role === "staff_tro";
 
   const config = {
-    belum_bayar: {
+    peringatan: {
       icon: AlertTriangle,
       title: "🟡 Peringatan Pembayaran Bulanan",
       message:
@@ -66,7 +49,7 @@ export function MonthlyPaymentBanner() {
       wrap: "bg-red-50 border-red-300 text-red-900 dark:bg-red-950/30 dark:border-red-800 dark:text-red-200",
       btn: "bg-red-600 hover:bg-red-700 text-white",
     },
-  }[state]!;
+  }[monthlyStatus];
 
   const Icon = config.icon;
 
