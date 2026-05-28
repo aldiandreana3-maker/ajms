@@ -418,60 +418,54 @@ export default function AktivasiSistem() {
           </Card>
         )}
 
-        {/* Pengaturan Notifikasi Pembayaran Bulanan - HANYA Master Developer */}
-        {isMasterDev && (
-          <Card className="border-primary/30">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Bell className="w-5 h-5 text-primary" />
-                Kontrol Notifikasi Pembayaran
-              </CardTitle>
-              <CardDescription>
-                Pengaturan ini hanya dapat diakses oleh <strong>Master Developer</strong>.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-start justify-between gap-4 p-4 rounded-lg border bg-muted/30">
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-foreground text-sm">
-                    Aktifkan Notifikasi Pembayaran Bulanan
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Menampilkan peringatan kepada pengguna jika biaya operasional bulanan AJMS
-                    belum dibayar, lewat jatuh tempo, atau sistem ditangguhkan.
-                  </p>
-                  <ul className="text-xs text-muted-foreground mt-2 space-y-0.5">
-                    <li>✔ Master Developer → Bisa aktifkan / nonaktifkan</li>
-                    <li>❌ Super Admin → Tidak memiliki akses</li>
-                    <li>❌ Admin → Tidak memiliki akses</li>
-                  </ul>
+        {/* Status Pembayaran Bulanan - HANYA Master Developer */}
+        {isMasterDev && (() => {
+          const currentMonthly = ((systemStatus as { monthly_status?: string } | null)?.monthly_status || "normal") as MonthlyStatus;
+          const options: { value: MonthlyStatus; label: string; desc: string; cls: string; activeCls: string }[] = [
+            { value: "normal", label: "Normal", desc: "Tidak menampilkan peringatan apapun", cls: "border-border", activeCls: "border-primary bg-primary/10" },
+            { value: "peringatan", label: "🟡 Peringatan Pembayaran", desc: "Tampil banner kuning: belum bayar bulanan", cls: "border-border", activeCls: "border-yellow-500 bg-yellow-50 dark:bg-yellow-950/30" },
+            { value: "terlambat", label: "🟠 Pembayaran Terlambat", desc: "Tampil banner oranye: lewat jatuh tempo", cls: "border-border", activeCls: "border-orange-500 bg-orange-50 dark:bg-orange-950/30" },
+            { value: "dibatasi", label: "🔴 Sistem Dibatasi", desc: "Tampil banner merah: sistem dibatasi", cls: "border-border", activeCls: "border-red-500 bg-red-50 dark:bg-red-950/30" },
+          ];
+          return (
+            <Card className="border-primary/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Bell className="w-5 h-5 text-primary" />
+                  Status Pembayaran Bulanan
+                </CardTitle>
+                <CardDescription>
+                  Dikendalikan manual oleh <strong>Master Developer</strong>. Status ini menentukan banner peringatan yang muncul ke seluruh pengguna.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {options.map((opt) => {
+                    const active = currentMonthly === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        disabled={setMonthlyStatus.isPending}
+                        onClick={() => setMonthlyStatus.mutate(opt.value)}
+                        className={`text-left p-3 rounded-lg border-2 transition ${active ? opt.activeCls : opt.cls + " hover:bg-muted/50"}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="font-semibold text-sm text-foreground">{opt.label}</p>
+                          {active && <CheckCircle2 className="w-4 h-4 text-primary" />}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">{opt.desc}</p>
+                      </button>
+                    );
+                  })}
                 </div>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <Switch
-                          checked={!!(systemStatus as { monthly_notification_enabled?: boolean } | null)?.monthly_notification_enabled}
-                          disabled={toggleMonthlyNotif.isPending}
-                          onCheckedChange={(v) => toggleMonthlyNotif.mutate(v)}
-                        />
-                        <span className="text-xs font-medium text-muted-foreground w-8">
-                          {(systemStatus as { monthly_notification_enabled?: boolean } | null)?.monthly_notification_enabled ? "ON" : "OFF"}
-                        </span>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="left" className="max-w-xs">
-                      <p className="text-xs">
-                        <strong>ON</strong> → Notifikasi pembayaran tampil otomatis ke pengguna.<br />
-                        <strong>OFF</strong> → Notifikasi pembayaran disembunyikan.
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                <p className="text-xs text-muted-foreground mt-3">
+                  ✔ Master Developer: bisa mengubah status &nbsp;•&nbsp; ❌ Super Admin / Admin: tidak memiliki akses
+                </p>
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* Payment Cards */}
         {canAccessPayment && (
