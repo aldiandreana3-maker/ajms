@@ -2855,6 +2855,7 @@ export type Database = {
           created_at: string
           deactivated_at: string | null
           id: string
+          monthly_notification_enabled: boolean
           system_status: string
           updated_at: string
           updated_by: string | null
@@ -2864,6 +2865,7 @@ export type Database = {
           created_at?: string
           deactivated_at?: string | null
           id?: string
+          monthly_notification_enabled?: boolean
           system_status?: string
           updated_at?: string
           updated_by?: string | null
@@ -2873,6 +2875,7 @@ export type Database = {
           created_at?: string
           deactivated_at?: string | null
           id?: string
+          monthly_notification_enabled?: boolean
           system_status?: string
           updated_at?: string
           updated_by?: string | null

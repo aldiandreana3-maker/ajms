@@ -6,6 +6,7 @@ import { useSystemStatus } from "@/hooks/useSystemActivation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AlertTriangle } from "lucide-react";
+import { MonthlyPaymentBanner } from "@/components/shared/MonthlyPaymentBanner";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -63,6 +64,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             <span>Sistem AJMS sedang tidak aktif. Sebagian besar fitur tidak dapat digunakan hingga sistem diaktifkan kembali.</span>
           </div>
         )}
+        <MonthlyPaymentBanner />
         <div className="p-4 md:p-6">{children}</div>
       </main>
     </div>
