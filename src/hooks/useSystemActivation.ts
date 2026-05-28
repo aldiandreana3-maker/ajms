@@ -59,12 +59,14 @@ export function useToggleSystemStatus() {
   });
 }
 
-export function useToggleMonthlyNotification() {
+export type MonthlyStatus = "normal" | "peringatan" | "terlambat" | "dibatasi";
+
+export function useSetMonthlyStatus() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (enabled: boolean) => {
+    mutationFn: async (newStatus: MonthlyStatus) => {
       const { data: current } = await supabase
         .from("system_activation")
         .select("id")
@@ -73,19 +75,21 @@ export function useToggleMonthlyNotification() {
       if (!current) throw new Error("System activation record not found");
       const { error } = await supabase
         .from("system_activation")
-        .update({ monthly_notification_enabled: enabled, updated_at: new Date().toISOString() } as never)
+        .update({ monthly_status: newStatus, updated_at: new Date().toISOString() } as never)
         .eq("id", current.id);
       if (error) throw error;
     },
-    onSuccess: (_d, enabled) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["system-activation"] });
-      toast({ title: enabled ? "Notifikasi pembayaran bulanan diaktifkan" : "Notifikasi pembayaran bulanan dinonaktifkan" });
+      toast({ title: "Status bulanan diperbarui" });
     },
     onError: (error: Error) => {
-      toast({ title: "Gagal memperbarui pengaturan", description: error.message, variant: "destructive" });
+      toast({ title: "Gagal memperbarui status bulanan", description: error.message, variant: "destructive" });
     },
   });
 }
+
+
 
 export function useSystemPayments() {
   return useQuery({
