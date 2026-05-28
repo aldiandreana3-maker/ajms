@@ -64,6 +64,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             <span>Sistem AJMS sedang tidak aktif. Sebagian besar fitur tidak dapat digunakan hingga sistem diaktifkan kembali.</span>
           </div>
         )}
+        <MonthlyPaymentBanner />
         <div className="p-4 md:p-6">{children}</div>
       </main>
     </div>
