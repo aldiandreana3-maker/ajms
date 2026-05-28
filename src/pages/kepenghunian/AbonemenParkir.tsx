@@ -685,7 +685,7 @@ export default function AbonemenParkir() {
                           <TableHead className="h-9">Plat</TableHead>
                           <TableHead className="h-9">Berakhir</TableHead>
                           <TableHead className="h-9">Status</TableHead>
-                          {canVerify && <TableHead className="h-9 text-right">Aksi</TableHead>}
+                          {(canVerify || isAuthenticated) && <TableHead className="h-9 text-right">Aksi</TableHead>}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
