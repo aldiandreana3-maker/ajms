@@ -232,7 +232,7 @@ export default function AktivasiSistem() {
   const toggleStatus = useToggleSystemStatus();
   const deletePayment = useDeletePayment();
   const updatePaymentStatus = useUpdatePaymentStatus();
-  const toggleMonthlyNotif = useToggleMonthlyNotification();
+  const setMonthlyStatus = useSetMonthlyStatus();
   const { toast } = useToast();
   const [payingType, setPayingType] = useState<string | null>(null);
   const [rincianDialog, setRincianDialog] = useState<"aktivasi" | "bulanan" | null>(null);
