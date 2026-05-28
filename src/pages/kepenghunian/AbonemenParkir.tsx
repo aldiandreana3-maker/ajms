@@ -685,7 +685,7 @@ export default function AbonemenParkir() {
                           <TableHead className="h-9">Plat</TableHead>
                           <TableHead className="h-9">Berakhir</TableHead>
                           <TableHead className="h-9">Status</TableHead>
-                          {canVerify && <TableHead className="h-9 text-right">Aksi</TableHead>}
+                          {(canVerify || isAuthenticated) && <TableHead className="h-9 text-right">Aksi</TableHead>}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -702,18 +702,9 @@ export default function AbonemenParkir() {
                                 {expired ? `Habis ${Math.abs(diffDays)} hari lalu` : diffDays === 0 ? "Habis hari ini" : `${diffDays} hari lagi`}
                               </Badge>
                             </TableCell>
-                            {canVerify && (
+                            {canVerify ? (
                               <TableCell className="py-2 text-right">
                                 <div className="flex justify-end gap-1 flex-wrap">
-                                  <Button
-                                    size="sm"
-                                    className="h-7 text-xs bg-success hover:bg-success/90 text-success-foreground"
-                                    disabled={extendMutation.isPending}
-                                    onClick={() => handleQuickRenew(sub.id)}
-                                    title={`Perpanjang ke bulan ${monthLabel(currentMonthKey)} (jatuh tempo tgl 5)`}
-                                  >
-                                    Perpanjang
-                                  </Button>
                                   <Select
                                     disabled={extendMutation.isPending}
                                     onValueChange={(v) => {
@@ -737,8 +728,8 @@ export default function AbonemenParkir() {
                                       }
                                     }}
                                   >
-                                    <SelectTrigger className="h-7 w-[130px] text-xs">
-                                      <SelectValue placeholder="Opsi lain…" />
+                                    <SelectTrigger className="h-7 w-[150px] text-xs bg-success text-success-foreground border-success hover:bg-success/90">
+                                      <SelectValue placeholder="Opsi Lain…" />
                                     </SelectTrigger>
                                     <SelectContent>
                                       <SelectItem value="manual_days">Manual (Hari)…</SelectItem>
@@ -764,12 +755,24 @@ export default function AbonemenParkir() {
                                   )}
                                 </div>
                               </TableCell>
-                            )}
+                            ) : isAuthenticated ? (
+                              <TableCell className="py-2 text-right">
+                                <Button
+                                  size="sm"
+                                  className="h-7 text-xs bg-success hover:bg-success/90 text-success-foreground"
+                                  disabled={extendMutation.isPending}
+                                  onClick={() => handleQuickRenew(sub.id)}
+                                  title={`Perpanjang ke bulan ${monthLabel(currentMonthKey)} (jatuh tempo tgl 5)`}
+                                >
+                                  Perpanjang
+                                </Button>
+                              </TableCell>
+                            ) : null}
                           </TableRow>
                         ))}
                         {filteredNotifRows.length === 0 && (
                           <TableRow>
-                            <TableCell colSpan={canVerify ? 6 : 5} className="text-center text-muted-foreground py-4 text-sm">
+                            <TableCell colSpan={(canVerify || isAuthenticated) ? 6 : 5} className="text-center text-muted-foreground py-4 text-sm">
                               Tidak ada notifikasi yang sesuai filter.
                             </TableCell>
                           </TableRow>
