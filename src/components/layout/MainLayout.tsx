@@ -6,6 +6,7 @@ import { useSystemStatus } from "@/hooks/useSystemActivation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AlertTriangle } from "lucide-react";
+import { MonthlyPaymentBanner } from "@/components/shared/MonthlyPaymentBanner";
 
 interface MainLayoutProps {
   children: React.ReactNode;
