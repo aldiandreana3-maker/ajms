@@ -26,6 +26,7 @@ import { exportToExcel, parkingExportColumns } from "@/lib/exportExcel";
 import { PhotoCell } from "@/components/shared/PhotoActions";
 import { PhotoUpload } from "@/components/shared/PhotoUpload";
 import { NotesCell, ReceiptPhotoCell } from "@/components/shared/ParkingInlineCells";
+import { QuickRenewParkingDialog } from "@/components/shared/QuickRenewParkingDialog";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -195,13 +196,17 @@ export default function AbonemenParkir() {
 
   const paginatedData = usePagination(currentAndFutureData, itemsPerPage, currentPage);
 
-  // 1-klik Perpanjang: extend ke tanggal 5 bulan berjalan (atau bulan berikutnya bila sudah lewat tgl 5)
-  const handleQuickRenew = (id: string) => {
+  // 1-klik Perpanjang (penghuni): buka dialog kecil untuk upload bukti transfer
+  const [renewDialog, setRenewDialog] = useState<{ id: string; vehicle: string | null; fee: number | null } | null>(null);
+  const quickRenewTargetDate = useMemo(() => {
     const target = new Date();
     target.setHours(0, 0, 0, 0);
     if (target.getDate() > 5) target.setMonth(target.getMonth() + 1);
     target.setDate(5);
-    extendMutation.mutate({ id, customEndDate: target.toISOString().split("T")[0] });
+    return target.toISOString().split("T")[0];
+  }, []);
+  const handleQuickRenew = (id: string, vehicle: string | null, fee: number | null) => {
+    setRenewDialog({ id, vehicle, fee });
   };
 
   // ===== Notifikasi Pengingat Perpanjangan Abonemen Parkir =====
@@ -761,7 +766,7 @@ export default function AbonemenParkir() {
                                   size="sm"
                                   className="h-7 text-xs bg-success hover:bg-success/90 text-success-foreground"
                                   disabled={extendMutation.isPending}
-                                  onClick={() => handleQuickRenew(sub.id)}
+                                  onClick={() => handleQuickRenew(sub.id, sub.vehicle_number, sub.monthly_fee)}
                                   title={`Perpanjang ke bulan ${monthLabel(currentMonthKey)} (jatuh tempo tgl 5)`}
                                 >
                                   Perpanjang
@@ -1153,6 +1158,18 @@ export default function AbonemenParkir() {
             )}
           </DialogContent>
         </Dialog>
+
+        {renewDialog && (
+          <QuickRenewParkingDialog
+            open={!!renewDialog}
+            onOpenChange={(o) => { if (!o) setRenewDialog(null); }}
+            subscriptionId={renewDialog.id}
+            vehicleNumber={renewDialog.vehicle}
+            monthlyFee={renewDialog.fee}
+            targetEndDate={quickRenewTargetDate}
+            monthLabel={monthLabel(currentMonthKey)}
+          />
+        )}
       </div>
     </MainLayout>
   );
