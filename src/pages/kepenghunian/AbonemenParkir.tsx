@@ -196,13 +196,17 @@ export default function AbonemenParkir() {
 
   const paginatedData = usePagination(currentAndFutureData, itemsPerPage, currentPage);
 
-  // 1-klik Perpanjang: extend ke tanggal 5 bulan berjalan (atau bulan berikutnya bila sudah lewat tgl 5)
-  const handleQuickRenew = (id: string) => {
+  // 1-klik Perpanjang (penghuni): buka dialog kecil untuk upload bukti transfer
+  const [renewDialog, setRenewDialog] = useState<{ id: string; vehicle: string | null; fee: number | null } | null>(null);
+  const quickRenewTargetDate = useMemo(() => {
     const target = new Date();
     target.setHours(0, 0, 0, 0);
     if (target.getDate() > 5) target.setMonth(target.getMonth() + 1);
     target.setDate(5);
-    extendMutation.mutate({ id, customEndDate: target.toISOString().split("T")[0] });
+    return target.toISOString().split("T")[0];
+  }, []);
+  const handleQuickRenew = (id: string, vehicle: string | null, fee: number | null) => {
+    setRenewDialog({ id, vehicle, fee });
   };
 
   // ===== Notifikasi Pengingat Perpanjangan Abonemen Parkir =====
