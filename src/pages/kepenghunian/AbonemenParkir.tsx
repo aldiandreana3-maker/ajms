@@ -766,7 +766,7 @@ export default function AbonemenParkir() {
                                   size="sm"
                                   className="h-7 text-xs bg-success hover:bg-success/90 text-success-foreground"
                                   disabled={extendMutation.isPending}
-                                  onClick={() => handleQuickRenew(sub.id)}
+                                  onClick={() => handleQuickRenew(sub.id, sub.vehicle_number, sub.monthly_fee)}
                                   title={`Perpanjang ke bulan ${monthLabel(currentMonthKey)} (jatuh tempo tgl 5)`}
                                 >
                                   Perpanjang
