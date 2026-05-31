@@ -130,7 +130,7 @@ export function QuickRenewParkingDialog({
         end_date: targetEndDate,
         is_active: true,
         payment_proof_url: path,
-        verification_status: "pending",
+        verification_status: "proses",
         admin_notes: `Perpanjangan ${monthLabel} — Transfer BCA, menunggu verifikasi`,
       }).eq("id", subscriptionId);
       if (error) throw error;
@@ -148,7 +148,7 @@ export function QuickRenewParkingDialog({
       const { error } = await supabase.from("parking_subscriptions").update({
         end_date: targetEndDate,
         is_active: true,
-        verification_status: "pending",
+        verification_status: "proses",
         admin_notes: `Perpanjangan ${monthLabel} — Bayar di Kasir, menunggu pembayaran`,
       }).eq("id", subscriptionId);
       if (error) throw error;
