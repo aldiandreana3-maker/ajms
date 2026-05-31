@@ -648,146 +648,7 @@ export default function AbonemenParkir() {
             </div>
           </CardHeader>
           <CardContent>
-            {reminderRows.length > 0 && (
-              <Card className="mb-4 border-warning/50 bg-warning/5">
-                <CardHeader className="pb-3">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <CardTitle className="text-base flex items-center gap-2 text-warning-foreground">
-                      <BellRing className="h-4 w-4 text-warning" />
-                      Notifikasi Perpanjangan Abonemen Parkir
-                      <Badge variant="secondary" className="ml-1">{reminderRows.length}</Badge>
-                      {expiredCount > 0 && (
-                        <Badge variant="destructive">{expiredCount} expired</Badge>
-                      )}
-                    </CardTitle>
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <Input
-                        value={notifSearch}
-                        onChange={(e) => setNotifSearch(e.target.value)}
-                        placeholder="Cari unit / plat / nama..."
-                        className="h-9 w-full sm:w-56"
-                      />
-                      <Select value={notifFilter} onValueChange={(v: any) => setNotifFilter(v)}>
-                        <SelectTrigger className="h-9 w-full sm:w-40">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Semua</SelectItem>
-                          <SelectItem value="expired">Sudah Habis</SelectItem>
-                          <SelectItem value="soon">Akan Habis</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="max-h-64 overflow-y-auto rounded-md border">
-                    <Table>
-                      <TableHeader className="sticky top-0 bg-background z-10">
-                        <TableRow>
-                          <TableHead className="h-9">Unit</TableHead>
-                          <TableHead className="h-9">Nama</TableHead>
-                          <TableHead className="h-9">Plat</TableHead>
-                          <TableHead className="h-9">Berakhir</TableHead>
-                          <TableHead className="h-9">Status</TableHead>
-                          {(canVerify || isAuthenticated) && <TableHead className="h-9 text-right">Aksi</TableHead>}
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredNotifRows.map(({ sub, diffDays, expired }) => (
-                          <TableRow key={sub.id}>
-                            <TableCell className="py-2">{sub.unit_number || sub.units?.unit_number || "-"}</TableCell>
-                            <TableCell className="py-2">{sub.penghuni_name || "-"}</TableCell>
-                            <TableCell className="py-2 font-mono text-xs">{sub.vehicle_number}</TableCell>
-                            <TableCell className="py-2 whitespace-nowrap text-xs">
-                              {format(new Date(sub.end_date), "dd/MM/yyyy")}
-                            </TableCell>
-                            <TableCell className="py-2">
-                              <Badge variant={expired ? "destructive" : "secondary"} className="text-xs">
-                                {expired ? `Habis ${Math.abs(diffDays)} hari lalu` : diffDays === 0 ? "Habis hari ini" : `${diffDays} hari lagi`}
-                              </Badge>
-                            </TableCell>
-                            {canVerify ? (
-                              <TableCell className="py-2 text-right">
-                                <div className="flex justify-end gap-1 flex-wrap">
-                                  <Select
-                                    disabled={extendMutation.isPending}
-                                    onValueChange={(v) => {
-                                      if (v === "manual_days") {
-                                        const input = prompt("Masukkan jumlah HARI perpanjangan:", "30");
-                                        if (!input) return;
-                                        const days = parseInt(input, 10);
-                                        if (!Number.isFinite(days) || days <= 0) {
-                                          toast.error("Jumlah hari tidak valid");
-                                          return;
-                                        }
-                                        const target = new Date();
-                                        target.setHours(0, 0, 0, 0);
-                                        target.setDate(target.getDate() + days);
-                                        if (target.getDate() > 5) target.setMonth(target.getMonth() + 1);
-                                        target.setDate(5);
-                                        extendMutation.mutate({ id: sub.id, customEndDate: target.toISOString().split("T")[0] });
-                                      } else {
-                                        const months = parseInt(v, 10);
-                                        extendMutation.mutate({ id: sub.id, months, currentEndDate: null });
-                                      }
-                                    }}
-                                  >
-                                    <SelectTrigger className="h-7 w-[150px] text-xs bg-success text-success-foreground border-success hover:bg-success/90">
-                                      <SelectValue placeholder="Opsi Lain…" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="manual_days">Manual (Hari)…</SelectItem>
-                                      <SelectItem value="1">1 Bulan (s/d tgl 5)</SelectItem>
-                                      <SelectItem value="2">2 Bulan (s/d tgl 5)</SelectItem>
-                                      <SelectItem value="3">3 Bulan (s/d tgl 5)</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                  {canCancelExtension && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-7 text-xs text-destructive hover:text-destructive"
-                                      disabled={cancelExtendMutation.isPending}
-                                      onClick={() => {
-                                        if (window.confirm(`Batalkan perpanjangan untuk plat ${sub.vehicle_number}?`)) {
-                                          cancelExtendMutation.mutate({ id: sub.id, startDate: sub.start_date });
-                                        }
-                                      }}
-                                    >
-                                      Batalkan
-                                    </Button>
-                                  )}
-                                </div>
-                              </TableCell>
-                            ) : isAuthenticated ? (
-                              <TableCell className="py-2 text-right">
-                                <Button
-                                  size="sm"
-                                  className="h-7 text-xs bg-success hover:bg-success/90 text-success-foreground"
-                                  disabled={extendMutation.isPending}
-                                  onClick={() => handleQuickRenew(sub.id, sub.vehicle_number, sub.monthly_fee)}
-                                  title={`Perpanjang ke bulan ${monthLabel(currentMonthKey)} (jatuh tempo tgl 5)`}
-                                >
-                                  Perpanjang
-                                </Button>
-                              </TableCell>
-                            ) : null}
-                          </TableRow>
-                        ))}
-                        {filteredNotifRows.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={(canVerify || isAuthenticated) ? 6 : 5} className="text-center text-muted-foreground py-4 text-sm">
-                              Tidak ada notifikasi yang sesuai filter.
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            {/* Kotak notifikasi perpanjangan dihilangkan — tombol Perpanjang langsung ada di kolom tabel utama. */}
             <DataFilterBar
               searchValue={searchValue}
               onSearchChange={handleSearchChange}
@@ -1006,7 +867,21 @@ export default function AbonemenParkir() {
                               </SelectContent>
                             </Select>
                             );
-                          })() : (
+                          })() : isAuthenticated ? (
+                            <div className="flex flex-col gap-1">
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs bg-success hover:bg-success/90 text-success-foreground"
+                                onClick={() => handleQuickRenew(sub.id, sub.vehicle_number, sub.monthly_fee)}
+                                title={`Perpanjang ke bulan ${monthLabel(currentMonthKey)}`}
+                              >
+                                Perpanjang
+                              </Button>
+                              {sub.verification_status && sub.verification_status !== "terverifikasi" && (
+                                <Badge variant="secondary" className="text-[10px] justify-center">Menunggu</Badge>
+                              )}
+                            </div>
+                          ) : (
                             <Badge variant={sub.verification_status === "terverifikasi" ? "default" : "secondary"}
                               className={sub.verification_status === "terverifikasi" ? "bg-success" : ""}>
                               {sub.verification_status === "terverifikasi" ? "Aktif" : "Menunggu"}
