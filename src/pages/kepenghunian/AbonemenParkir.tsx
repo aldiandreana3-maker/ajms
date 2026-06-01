@@ -1124,8 +1124,16 @@ export default function AbonemenParkir() {
             subscriptionId={renewDialog.id}
             vehicleNumber={renewDialog.vehicle}
             monthlyFee={renewDialog.fee}
-            targetEndDate={quickRenewTargetDate}
-            monthLabel={monthLabel(currentMonthKey)}
+          />
+        )}
+        {notRenewedDialog && (
+          <QuickRenewParkingDialog
+            open={!!notRenewedDialog}
+            onOpenChange={(o) => { if (!o) setNotRenewedDialog(null); }}
+            subscriptionId={notRenewedDialog.id}
+            vehicleNumber={notRenewedDialog.vehicle}
+            monthlyFee={notRenewedDialog.fee}
+            enableMonthSelection={true}
           />
         )}
       </div>
