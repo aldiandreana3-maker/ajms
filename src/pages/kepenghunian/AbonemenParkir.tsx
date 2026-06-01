@@ -656,6 +656,60 @@ export default function AbonemenParkir() {
               searchPlaceholder="Cari plat, unit, nama, kartu member..."
             />
 
+            {/* Tabel Belum Diperpanjang — hanya Admin / Staff Finance / Staff TRO */}
+            {canVerify && (() => {
+              const notRenewed = filteredData.filter((s: any) => getMonthKey(s) < currentMonthKey);
+              if (notRenewed.length === 0) return null;
+              return (
+                <div className="my-4 rounded-md border border-destructive/40 bg-destructive/5">
+                  <div className="px-3 py-2 border-b border-destructive/30 flex items-center gap-2">
+                    <span className="text-sm font-semibold text-destructive">
+                      Belum Diperpanjang — {monthLabel(currentMonthKey)}
+                    </span>
+                    <Badge variant="destructive" className="text-xs">{notRenewed.length}</Badge>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="h-9">Unit</TableHead>
+                          <TableHead className="h-9">Nama</TableHead>
+                          <TableHead className="h-9">Plat</TableHead>
+                          <TableHead className="h-9">Kendaraan</TableHead>
+                          <TableHead className="h-9">Telepon</TableHead>
+                          <TableHead className="h-9">Terakhir Berakhir</TableHead>
+                          <TableHead className="h-9 text-right">Aksi</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {notRenewed.map((s: any) => (
+                          <TableRow key={s.id}>
+                            <TableCell className="font-medium">{s.unit_number || s.units?.unit_number || "-"}</TableCell>
+                            <TableCell>{s.penghuni_name || s.penghuni?.full_name || "-"}</TableCell>
+                            <TableCell>{s.vehicle_number || "-"}</TableCell>
+                            <TableCell>{s.vehicle_type || "-"}</TableCell>
+                            <TableCell>{s.phone || "-"}</TableCell>
+                            <TableCell>{s.end_date ? new Date(s.end_date).toLocaleDateString("id-ID") : "-"}</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs bg-success hover:bg-success/90 text-success-foreground"
+                                disabled={extendMutation.isPending}
+                                onClick={() => extendMutation.mutate({ id: s.id, months: 1, currentEndDate: s.end_date })}
+                              >
+                                Perpanjang
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              );
+            })()}
+
+
             {/* Riwayat per Bulan (bulan-bulan yang sudah berlalu) */}
             {pastGroups.length > 0 && (
               <Accordion type="multiple" className="mb-4 rounded-md border bg-muted/30">
