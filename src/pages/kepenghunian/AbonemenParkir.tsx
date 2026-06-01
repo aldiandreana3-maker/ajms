@@ -76,6 +76,10 @@ export default function AbonemenParkir() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
+  // Pagination untuk tabel Belum Diperpanjang
+  const [notRenewedPage, setNotRenewedPage] = useState(1);
+  const [notRenewedPerPage, setNotRenewedPerPage] = useState(5);
+
   // State khusus untuk panel notifikasi
   const [notifSearch, setNotifSearch] = useState("");
   const [notifFilter, setNotifFilter] = useState<"all" | "expired" | "soon">("all");
@@ -198,16 +202,12 @@ export default function AbonemenParkir() {
 
   // 1-klik Perpanjang (penghuni): buka dialog kecil untuk upload bukti transfer
   const [renewDialog, setRenewDialog] = useState<{ id: string; vehicle: string | null; fee: number | null } | null>(null);
-  const quickRenewTargetDate = useMemo(() => {
-    const target = new Date();
-    target.setHours(0, 0, 0, 0);
-    if (target.getDate() > 5) target.setMonth(target.getMonth() + 1);
-    target.setDate(5);
-    return target.toISOString().split("T")[0];
-  }, []);
   const handleQuickRenew = (id: string, vehicle: string | null, fee: number | null) => {
     setRenewDialog({ id, vehicle, fee });
   };
+
+  // Dialog perpanjang untuk tabel Belum Diperpanjang (admin/staff)
+  const [notRenewedDialog, setNotRenewedDialog] = useState<{ id: string; vehicle: string | null; fee: number | null } | null>(null);
 
   // ===== Notifikasi Pengingat Perpanjangan Abonemen Parkir =====
   // - Penghuni/Agent: hanya melihat abonemen miliknya (created_by = userId atau penghuni terkait)
@@ -660,6 +660,9 @@ export default function AbonemenParkir() {
             {canVerify && (() => {
               const notRenewed = filteredData.filter((s: any) => getMonthKey(s) < currentMonthKey);
               if (notRenewed.length === 0) return null;
+              const totalPages = Math.ceil(notRenewed.length / notRenewedPerPage);
+              const start = (notRenewedPage - 1) * notRenewedPerPage;
+              const paginatedNotRenewed = notRenewed.slice(start, start + notRenewedPerPage);
               return (
                 <div className="my-4 rounded-md border border-destructive/40 bg-destructive/5">
                   <div className="px-3 py-2 border-b border-destructive/30 flex items-center gap-2">
@@ -682,7 +685,7 @@ export default function AbonemenParkir() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {notRenewed.map((s: any) => (
+                        {paginatedNotRenewed.map((s: any) => (
                           <TableRow key={s.id}>
                             <TableCell className="font-medium">{s.unit_number || s.units?.unit_number || "-"}</TableCell>
                             <TableCell>{s.penghuni_name || s.penghuni?.full_name || "-"}</TableCell>
@@ -694,8 +697,7 @@ export default function AbonemenParkir() {
                               <Button
                                 size="sm"
                                 className="h-7 text-xs bg-success hover:bg-success/90 text-success-foreground"
-                                disabled={extendMutation.isPending}
-                                onClick={() => extendMutation.mutate({ id: s.id, months: 1, currentEndDate: s.end_date })}
+                                onClick={() => setNotRenewedDialog({ id: s.id, vehicle: s.vehicle_number, fee: s.monthly_fee })}
                               >
                                 Perpanjang
                               </Button>
@@ -704,6 +706,34 @@ export default function AbonemenParkir() {
                         ))}
                       </TableBody>
                     </Table>
+                  </div>
+                  {/* Pagination Belum Diperpanjang */}
+                  <div className="px-3 py-2 border-t border-destructive/20 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Tampilkan</span>
+                      <Select value={String(notRenewedPerPage)} onValueChange={(v) => { setNotRenewedPerPage(Number(v)); setNotRenewedPage(1); }}>
+                        <SelectTrigger className="h-7 w-[70px] text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="5">5</SelectItem>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <span className="text-xs text-muted-foreground">data</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" className="h-7 text-xs" disabled={notRenewedPage <= 1} onClick={() => setNotRenewedPage((p) => Math.max(1, p - 1))}>
+                        Sebelumnya
+                      </Button>
+                      <span className="text-xs text-muted-foreground">
+                        Hal {notRenewedPage} / {totalPages || 1}
+                      </span>
+                      <Button variant="outline" size="sm" className="h-7 text-xs" disabled={notRenewedPage >= totalPages} onClick={() => setNotRenewedPage((p) => Math.min(totalPages, p + 1))}>
+                        Berikutnya
+                      </Button>
+                    </div>
                   </div>
                 </div>
               );
@@ -1094,8 +1124,16 @@ export default function AbonemenParkir() {
             subscriptionId={renewDialog.id}
             vehicleNumber={renewDialog.vehicle}
             monthlyFee={renewDialog.fee}
-            targetEndDate={quickRenewTargetDate}
-            monthLabel={monthLabel(currentMonthKey)}
+          />
+        )}
+        {notRenewedDialog && (
+          <QuickRenewParkingDialog
+            open={!!notRenewedDialog}
+            onOpenChange={(o) => { if (!o) setNotRenewedDialog(null); }}
+            subscriptionId={notRenewedDialog.id}
+            vehicleNumber={notRenewedDialog.vehicle}
+            monthlyFee={notRenewedDialog.fee}
+            enableMonthSelection={true}
           />
         )}
       </div>

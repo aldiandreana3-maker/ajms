@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -14,8 +14,7 @@ interface Props {
   subscriptionId: string;
   vehicleNumber?: string | null;
   monthlyFee?: number | null;
-  targetEndDate: string;
-  monthLabel: string;
+  enableMonthSelection?: boolean;
 }
 
 const REKENING = {
@@ -24,7 +23,7 @@ const REKENING = {
   atasNama: "PPPSRS THE JARRDIN",
 };
 
-type Step = "method" | "transfer" | "kasir";
+type Step = "months" | "method" | "transfer" | "kasir";
 
 export function QuickRenewParkingDialog({
   open,
@@ -32,8 +31,7 @@ export function QuickRenewParkingDialog({
   subscriptionId,
   vehicleNumber,
   monthlyFee,
-  targetEndDate,
-  monthLabel,
+  enableMonthSelection = false,
 }: Props) {
   const { uploadFile } = useFileUpload({ folder: "parking" });
   const queryClient = useQueryClient();
@@ -41,7 +39,8 @@ export function QuickRenewParkingDialog({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const [step, setStep] = useState<Step>("method");
+  const [step, setStep] = useState<Step>(enableMonthSelection ? "months" : "method");
+  const [selectedMonths, setSelectedMonths] = useState(1);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -54,11 +53,12 @@ export function QuickRenewParkingDialog({
 
   useEffect(() => {
     if (!open) {
-      setStep("method");
+      setStep(enableMonthSelection ? "months" : "method");
+      setSelectedMonths(1);
       setFile(null);
       setPreview(null);
     }
-  }, [open]);
+  }, [open, enableMonthSelection]);
 
   const stopCamera = useCallback(() => {
     if (stream) {
@@ -120,6 +120,25 @@ export function QuickRenewParkingDialog({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const computedTargetDate = useMemo(() => {
+    const target = new Date();
+    target.setHours(0, 0, 0, 0);
+    if (target.getDate() > 5) target.setMonth(target.getMonth() + 1);
+    target.setDate(5);
+    target.setMonth(target.getMonth() + (selectedMonths - 1));
+    return target.toISOString().split("T")[0];
+  }, [selectedMonths]);
+
+  const computedMonthLabel = useMemo(() => {
+    const d = new Date(computedTargetDate + "T00:00:00");
+    return d.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+  }, [computedTargetDate]);
+
+  const totalFee = useMemo(() => {
+    if (!monthlyFee) return null;
+    return monthlyFee * selectedMonths;
+  }, [monthlyFee, selectedMonths]);
+
   const submitTransfer = async () => {
     if (!file) { toast.error("Mohon upload bukti transfer terlebih dahulu"); return; }
     setSubmitting(true);
@@ -127,14 +146,14 @@ export function QuickRenewParkingDialog({
       const path = await uploadFile(file);
       if (!path) throw new Error("Gagal upload bukti");
       const { error } = await supabase.from("parking_subscriptions").update({
-        end_date: targetEndDate,
+        end_date: computedTargetDate,
         is_active: true,
         payment_proof_url: path,
         verification_status: "proses",
-        admin_notes: `Perpanjangan ${monthLabel} — Transfer BCA, menunggu verifikasi`,
+        admin_notes: `Perpanjangan ${computedMonthLabel} (${selectedMonths} bln) — Transfer BCA, menunggu verifikasi`,
       }).eq("id", subscriptionId);
       if (error) throw error;
-      toast.success(`Pengajuan perpanjangan ${monthLabel} terkirim. Menunggu verifikasi admin.`);
+      toast.success(`Pengajuan perpanjangan ${computedMonthLabel} terkirim. Menunggu verifikasi admin.`);
       queryClient.invalidateQueries({ queryKey: ["parking-subscriptions"] });
       onOpenChange(false);
     } catch (e: any) {
@@ -146,13 +165,13 @@ export function QuickRenewParkingDialog({
     setSubmitting(true);
     try {
       const { error } = await supabase.from("parking_subscriptions").update({
-        end_date: targetEndDate,
+        end_date: computedTargetDate,
         is_active: true,
         verification_status: "proses",
-        admin_notes: `Perpanjangan ${monthLabel} — Bayar di Kasir, menunggu pembayaran`,
+        admin_notes: `Perpanjangan ${computedMonthLabel} (${selectedMonths} bln) — Bayar di Kasir, menunggu pembayaran`,
       }).eq("id", subscriptionId);
       if (error) throw error;
-      toast.success(`Pengajuan perpanjangan ${monthLabel} terkirim. Silakan bayar di kasir.`);
+      toast.success(`Pengajuan perpanjangan ${computedMonthLabel} terkirim. Silakan bayar di kasir.`);
       queryClient.invalidateQueries({ queryKey: ["parking-subscriptions"] });
       onOpenChange(false);
     } catch (e: any) {
@@ -168,13 +187,40 @@ export function QuickRenewParkingDialog({
             <DialogTitle>Perpanjang Abonemen Parkir</DialogTitle>
             <DialogDescription>
               {vehicleNumber ? <>Plat <b>{vehicleNumber}</b> — </> : null}
-              Periode: <b>{monthLabel}</b>
-              {monthlyFee ? <> — Nominal: <b>Rp {Number(monthlyFee).toLocaleString("id-ID")}</b></> : null}
+              Periode: <b>{computedMonthLabel}</b>
+              {totalFee ? <> — Total: <b>Rp {Number(totalFee).toLocaleString("id-ID")}</b></> : monthlyFee ? <> — /bulan: <b>Rp {Number(monthlyFee).toLocaleString("id-ID")}</b></> : null}
             </DialogDescription>
           </DialogHeader>
 
+          {step === "months" && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">Pilih durasi perpanjangan:</p>
+              <div className="grid grid-cols-3 gap-2">
+                {[1, 2, 3].map((m) => (
+                  <Button
+                    key={m}
+                    variant={selectedMonths === m ? "default" : "outline"}
+                    className={selectedMonths === m ? "bg-success hover:bg-success/90 text-success-foreground" : ""}
+                    onClick={() => setSelectedMonths(m)}
+                  >
+                    {m} Bulan
+                  </Button>
+                ))}
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => onOpenChange(false)}>Batal</Button>
+                <Button onClick={() => setStep("method")}>Lanjut</Button>
+              </div>
+            </div>
+          )}
+
           {step === "method" && (
             <div className="space-y-2">
+              {enableMonthSelection && (
+                <Button variant="ghost" size="sm" className="-ml-2" onClick={() => setStep("months")} disabled={submitting}>
+                  <ArrowLeft className="w-4 h-4 mr-1" /> Ubah Durasi ({selectedMonths} bln)
+                </Button>
+              )}
               <p className="text-sm text-muted-foreground">Pilih metode pembayaran:</p>
               <Button variant="outline" className="w-full justify-start h-auto py-3" onClick={() => setStep("transfer")}>
                 <Building2 className="w-5 h-5 mr-3 text-primary" />
@@ -261,7 +307,7 @@ export function QuickRenewParkingDialog({
                   <Banknote className="w-4 h-4" /> Bayar di Kasir
                 </div>
                 <p>Silakan datang ke kantor pengelola untuk membayar perpanjangan. Pengajuan akan tercatat dan diaktifkan setelah pembayaran diterima.</p>
-                {monthlyFee ? <p>Total: <b>Rp {Number(monthlyFee).toLocaleString("id-ID")}</b></p> : null}
+                {totalFee ? <p>Total: <b>Rp {Number(totalFee).toLocaleString("id-ID")}</b></p> : monthlyFee ? <p>/bulan: <b>Rp {Number(monthlyFee).toLocaleString("id-ID")}</b> × {selectedMonths} bln</p> : null}
               </div>
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>Batal</Button>
