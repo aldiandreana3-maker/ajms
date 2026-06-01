@@ -174,7 +174,7 @@ export default function AbonemenParkir() {
     return new Date(y, m - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
   };
   const getMonthKey = (sub: any) => {
-    if (!sub.end_date) return currentMonthKey;
+    if (!sub.end_date) return "0000-00"; // belum diperpanjang → masuk grup lalu
     const d = new Date(sub.end_date);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   };
@@ -648,15 +648,20 @@ export default function AbonemenParkir() {
             </div>
           </CardHeader>
           <CardContent>
-            {/* Tabel Belum Diperpanjang — hanya untuk Admin / Staff Finance / Staff TRO */}
+            <DataFilterBar
+              searchValue={searchValue}
+              onSearchChange={handleSearchChange}
+              dateFilter={dateFilter}
+              onDateFilterChange={handleDateFilterChange}
+              searchPlaceholder="Cari plat, unit, nama, kartu member..."
+            />
+
+            {/* Tabel Belum Diperpanjang — hanya Admin / Staff Finance / Staff TRO */}
             {canVerify && (() => {
-              const notRenewed = (subscriptions || []).filter((s: any) => {
-                const key = getMonthKey(s);
-                return key < currentMonthKey;
-              });
+              const notRenewed = filteredData.filter((s: any) => getMonthKey(s) < currentMonthKey);
               if (notRenewed.length === 0) return null;
               return (
-                <div className="mb-4 rounded-md border border-destructive/40 bg-destructive/5">
+                <div className="my-4 rounded-md border border-destructive/40 bg-destructive/5">
                   <div className="px-3 py-2 border-b border-destructive/30 flex items-center gap-2">
                     <span className="text-sm font-semibold text-destructive">
                       Belum Diperpanjang — {monthLabel(currentMonthKey)}
@@ -671,8 +676,9 @@ export default function AbonemenParkir() {
                           <TableHead className="h-9">Nama</TableHead>
                           <TableHead className="h-9">Plat</TableHead>
                           <TableHead className="h-9">Kendaraan</TableHead>
-                          <TableHead className="h-9">Berakhir</TableHead>
                           <TableHead className="h-9">Telepon</TableHead>
+                          <TableHead className="h-9">Terakhir Berakhir</TableHead>
+                          <TableHead className="h-9 text-right">Aksi</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -682,8 +688,18 @@ export default function AbonemenParkir() {
                             <TableCell>{s.penghuni_name || s.penghuni?.full_name || "-"}</TableCell>
                             <TableCell>{s.vehicle_number || "-"}</TableCell>
                             <TableCell>{s.vehicle_type || "-"}</TableCell>
-                            <TableCell>{s.end_date ? new Date(s.end_date).toLocaleDateString("id-ID") : "-"}</TableCell>
                             <TableCell>{s.phone || "-"}</TableCell>
+                            <TableCell>{s.end_date ? new Date(s.end_date).toLocaleDateString("id-ID") : "-"}</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs bg-success hover:bg-success/90 text-success-foreground"
+                                disabled={extendMutation.isPending}
+                                onClick={() => extendMutation.mutate({ id: s.id, months: 1, currentEndDate: s.end_date })}
+                              >
+                                Perpanjang
+                              </Button>
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -692,13 +708,7 @@ export default function AbonemenParkir() {
                 </div>
               );
             })()}
-            <DataFilterBar
-              searchValue={searchValue}
-              onSearchChange={handleSearchChange}
-              dateFilter={dateFilter}
-              onDateFilterChange={handleDateFilterChange}
-              searchPlaceholder="Cari plat, unit, nama, kartu member..."
-            />
+
 
             {/* Riwayat per Bulan (bulan-bulan yang sudah berlalu) */}
             {pastGroups.length > 0 && (
