@@ -174,7 +174,7 @@ export default function AbonemenParkir() {
     return new Date(y, m - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
   };
   const getMonthKey = (sub: any) => {
-    if (!sub.end_date) return currentMonthKey;
+    if (!sub.end_date) return "0000-00"; // belum diperpanjang → masuk grup lalu
     const d = new Date(sub.end_date);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   };
