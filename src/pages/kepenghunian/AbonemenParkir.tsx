@@ -656,57 +656,102 @@ export default function AbonemenParkir() {
               searchPlaceholder="Cari plat, unit, nama, kartu member..."
             />
 
-            {/* Tabel Belum Diperpanjang — hanya Admin / Staff Finance / Staff TRO */}
+            {/* Tabel Belum Diperpanjang — dikelompokkan per BULAN tertunggak */}
             {canVerify && (() => {
               const notRenewed = filteredData.filter((s: any) => getMonthKey(s) < currentMonthKey);
               if (notRenewed.length === 0) return null;
+
+              // Kelompokkan berdasarkan bulan terakhir berakhir (atau "Belum Pernah" untuk null)
+              const groups: Record<string, any[]> = {};
+              for (const s of notRenewed) {
+                const key = getMonthKey(s); // "0000-00" untuk tanpa end_date
+                (groups[key] = groups[key] || []).push(s);
+              }
+              // Urutkan: bulan terbaru di atas, "Belum Pernah" (0000-00) paling bawah
+              const groupKeys = Object.keys(groups).sort((a, b) => {
+                if (a === "0000-00") return 1;
+                if (b === "0000-00") return -1;
+                return b.localeCompare(a);
+              });
+
+              // Pagination global per-grup gabungan (sederhana): tampilkan semua grup,
+              // tiap grup dipotong sesuai notRenewedPerPage; tombol halaman berlaku ke seluruh grup.
               const totalPages = Math.ceil(notRenewed.length / notRenewedPerPage);
+
+              // Flatten dengan label grup → slice → group ulang untuk tampilan
+              const flat: { key: string; sub: any }[] = [];
+              for (const k of groupKeys) for (const s of groups[k]) flat.push({ key: k, sub: s });
               const start = (notRenewedPage - 1) * notRenewedPerPage;
-              const paginatedNotRenewed = notRenewed.slice(start, start + notRenewedPerPage);
+              const pageSlice = flat.slice(start, start + notRenewedPerPage);
+              const visibleGroups: Record<string, any[]> = {};
+              for (const row of pageSlice) (visibleGroups[row.key] = visibleGroups[row.key] || []).push(row.sub);
+              const visibleKeys = Object.keys(visibleGroups).sort((a, b) => {
+                if (a === "0000-00") return 1;
+                if (b === "0000-00") return -1;
+                return b.localeCompare(a);
+              });
+
               return (
                 <div className="my-4 rounded-md border border-destructive/40 bg-destructive/5">
-                  <div className="px-3 py-2 border-b border-destructive/30 flex items-center gap-2">
+                  <div className="px-3 py-2 border-b border-destructive/30 flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-semibold text-destructive">
-                      Belum Diperpanjang — {monthLabel(currentMonthKey)}
+                      Belum Diperpanjang per Bulan
                     </span>
-                    <Badge variant="destructive" className="text-xs">{notRenewed.length}</Badge>
+                    <Badge variant="destructive" className="text-xs">Total {notRenewed.length}</Badge>
+                    <span className="text-xs text-muted-foreground">
+                      Tertunggak sampai {monthLabel(currentMonthKey)}
+                    </span>
                   </div>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="h-9">Unit</TableHead>
-                          <TableHead className="h-9">Nama</TableHead>
-                          <TableHead className="h-9">Plat</TableHead>
-                          <TableHead className="h-9">Kendaraan</TableHead>
-                          <TableHead className="h-9">Telepon</TableHead>
-                          <TableHead className="h-9">Terakhir Berakhir</TableHead>
-                          <TableHead className="h-9 text-right">Aksi</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {paginatedNotRenewed.map((s: any) => (
-                          <TableRow key={s.id}>
-                            <TableCell className="font-medium">{s.unit_number || s.units?.unit_number || "-"}</TableCell>
-                            <TableCell>{s.penghuni_name || s.penghuni?.full_name || "-"}</TableCell>
-                            <TableCell>{s.vehicle_number || "-"}</TableCell>
-                            <TableCell>{s.vehicle_type || "-"}</TableCell>
-                            <TableCell>{s.phone || "-"}</TableCell>
-                            <TableCell>{s.end_date ? new Date(s.end_date).toLocaleDateString("id-ID") : "-"}</TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                size="sm"
-                                className="h-7 text-xs bg-success hover:bg-success/90 text-success-foreground"
-                                onClick={() => setNotRenewedDialog({ id: s.id, vehicle: s.vehicle_number, fee: s.monthly_fee })}
-                              >
-                                Perpanjang
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+
+                  {visibleKeys.map((gk) => (
+                    <div key={gk} className="border-b border-destructive/20 last:border-b-0">
+                      <div className="px-3 py-1.5 bg-destructive/10 flex items-center gap-2">
+                        <span className="text-xs font-semibold text-destructive">
+                          {gk === "0000-00" ? "Belum Pernah Diperpanjang" : `Bulan ${monthLabel(gk)}`}
+                        </span>
+                        <Badge variant="destructive" className="text-[10px] h-4 px-1.5">
+                          {groups[gk].length}
+                        </Badge>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="h-9">Unit</TableHead>
+                              <TableHead className="h-9">Nama</TableHead>
+                              <TableHead className="h-9">Plat</TableHead>
+                              <TableHead className="h-9">Kendaraan</TableHead>
+                              <TableHead className="h-9">Telepon</TableHead>
+                              <TableHead className="h-9">Terakhir Berakhir</TableHead>
+                              <TableHead className="h-9 text-right">Aksi</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {visibleGroups[gk].map((s: any) => (
+                              <TableRow key={s.id}>
+                                <TableCell className="font-medium">{s.unit_number || s.units?.unit_number || "-"}</TableCell>
+                                <TableCell>{s.penghuni_name || s.penghuni?.full_name || "-"}</TableCell>
+                                <TableCell>{s.vehicle_number || "-"}</TableCell>
+                                <TableCell>{s.vehicle_type || "-"}</TableCell>
+                                <TableCell>{s.phone || "-"}</TableCell>
+                                <TableCell>{s.end_date ? new Date(s.end_date).toLocaleDateString("id-ID") : "-"}</TableCell>
+                                <TableCell className="text-right">
+                                  <Button
+                                    size="sm"
+                                    className="h-7 text-xs bg-success hover:bg-success/90 text-success-foreground"
+                                    onClick={() => setNotRenewedDialog({ id: s.id, vehicle: s.vehicle_number, fee: s.monthly_fee })}
+                                  >
+                                    Perpanjang
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  ))}
+
                   {/* Pagination Belum Diperpanjang */}
                   <div className="px-3 py-2 border-t border-destructive/20 flex items-center justify-between">
                     <div className="flex items-center gap-2">
