@@ -188,6 +188,11 @@ export default function AbonemenParkir() {
     const cur: any[] = [];
     for (const sub of filteredData) {
       const key = getMonthKey(sub);
+      // "0000-00" (tanpa end_date) tidak masuk grup riwayat — ditampilkan di tabel "Belum Diperpanjang"
+      if (key === "0000-00") {
+        cur.push(sub);
+        continue;
+      }
       if (key < currentMonthKey) {
         (past[key] = past[key] || []).push(sub);
       } else {
