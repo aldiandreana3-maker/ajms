@@ -805,47 +805,63 @@ export default function AbonemenParkir() {
             })()}
 
 
-            {/* Riwayat per Bulan (bulan-bulan yang sudah berlalu) */}
-            {pastGroups.length > 0 && (
+            {/* Riwayat per Bulan — diambil dari parking_payment_history (per-bulan + bukti pembayaran) */}
+            {historyGroups.length > 0 && (
               <Accordion type="multiple" className="mb-4 rounded-md border bg-muted/30">
-                {pastGroups.map(([key, items]) => (
-                  <AccordionItem key={key} value={key} className="border-b last:border-b-0 px-3">
-                    <AccordionTrigger className="text-sm py-2 hover:no-underline">
-                      <span className="flex items-center gap-2">
-                        <span className="font-medium">Riwayat {monthLabel(key)}</span>
-                        <Badge variant="secondary" className="text-xs">{items.length}</Badge>
-                      </span>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div className="overflow-x-auto rounded-md border bg-background">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead className="h-9">Unit</TableHead>
-                              <TableHead className="h-9">Nama</TableHead>
-                              <TableHead className="h-9">Plat</TableHead>
-                              <TableHead className="h-9">Kendaraan</TableHead>
-                              <TableHead className="h-9">Berakhir</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {items.map((sub: any) => (
-                              <TableRow key={sub.id}>
-                                <TableCell className="py-2">{sub.unit_number || sub.units?.unit_number || "-"}</TableCell>
-                                <TableCell className="py-2">{sub.penghuni_name || "-"}</TableCell>
-                                <TableCell className="py-2 font-mono text-xs">{sub.vehicle_number}</TableCell>
-                                <TableCell className="py-2 capitalize text-sm">{sub.vehicle_type}</TableCell>
-                                <TableCell className="py-2 text-xs whitespace-nowrap">
-                                  {sub.end_date ? format(new Date(sub.end_date), "dd/MM/yyyy") : "-"}
-                                </TableCell>
+                {historyGroups.map(([key, items]) => {
+                  const [y, m] = key.split("-").map(Number);
+                  const label = new Date(y, m - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+                  return (
+                    <AccordionItem key={key} value={key} className="border-b last:border-b-0 px-3">
+                      <AccordionTrigger className="text-sm py-2 hover:no-underline">
+                        <span className="flex items-center gap-2">
+                          <span className="font-medium">Riwayat {label}</span>
+                          <Badge variant="secondary" className="text-xs">{items.length}</Badge>
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="overflow-x-auto rounded-md border bg-background">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="h-9">Unit</TableHead>
+                                <TableHead className="h-9">Pemilik</TableHead>
+                                <TableHead className="h-9">Plat</TableHead>
+                                <TableHead className="h-9">Nominal</TableHead>
+                                <TableHead className="h-9">Metode</TableHead>
+                                <TableHead className="h-9">Bukti</TableHead>
+                                <TableHead className="h-9">Status</TableHead>
+                                <TableHead className="h-9">Tgl Bayar</TableHead>
                               </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
+                            </TableHeader>
+                            <TableBody>
+                              {items.map((h: any) => (
+                                <TableRow key={h.id}>
+                                  <TableCell className="py-2">{h.unit_number || "-"}</TableCell>
+                                  <TableCell className="py-2">{h.owner_name || "-"}</TableCell>
+                                  <TableCell className="py-2 font-mono text-xs">{h.vehicle_number || "-"}</TableCell>
+                                  <TableCell className="py-2 text-sm">Rp {Number(h.nominal || 0).toLocaleString("id-ID")}</TableCell>
+                                  <TableCell className="py-2 capitalize text-sm">{h.payment_method || "-"}</TableCell>
+                                  <TableCell className="py-2">
+                                    {h.payment_proof_url ? (
+                                      <PhotoCell url={h.payment_proof_url} alt={`Bukti ${label}`} bucket="kepenghunian-files" />
+                                    ) : (
+                                      <span className="text-xs text-muted-foreground">-</span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="py-2 text-xs capitalize">{h.verification_status}</TableCell>
+                                  <TableCell className="py-2 text-xs whitespace-nowrap">
+                                    {h.payment_date ? format(new Date(h.payment_date), "dd/MM/yyyy") : "-"}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
               </Accordion>
             )}
 
