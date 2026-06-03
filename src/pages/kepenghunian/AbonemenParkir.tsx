@@ -56,6 +56,7 @@ export default function AbonemenParkir() {
   const { role } = useAuth();
   const permission = getFeaturePermission("abonemen-parkir");
   const { data: subscriptions, isLoading } = useParkingSubscriptions();
+  const { data: paymentHistory } = useParkingPaymentHistory();
   const createMutation = useCreateParkingSubscription();
   const extendMutation = useExtendParkingSubscription();
   const cancelExtendMutation = useCancelExtensionParkingSubscription();
