@@ -844,7 +844,7 @@ export default function AbonemenParkir() {
                                   <TableCell className="py-2 capitalize text-sm">{h.payment_method || "-"}</TableCell>
                                   <TableCell className="py-2">
                                     {h.payment_proof_url ? (
-                                      <PhotoCell url={h.payment_proof_url} alt={`Bukti ${label}`} bucket="kepenghunian-files" />
+                                      <PhotoCell photos={[{ url: h.payment_proof_url, label: `Bukti ${label}` }]} showThumbnail />
                                     ) : (
                                       <span className="text-xs text-muted-foreground">-</span>
                                     )}
