@@ -139,12 +139,75 @@ export function QuickRenewParkingDialog({
     return monthlyFee * selectedMonths;
   }, [monthlyFee, selectedMonths]);
 
+  // Hitung daftar bulan-bulan yang akan diperpanjang (1 row history per bulan)
+  const monthsToInsert = useMemo(() => {
+    const startTarget = new Date();
+    startTarget.setHours(0, 0, 0, 0);
+    if (startTarget.getDate() > 5) startTarget.setMonth(startTarget.getMonth() + 1);
+    startTarget.setDate(1);
+    const months: { year: number; month: number; label: string; date: string }[] = [];
+    for (let i = 0; i < selectedMonths; i++) {
+      const d = new Date(startTarget);
+      d.setMonth(d.getMonth() + i);
+      months.push({
+        year: d.getFullYear(),
+        month: d.getMonth() + 1,
+        label: d.toLocaleDateString("id-ID", { month: "long", year: "numeric" }),
+        date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`,
+      });
+    }
+    return months;
+  }, [selectedMonths]);
+
+  // Ambil context subscription untuk menyimpan ke history
+  const fetchSubContext = async () => {
+    const { data } = await supabase
+      .from("parking_subscriptions")
+      .select("vehicle_number, unit_number, unit_id, penghuni_name, monthly_fee")
+      .eq("id", subscriptionId)
+      .maybeSingle();
+    return data;
+  };
+
+  const insertHistory = async (
+    method: "transfer" | "kasir",
+    proofPath: string | null,
+  ) => {
+    const ctx = await fetchSubContext();
+    const fee = monthlyFee ?? ctx?.monthly_fee ?? 0;
+    const { data: { user } } = await supabase.auth.getUser();
+    const rows = monthsToInsert.map((m) => ({
+      subscription_id: subscriptionId,
+      vehicle_number: ctx?.vehicle_number ?? null,
+      unit_number: ctx?.unit_number ?? null,
+      unit_id: ctx?.unit_id ?? null,
+      owner_name: ctx?.penghuni_name ?? null,
+      period_month: m.month,
+      period_year: m.year,
+      period_label: m.label,
+      period_date: m.date,
+      nominal: fee,
+      payment_method: method,
+      payment_proof_url: proofPath,
+      payment_date: new Date().toISOString(),
+      verification_status: "pending",
+      created_by: user?.id ?? null,
+      notes: method === "transfer" ? "Transfer BCA, menunggu verifikasi" : "Bayar di Kasir, menunggu pembayaran",
+    }));
+    // upsert by (subscription_id, period_year, period_month)
+    const { error } = await (supabase as any)
+      .from("parking_payment_history")
+      .upsert(rows, { onConflict: "subscription_id,period_year,period_month" });
+    if (error) throw error;
+  };
+
   const submitTransfer = async () => {
     if (!file) { toast.error("Mohon upload bukti transfer terlebih dahulu"); return; }
     setSubmitting(true);
     try {
       const path = await uploadFile(file);
       if (!path) throw new Error("Gagal upload bukti");
+      await insertHistory("transfer", path);
       const { error } = await supabase.from("parking_subscriptions").update({
         end_date: computedTargetDate,
         is_active: true,
@@ -153,8 +216,9 @@ export function QuickRenewParkingDialog({
         admin_notes: `Perpanjangan ${computedMonthLabel} (${selectedMonths} bln) — Transfer BCA, menunggu verifikasi`,
       }).eq("id", subscriptionId);
       if (error) throw error;
-      toast.success(`Pengajuan perpanjangan ${computedMonthLabel} terkirim. Menunggu verifikasi admin.`);
+      toast.success(`Pengajuan perpanjangan ${selectedMonths} bln (s/d ${computedMonthLabel}) terkirim. Menunggu verifikasi admin.`);
       queryClient.invalidateQueries({ queryKey: ["parking-subscriptions"] });
+      queryClient.invalidateQueries({ queryKey: ["parking-payment-history"] });
       onOpenChange(false);
     } catch (e: any) {
       toast.error("Gagal mengirim: " + (e?.message || ""));
@@ -164,6 +228,7 @@ export function QuickRenewParkingDialog({
   const submitKasir = async () => {
     setSubmitting(true);
     try {
+      await insertHistory("kasir", null);
       const { error } = await supabase.from("parking_subscriptions").update({
         end_date: computedTargetDate,
         is_active: true,
@@ -171,8 +236,9 @@ export function QuickRenewParkingDialog({
         admin_notes: `Perpanjangan ${computedMonthLabel} (${selectedMonths} bln) — Bayar di Kasir, menunggu pembayaran`,
       }).eq("id", subscriptionId);
       if (error) throw error;
-      toast.success(`Pengajuan perpanjangan ${computedMonthLabel} terkirim. Silakan bayar di kasir.`);
+      toast.success(`Pengajuan perpanjangan ${selectedMonths} bln (s/d ${computedMonthLabel}) terkirim. Silakan bayar di kasir.`);
       queryClient.invalidateQueries({ queryKey: ["parking-subscriptions"] });
+      queryClient.invalidateQueries({ queryKey: ["parking-payment-history"] });
       onOpenChange(false);
     } catch (e: any) {
       toast.error("Gagal mengirim: " + (e?.message || ""));

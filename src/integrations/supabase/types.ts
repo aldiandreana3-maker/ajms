@@ -2217,6 +2217,78 @@ export type Database = {
           },
         ]
       }
+      parking_payment_history: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          nominal: number
+          notes: string | null
+          owner_name: string | null
+          payment_date: string | null
+          payment_method: string | null
+          payment_proof_url: string | null
+          period_date: string
+          period_label: string
+          period_month: number
+          period_year: number
+          subscription_id: string | null
+          unit_id: string | null
+          unit_number: string | null
+          updated_at: string
+          vehicle_number: string | null
+          verification_status: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nominal?: number
+          notes?: string | null
+          owner_name?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_proof_url?: string | null
+          period_date: string
+          period_label: string
+          period_month: number
+          period_year: number
+          subscription_id?: string | null
+          unit_id?: string | null
+          unit_number?: string | null
+          updated_at?: string
+          vehicle_number?: string | null
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nominal?: number
+          notes?: string | null
+          owner_name?: string | null
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_proof_url?: string | null
+          period_date?: string
+          period_label?: string
+          period_month?: number
+          period_year?: number
+          subscription_id?: string | null
+          unit_id?: string | null
+          unit_number?: string | null
+          updated_at?: string
+          vehicle_number?: string | null
+          verification_status?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: []
+      }
       parking_subscriptions: {
         Row: {
           admin_notes: string | null
