@@ -207,6 +207,19 @@ export default function AbonemenParkir() {
 
   const paginatedData = usePagination(currentAndFutureData, itemsPerPage, currentPage);
 
+  // Grup riwayat pembayaran parkir per bulan (dari tabel parking_payment_history)
+  // Hanya tampilkan bulan-bulan yang sudah lewat (< bulan berjalan) sebagai "Riwayat per Bulan"
+  const historyGroups = useMemo(() => {
+    if (!paymentHistory || paymentHistory.length === 0) return [] as [string, any[]][];
+    const groups: Record<string, any[]> = {};
+    for (const h of paymentHistory) {
+      const key = `${h.period_year}-${String(h.period_month).padStart(2, "0")}`;
+      if (key >= currentMonthKey) continue; // bulan berjalan/masa depan tidak masuk riwayat
+      (groups[key] = groups[key] || []).push(h);
+    }
+    return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a));
+  }, [paymentHistory, currentMonthKey]);
+
   // 1-klik Perpanjang (penghuni): buka dialog kecil untuk upload bukti transfer
   const [renewDialog, setRenewDialog] = useState<{ id: string; vehicle: string | null; fee: number | null } | null>(null);
   const handleQuickRenew = (id: string, vehicle: string | null, fee: number | null) => {
