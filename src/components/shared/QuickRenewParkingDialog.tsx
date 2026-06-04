@@ -213,7 +213,7 @@ export function QuickRenewParkingDialog({
         is_active: true,
         payment_proof_url: path,
         verification_status: "proses",
-        admin_notes: `Perpanjangan ${computedMonthLabel} (${selectedMonths} bln) — Transfer BCA, menunggu verifikasi`,
+        admin_notes: `Perpanjangan ${computedMonthLabel} (${selectedMonths} bln) — Transfer BRI, menunggu verifikasi`,
       }).eq("id", subscriptionId);
       if (error) throw error;
       toast.success(`Pengajuan perpanjangan ${selectedMonths} bln (s/d ${computedMonthLabel}) terkirim. Menunggu verifikasi admin.`);
