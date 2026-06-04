@@ -19,7 +19,7 @@ interface Props {
 
 const REKENING = {
   bank: "BRI",
-  nomor: "777 80808 11",
+  nomor: "200001000338306",
   atasNama: "PPPSRS THE JARRDIN",
 };
 
