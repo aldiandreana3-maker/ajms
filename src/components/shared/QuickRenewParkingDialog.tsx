@@ -18,8 +18,8 @@ interface Props {
 }
 
 const REKENING = {
-  bank: "BCA",
-  nomor: "200001000338306",
+  bank: "BRI",
+  nomor: "777 80808 11",
   atasNama: "PPPSRS THE JARRDIN",
 };
 
