@@ -292,7 +292,7 @@ export function QuickRenewParkingDialog({
                 <Building2 className="w-5 h-5 mr-3 text-primary" />
                 <div className="text-left">
                   <div className="font-semibold">Transfer Bank</div>
-                  <div className="text-xs text-muted-foreground">BCA {REKENING.nomor}</div>
+                  <div className="text-xs text-muted-foreground">BRI {REKENING.nomor}</div>
                 </div>
               </Button>
               <Button variant="outline" className="w-full justify-start h-auto py-3" onClick={() => setStep("kasir")}>
