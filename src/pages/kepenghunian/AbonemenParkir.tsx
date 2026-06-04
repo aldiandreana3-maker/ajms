@@ -594,7 +594,7 @@ export default function AbonemenParkir() {
                   <Info className="w-4 h-4 text-info mt-0.5" />
                   <div className="text-sm text-info">
                     <p className="font-medium">Pembayaran ke rekening:</p>
-                    <p className="font-mono">200001000338306 (BRI)</p>
+                    <p className="font-mono">777 80808 11 (BRI) a.n. PPPSRS THE JARRDIN</p>
                   </div>
                 </div>
 

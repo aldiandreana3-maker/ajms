@@ -18,8 +18,8 @@ interface Props {
 }
 
 const REKENING = {
-  bank: "BCA",
-  nomor: "200001000338306",
+  bank: "BRI",
+  nomor: "777 80808 11",
   atasNama: "PPPSRS THE JARRDIN",
 };
 
@@ -192,7 +192,7 @@ export function QuickRenewParkingDialog({
       payment_date: new Date().toISOString(),
       verification_status: "pending",
       created_by: user?.id ?? null,
-      notes: method === "transfer" ? "Transfer BCA, menunggu verifikasi" : "Bayar di Kasir, menunggu pembayaran",
+      notes: method === "transfer" ? "Transfer BRI, menunggu verifikasi" : "Bayar di Kasir, menunggu pembayaran",
     }));
     // upsert by (subscription_id, period_year, period_month)
     const { error } = await (supabase as any)
@@ -213,7 +213,7 @@ export function QuickRenewParkingDialog({
         is_active: true,
         payment_proof_url: path,
         verification_status: "proses",
-        admin_notes: `Perpanjangan ${computedMonthLabel} (${selectedMonths} bln) — Transfer BCA, menunggu verifikasi`,
+        admin_notes: `Perpanjangan ${computedMonthLabel} (${selectedMonths} bln) — Transfer BRI, menunggu verifikasi`,
       }).eq("id", subscriptionId);
       if (error) throw error;
       toast.success(`Pengajuan perpanjangan ${selectedMonths} bln (s/d ${computedMonthLabel}) terkirim. Menunggu verifikasi admin.`);
@@ -292,7 +292,7 @@ export function QuickRenewParkingDialog({
                 <Building2 className="w-5 h-5 mr-3 text-primary" />
                 <div className="text-left">
                   <div className="font-semibold">Transfer Bank</div>
-                  <div className="text-xs text-muted-foreground">BCA {REKENING.nomor}</div>
+                  <div className="text-xs text-muted-foreground">BRI {REKENING.nomor}</div>
                 </div>
               </Button>
               <Button variant="outline" className="w-full justify-start h-auto py-3" onClick={() => setStep("kasir")}>
