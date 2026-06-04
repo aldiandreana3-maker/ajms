@@ -192,7 +192,7 @@ export function QuickRenewParkingDialog({
       payment_date: new Date().toISOString(),
       verification_status: "pending",
       created_by: user?.id ?? null,
-      notes: method === "transfer" ? "Transfer BCA, menunggu verifikasi" : "Bayar di Kasir, menunggu pembayaran",
+      notes: method === "transfer" ? "Transfer BRI, menunggu verifikasi" : "Bayar di Kasir, menunggu pembayaran",
     }));
     // upsert by (subscription_id, period_year, period_month)
     const { error } = await (supabase as any)
