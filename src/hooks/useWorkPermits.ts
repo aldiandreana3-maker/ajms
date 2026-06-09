@@ -12,6 +12,8 @@ interface WorkPermit {
   start_date: string;
   end_date: string;
   document_url: string | null;
+  payment_proof_url: string | null;
+  payment_method: string | null;
   status: "pending" | "approved" | "rejected";
   approved_by: string | null;
   notes: string | null;
@@ -33,10 +35,13 @@ interface CreateWorkPermitInput {
   start_date: string;
   end_date: string;
   document_url?: string;
+  payment_proof_url?: string;
+  payment_method?: string;
   penghuni_name?: string;
   unit_number?: string;
   phone?: string;
 }
+
 
 export function useWorkPermits() {
   return useQuery({
