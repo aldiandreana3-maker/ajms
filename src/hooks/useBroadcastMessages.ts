@@ -33,8 +33,11 @@ interface SendMessageParams {
 }
 
 export function useBroadcastMessages() {
-  const { user } = useAuth();
+  const { user, isAdmin, isStaff } = useAuth();
   const queryClient = useQueryClient();
+
+  // Admin/staff see all messages; penghuni/agent only see those targeted to them
+  const canSeeAll = isAdmin || isStaff;
 
   const messagesQuery = useQuery({
     queryKey: ["broadcast-messages"],
@@ -50,14 +53,8 @@ export function useBroadcastMessages() {
   });
 
   const inboxQuery = useQuery({
-    queryKey: ["broadcast-inbox", user?.id],
+    queryKey: ["broadcast-inbox", user?.id, canSeeAll],
     queryFn: async () => {
-      const { data: messages, error: msgError } = await supabase
-        .from("broadcast_messages")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (msgError) throw msgError;
-
       const { data: reads, error: readError } = await supabase
         .from("broadcast_message_reads")
         .select("*")
@@ -65,6 +62,31 @@ export function useBroadcastMessages() {
       if (readError) throw readError;
 
       const readMap = new Map((reads as BroadcastMessageRead[]).map((r) => [r.message_id, r]));
+
+      if (canSeeAll) {
+        // Admin/Staff: see all broadcasts
+        const { data: messages, error: msgError } = await supabase
+          .from("broadcast_messages")
+          .select("*")
+          .order("created_at", { ascending: false });
+        if (msgError) throw msgError;
+        return (messages as BroadcastMessage[]).map((msg) => ({
+          ...msg,
+          is_read: readMap.get(msg.id)?.is_read ?? false,
+          read_at: readMap.get(msg.id)?.read_at ?? null,
+        }));
+      }
+
+      // Penghuni/Agent: only messages where they are a recipient (have a read record)
+      const messageIds = Array.from(readMap.keys());
+      if (messageIds.length === 0) return [];
+
+      const { data: messages, error: msgError } = await supabase
+        .from("broadcast_messages")
+        .select("*")
+        .in("id", messageIds)
+        .order("created_at", { ascending: false });
+      if (msgError) throw msgError;
 
       return (messages as BroadcastMessage[]).map((msg) => ({
         ...msg,

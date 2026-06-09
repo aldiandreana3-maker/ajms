@@ -92,39 +92,53 @@ export function useRealtimeNotifications() {
 
     const channels: any[] = [];
 
-    // 1) Broadcast messages — listen directly to INSERTs and notify recipients (sync sound)
-    const broadcastChannel = supabase
-      .channel("notif-broadcast-messages-v2")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "broadcast_messages" },
-        (payload) => {
-          const row: any = payload.new;
-          if (!row) return;
-          // Don't notify the sender about their own message
-          if (row.sender_id === user.id) return;
-
-          // Determine if this user is targeted
-          const targetType = row.target_type || "all";
-          const targetValue: string[] = Array.isArray(row.target_value) ? row.target_value : [];
-          let isTargeted = targetType === "all";
-          if (targetType === "custom" && targetValue.includes(user.id)) isTargeted = true;
-          if ((targetType === "tower" || targetType === "unit") && targetValue.length > 0) {
-            // For tower/unit, RLS already restricts visibility — trust the event delivery
-            isTargeted = true;
+    // 1) Broadcast messages
+    if (isStaff) {
+      // Staff/Admin: notify on every new broadcast (they can see all)
+      const broadcastChannel = supabase
+        .channel("notif-broadcast-messages-staff")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "broadcast_messages" },
+          (payload) => {
+            const row: any = payload.new;
+            if (!row) return;
+            if (row.sender_id === user.id) return;
+            const title = row.title || "Pesan baru";
+            const body = (row.content || "").slice(0, 120) || "Pesan broadcast baru.";
+            notify(`📢 ${title}`, body);
+            queryClient.invalidateQueries({ queryKey: ["broadcast-inbox"] });
+            queryClient.invalidateQueries({ queryKey: ["broadcast-messages"] });
           }
-          if (!isTargeted) return;
-
-          // Play sound SYNCHRONOUSLY (no await) — required by browser autoplay policy
-          const title = row.title || "Pesan baru";
-          const body = (row.content || "").slice(0, 120) || "Anda menerima pesan broadcast baru.";
-          notify(`📢 ${title}`, body);
-          queryClient.invalidateQueries({ queryKey: ["broadcast-inbox"] });
-          queryClient.invalidateQueries({ queryKey: ["broadcast-messages"] });
-        }
-      )
-      .subscribe();
-    channels.push(broadcastChannel);
+        )
+        .subscribe();
+      channels.push(broadcastChannel);
+    } else {
+      // Penghuni/Agent: only notify when a read-record is created for this user
+      const readsChannel = supabase
+        .channel("notif-broadcast-reads-user")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "broadcast_message_reads", filter: `user_id=eq.${user.id}` },
+          async (payload) => {
+            const row: any = payload.new;
+            if (!row?.message_id) return;
+            const { data: msg } = await supabase
+              .from("broadcast_messages")
+              .select("title, content, sender_id")
+              .eq("id", row.message_id)
+              .maybeSingle();
+            if (!msg) return;
+            if (msg.sender_id === user.id) return;
+            const title = msg.title || "Pesan baru";
+            const body = (msg.content || "").slice(0, 120) || "Anda menerima pesan baru.";
+            notify(`📢 ${title}`, body);
+            queryClient.invalidateQueries({ queryKey: ["broadcast-inbox"] });
+          }
+        )
+        .subscribe();
+      channels.push(readsChannel);
+    }
 
     // 2) Bills — notify owners of the unit when a new bill is inserted or status updated
     const billsChannel = supabase
