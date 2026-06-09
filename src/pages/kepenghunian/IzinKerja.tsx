@@ -477,6 +477,7 @@ export default function IzinKerja() {
                           <PhotoCell
                             photos={[
                               { url: p.document_url, label: "Dokumen" },
+                              { url: p.payment_proof_url, label: "Bukti TF" },
                             ]}
                           />
                         </TableCell>
