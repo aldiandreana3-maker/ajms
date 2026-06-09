@@ -479,6 +479,7 @@ export default function IzinKerja() {
                               { url: p.document_url, label: "Dokumen" },
                               { url: p.payment_proof_url, label: "Bukti TF" },
                             ]}
+                            showThumbnail
                           />
                         </TableCell>
                         <TableCell>
