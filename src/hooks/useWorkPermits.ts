@@ -83,6 +83,8 @@ export function useCreateWorkPermit() {
           start_date: input.start_date,
           end_date: input.end_date,
           document_url: input.document_url,
+          payment_proof_url: input.payment_proof_url,
+          payment_method: input.payment_method,
           penghuni_name: input.penghuni_name,
           unit_number: input.unit_number,
           phone: input.phone,
