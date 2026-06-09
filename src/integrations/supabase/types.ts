@@ -3429,6 +3429,8 @@ export type Database = {
           end_date: string
           id: string
           notes: string | null
+          payment_method: string | null
+          payment_proof_url: string | null
           penghuni_id: string | null
           penghuni_name: string | null
           phone: string | null
@@ -3449,6 +3451,8 @@ export type Database = {
           end_date: string
           id?: string
           notes?: string | null
+          payment_method?: string | null
+          payment_proof_url?: string | null
           penghuni_id?: string | null
           penghuni_name?: string | null
           phone?: string | null
@@ -3469,6 +3473,8 @@ export type Database = {
           end_date?: string
           id?: string
           notes?: string | null
+          payment_method?: string | null
+          payment_proof_url?: string | null
           penghuni_id?: string | null
           penghuni_name?: string | null
           phone?: string | null

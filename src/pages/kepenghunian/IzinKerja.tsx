@@ -155,6 +155,12 @@ export default function IzinKerja() {
       const path = await uploadFile(form.layout_file);
       if (path) documentUrl = path;
     }
+
+    let paymentProofUrl: string | undefined;
+    if (form.payment_proof) {
+      const path = await uploadFile(form.payment_proof);
+      if (path) paymentProofUrl = path;
+    }
     
     await createMutation.mutateAsync({
       vendor_name: form.vendor_name,
@@ -166,6 +172,8 @@ export default function IzinKerja() {
       unit_number: form.unit_number,
       phone: form.phone,
       document_url: documentUrl,
+      payment_proof_url: paymentProofUrl,
+      payment_method: form.payment_method || undefined,
     });
     setIsOpen(false);
     setForm({
@@ -469,6 +477,7 @@ export default function IzinKerja() {
                           <PhotoCell
                             photos={[
                               { url: p.document_url, label: "Dokumen" },
+                              { url: p.payment_proof_url, label: "Bukti TF" },
                             ]}
                           />
                         </TableCell>
