@@ -23,6 +23,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, parkingExportColumns } from "@/lib/exportExcel";
+import * as XLSXMod from "xlsx";
 import { PhotoCell } from "@/components/shared/PhotoActions";
 import { PhotoUpload } from "@/components/shared/PhotoUpload";
 import { NotesCell, ReceiptPhotoCell } from "@/components/shared/ParkingInlineCells";
@@ -299,6 +300,29 @@ export default function AbonemenParkir() {
       columns: parkingExportColumns,
       
     });
+  };
+
+  const handleExportMonth = (key: string, items: any[]) => {
+    if (!items?.length) return;
+    const [y, m] = key.split("-").map(Number);
+    const label = new Date(y, m - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+    const data = items.map((h: any) => ({
+      "Unit": h.unit_number || "-",
+      "Pemilik": h.owner_name || "-",
+      "Plat": h.vehicle_number || "-",
+      "Periode": h.period_label || label,
+      "Nominal": Number(h.nominal || 0),
+      "Metode": h.payment_method || "-",
+      "Status": h.verification_status || "-",
+      "Tgl Bayar": h.payment_date ? format(new Date(h.payment_date), "dd/MM/yyyy") : "-",
+      "Bukti URL": h.payment_proof_url || "-",
+      "Catatan": h.notes || "-",
+    }));
+    const ws = XLSXMod.utils.json_to_sheet(data);
+    ws["!cols"] = [{ wch: 12 }, { wch: 22 }, { wch: 14 }, { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 40 }, { wch: 30 }];
+    const wb = XLSXMod.utils.book_new();
+    XLSXMod.utils.book_append_sheet(wb, ws, label.substring(0, 31));
+    XLSXMod.writeFile(wb, `Abonemen_Parkir_${key}.xlsx`);
   };
 
   const handleUnverify = async (id: string) => {
@@ -813,12 +837,24 @@ export default function AbonemenParkir() {
                   const label = new Date(y, m - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
                   return (
                     <AccordionItem key={key} value={key} className="border-b last:border-b-0 px-3">
-                      <AccordionTrigger className="text-sm py-2 hover:no-underline">
-                        <span className="flex items-center gap-2">
-                          <span className="font-medium">Riwayat {label}</span>
-                          <Badge variant="secondary" className="text-xs">{items.length}</Badge>
-                        </span>
-                      </AccordionTrigger>
+                      <div className="flex items-center justify-between gap-2">
+                        <AccordionTrigger className="text-sm py-2 hover:no-underline flex-1">
+                          <span className="flex items-center gap-2">
+                            <span className="font-medium">Riwayat {label}</span>
+                            <Badge variant="secondary" className="text-xs">{items.length}</Badge>
+                          </span>
+                        </AccordionTrigger>
+                        {canExport && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-xs shrink-0"
+                            onClick={(e) => { e.stopPropagation(); handleExportMonth(key, items); }}
+                          >
+                            <Download className="w-3 h-3 mr-1" /> Export {label}
+                          </Button>
+                        )}
+                      </div>
                       <AccordionContent>
                         <div className="overflow-x-auto rounded-md border bg-background">
                           <Table>
