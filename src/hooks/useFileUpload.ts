@@ -26,6 +26,15 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
         return null;
       }
 
+      // Validasi format (untuk gambar: hanya JPG/JPEG/PNG; lainnya dilewati)
+      if (file.type.startsWith("image/")) {
+        const ok = ["image/jpeg", "image/jpg", "image/png"].includes(file.type);
+        if (!ok) {
+          toast.error("Format foto tidak didukung. Gunakan JPG, JPEG, atau PNG.");
+          return null;
+        }
+      }
+
       // Compress image if enabled and file is an image
       let fileToUpload = file;
       if (compressImages && file.type.startsWith("image/")) {
@@ -37,29 +46,39 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
       }
 
       const userId = sessionData.session.user.id;
-      const fileExt = fileToUpload.name.split(".").pop();
+      const fileExt = (fileToUpload.name.split(".").pop() || "bin").toLowerCase();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
       const filePath = folder
         ? `${userId}/${folder}/${fileName}`
         : `${userId}/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, fileToUpload, {
-          cacheControl: "3600",
-          upsert: false,
-        });
+      // Retry hingga 3x untuk gangguan jaringan
+      const maxAttempts = 3;
+      let lastError: any = null;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const { error: uploadError } = await supabase.storage
+          .from(bucket)
+          .upload(filePath, fileToUpload, {
+            cacheControl: "3600",
+            upsert: false,
+            contentType: fileToUpload.type || undefined,
+          });
 
-      if (uploadError) {
-        console.error("Upload error:", uploadError);
-        toast.error("Gagal upload file: " + uploadError.message);
-        return null;
+        if (!uploadError) {
+          return filePath;
+        }
+        lastError = uploadError;
+        console.warn(`Upload gagal (percobaan ${attempt}/${maxAttempts}):`, uploadError.message);
+        if (attempt < maxAttempts) {
+          await new Promise((r) => setTimeout(r, 600 * attempt));
+        }
       }
 
-      return filePath;
-    } catch (error) {
+      toast.error("Upload foto gagal. Silakan coba kembali. (" + (lastError?.message || "network") + ")");
+      return null;
+    } catch (error: any) {
       console.error("Upload error:", error);
-      toast.error("Gagal upload file");
+      toast.error("Upload foto gagal. Silakan coba kembali.");
       return null;
     } finally {
       setUploading(false);
