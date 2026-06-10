@@ -23,6 +23,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { exportToExcel, parkingExportColumns } from "@/lib/exportExcel";
+import * as XLSXMod from "xlsx";
 import { PhotoCell } from "@/components/shared/PhotoActions";
 import { PhotoUpload } from "@/components/shared/PhotoUpload";
 import { NotesCell, ReceiptPhotoCell } from "@/components/shared/ParkingInlineCells";
