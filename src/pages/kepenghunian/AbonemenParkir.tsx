@@ -301,6 +301,29 @@ export default function AbonemenParkir() {
     });
   };
 
+  const handleExportMonth = (key: string, items: any[]) => {
+    if (!items?.length) return;
+    const [y, m] = key.split("-").map(Number);
+    const label = new Date(y, m - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+    const data = items.map((h: any) => ({
+      "Unit": h.unit_number || "-",
+      "Pemilik": h.owner_name || "-",
+      "Plat": h.vehicle_number || "-",
+      "Periode": h.period_label || label,
+      "Nominal": Number(h.nominal || 0),
+      "Metode": h.payment_method || "-",
+      "Status": h.verification_status || "-",
+      "Tgl Bayar": h.payment_date ? format(new Date(h.payment_date), "dd/MM/yyyy") : "-",
+      "Bukti URL": h.payment_proof_url || "-",
+      "Catatan": h.notes || "-",
+    }));
+    const ws = XLSXMod.utils.json_to_sheet(data);
+    ws["!cols"] = [{ wch: 12 }, { wch: 22 }, { wch: 14 }, { wch: 18 }, { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 40 }, { wch: 30 }];
+    const wb = XLSXMod.utils.book_new();
+    XLSXMod.utils.book_append_sheet(wb, ws, label.substring(0, 31));
+    XLSXMod.writeFile(wb, `Abonemen_Parkir_${key}.xlsx`);
+  };
+
   const handleUnverify = async (id: string) => {
     await updateVerificationMutation.mutateAsync({ id, verification_status: "proses" });
   };
