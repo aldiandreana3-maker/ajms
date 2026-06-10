@@ -60,7 +60,9 @@ export const CreateKeluhanSchema = z.object({
   unit_id: z.string().uuid().optional(),
   subject: z.string().min(1).max(200),
   description: z.string().max(5000).optional().or(z.literal("")),
-  photo_url: z.string().url().max(2000).optional(),
+  // photo_url menerima path Storage (mis. "userId/folder/file.jpg") atau URL signed/public.
+  // Validasi cukup string panjang & non-kosong; URL valid dijamin saat dirender via signedUrl.
+  photo_url: z.string().min(1).max(2000).optional(),
   penghuni_name: z.string().max(200).optional(),
   unit_number: z.string().max(20).optional(),
   phone: z.string().max(20).optional(),
