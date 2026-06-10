@@ -837,12 +837,24 @@ export default function AbonemenParkir() {
                   const label = new Date(y, m - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
                   return (
                     <AccordionItem key={key} value={key} className="border-b last:border-b-0 px-3">
-                      <AccordionTrigger className="text-sm py-2 hover:no-underline">
-                        <span className="flex items-center gap-2">
-                          <span className="font-medium">Riwayat {label}</span>
-                          <Badge variant="secondary" className="text-xs">{items.length}</Badge>
-                        </span>
-                      </AccordionTrigger>
+                      <div className="flex items-center justify-between gap-2">
+                        <AccordionTrigger className="text-sm py-2 hover:no-underline flex-1">
+                          <span className="flex items-center gap-2">
+                            <span className="font-medium">Riwayat {label}</span>
+                            <Badge variant="secondary" className="text-xs">{items.length}</Badge>
+                          </span>
+                        </AccordionTrigger>
+                        {canExport && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 px-2 text-xs shrink-0"
+                            onClick={(e) => { e.stopPropagation(); handleExportMonth(key, items); }}
+                          >
+                            <Download className="w-3 h-3 mr-1" /> Export {label}
+                          </Button>
+                        )}
+                      </div>
                       <AccordionContent>
                         <div className="overflow-x-auto rounded-md border bg-background">
                           <Table>
