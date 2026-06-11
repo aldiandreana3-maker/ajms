@@ -132,44 +132,56 @@ export function QuickRenewParkingDialog({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const computedTargetDate = useMemo(() => {
-    const target = new Date();
-    target.setHours(0, 0, 0, 0);
-    if (target.getDate() > 5) target.setMonth(target.getMonth() + 1);
-    target.setDate(5);
-    target.setMonth(target.getMonth() + (selectedMonths - 1));
-    return target.toISOString().split("T")[0];
-  }, [selectedMonths]);
+  // Basis perpanjangan: jika end_date masih berlaku → mulai dari end_date,
+  // jika sudah lewat/null → mulai dari siklus berjalan (tgl 5 bulan ini/bulan depan).
+  const effectiveBase = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (baseEndDate) {
+      const d = new Date(baseEndDate);
+      d.setHours(0, 0, 0, 0);
+      if (d >= today) return d;
+    }
+    const fb = new Date(today);
+    if (fb.getDate() > 5) fb.setMonth(fb.getMonth() + 1);
+    fb.setDate(5);
+    return fb;
+  }, [baseEndDate]);
 
-  const computedMonthLabel = useMemo(() => {
-    const d = new Date(computedTargetDate + "T00:00:00");
-    return d.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
-  }, [computedTargetDate]);
-
-  const totalFee = useMemo(() => {
-    if (!monthlyFee) return null;
-    return monthlyFee * selectedMonths;
-  }, [monthlyFee, selectedMonths]);
-
-  // Hitung daftar bulan-bulan yang akan diperpanjang (1 row history per bulan)
+  // Daftar periode bulan yang akan dibuat (mengikuti masa berlaku, bukan tanggal transaksi).
+  // Periode bulan ke-i = bulan dari (effectiveBase + i bulan).
   const monthsToInsert = useMemo(() => {
-    const startTarget = new Date();
-    startTarget.setHours(0, 0, 0, 0);
-    if (startTarget.getDate() > 5) startTarget.setMonth(startTarget.getMonth() + 1);
-    startTarget.setDate(1);
-    const months: { year: number; month: number; label: string; date: string }[] = [];
+    const arr: { year: number; month: number; label: string; date: string }[] = [];
     for (let i = 0; i < selectedMonths; i++) {
-      const d = new Date(startTarget);
+      const d = new Date(effectiveBase);
+      d.setDate(1);
       d.setMonth(d.getMonth() + i);
-      months.push({
+      arr.push({
         year: d.getFullYear(),
         month: d.getMonth() + 1,
         label: d.toLocaleDateString("id-ID", { month: "long", year: "numeric" }),
         date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`,
       });
     }
-    return months;
-  }, [selectedMonths]);
+    return arr;
+  }, [effectiveBase, selectedMonths]);
+
+  // Tanggal berakhir baru = effectiveBase + selectedMonths bulan, snap ke tgl 5
+  const computedTargetDate = useMemo(() => {
+    const d = new Date(effectiveBase);
+    d.setMonth(d.getMonth() + selectedMonths);
+    d.setDate(5);
+    return d.toISOString().split("T")[0];
+  }, [effectiveBase, selectedMonths]);
+
+  // Label periode = bulan terakhir yang ditambahkan
+  const computedMonthLabel = useMemo(() => {
+    if (monthsToInsert.length === 0) {
+      const d = new Date(computedTargetDate + "T00:00:00");
+      return d.toLocaleDateString("id-ID", { month: "long", year: "numeric" });
+    }
+    return monthsToInsert[monthsToInsert.length - 1].label;
+  }, [monthsToInsert, computedTargetDate]);
 
   // Ambil context subscription untuk menyimpan ke history
   const fetchSubContext = async () => {
