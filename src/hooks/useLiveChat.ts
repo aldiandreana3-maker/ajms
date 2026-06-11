@@ -281,5 +281,16 @@ export function useKnowledgeBase() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["chat-kb"] }),
   });
 
-  return { ...query, create, update, remove };
+  const removeAll = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("chat_knowledge_base")
+        .delete()
+        .not("id", "is", null);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["chat-kb"] }),
+  });
+
+  return { ...query, create, update, remove, removeAll };
 }
