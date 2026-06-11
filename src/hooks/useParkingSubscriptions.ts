@@ -156,38 +156,86 @@ export function useExtendParkingSubscription() {
       currentEndDate?: string | null;
       customEndDate?: string;
     }) => {
-      let newEndStr: string;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-      if (customEndDate) {
-        // Tanggal akhir di-set langsung (sudah dihitung di UI dengan patokan tanggal 5)
-        newEndStr = customEndDate;
-      } else {
-        // Patokan: tanggal 5 setiap bulan adalah jatuh tempo siklus parkir
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const baseDate = currentEndDate ? new Date(currentEndDate) : today;
-        const startFrom = baseDate >= today ? baseDate : today;
-        const newEnd = new Date(startFrom);
-
-        if (days && days > 0) {
-          newEnd.setDate(newEnd.getDate() + days);
-        } else if (months && months > 0) {
-          newEnd.setMonth(newEnd.getMonth() + months);
-          newEnd.setDate(5);
-        } else {
-          throw new Error("Masukkan jumlah hari atau bulan perpanjangan");
+      // Basis perpanjangan = end_date saat ini jika masih berlaku; jika tidak, ambil tgl 5 siklus berjalan.
+      const baseDate = (() => {
+        if (currentEndDate) {
+          const d = new Date(currentEndDate);
+          d.setHours(0, 0, 0, 0);
+          if (d >= today) return d;
         }
+        const fb = new Date(today);
+        if (fb.getDate() > 5) fb.setMonth(fb.getMonth() + 1);
+        fb.setDate(5);
+        return fb;
+      })();
+
+      // Hitung tanggal akhir baru
+      let newEndStr: string;
+      let monthsAdded = 0;
+      if (customEndDate) {
+        newEndStr = customEndDate;
+      } else if (days && days > 0) {
+        const newEnd = new Date(baseDate);
+        newEnd.setDate(newEnd.getDate() + days);
         newEndStr = newEnd.toISOString().split("T")[0];
+      } else if (months && months > 0) {
+        const newEnd = new Date(baseDate);
+        newEnd.setMonth(newEnd.getMonth() + months);
+        newEnd.setDate(5);
+        newEndStr = newEnd.toISOString().split("T")[0];
+        monthsAdded = months;
+      } else {
+        throw new Error("Masukkan jumlah hari atau bulan perpanjangan");
       }
 
+      // Update subscription
       const { data, error } = await supabase
         .from("parking_subscriptions")
         .update({ end_date: newEndStr, is_active: true, verification_status: "terverifikasi" })
         .eq("id", id)
         .select()
         .single();
-
       if (error) throw error;
+
+      // Buat baris history per BULAN periode (mengikuti masa berlaku, bukan tanggal transaksi).
+      // Periode bulan ke-i = bulan dari (baseDate + i bulan).
+      if (monthsAdded > 0) {
+        const { data: { user } } = await supabase.auth.getUser();
+        const fee = Number(data?.monthly_fee || 0);
+        const rows = Array.from({ length: monthsAdded }, (_, i) => {
+          const d = new Date(baseDate);
+          d.setDate(1);
+          d.setMonth(d.getMonth() + i);
+          const y = d.getFullYear();
+          const m = d.getMonth() + 1;
+          return {
+            subscription_id: id,
+            vehicle_number: data?.vehicle_number ?? null,
+            unit_number: data?.unit_number ?? null,
+            unit_id: data?.unit_id ?? null,
+            owner_name: data?.penghuni_name ?? null,
+            period_month: m,
+            period_year: y,
+            period_label: d.toLocaleDateString("id-ID", { month: "long", year: "numeric" }),
+            period_date: `${y}-${String(m).padStart(2, "0")}-01`,
+            nominal: fee,
+            payment_method: "admin_extend",
+            payment_proof_url: null,
+            payment_date: new Date().toISOString(),
+            verification_status: "terverifikasi",
+            created_by: user?.id ?? null,
+            notes: `Perpanjangan oleh admin (${monthsAdded} bln, s/d ${newEndStr})`,
+          };
+        });
+        const { error: hErr } = await (supabase as any)
+          .from("parking_payment_history")
+          .upsert(rows, { onConflict: "subscription_id,period_year,period_month" });
+        if (hErr) console.warn("Gagal menulis history perpanjangan:", hErr.message);
+      }
+
       return data;
     },
     onSuccess: (_data, variables) => {
