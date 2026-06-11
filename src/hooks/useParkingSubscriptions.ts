@@ -240,6 +240,7 @@ export function useExtendParkingSubscription() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["parking-subscriptions"] });
+      queryClient.invalidateQueries({ queryKey: ["parking-payment-history"] });
       const label = variables.customEndDate
         ? `s/d ${variables.customEndDate} (jatuh tempo tgl 5)`
         : variables.days
