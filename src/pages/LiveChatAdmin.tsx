@@ -234,12 +234,28 @@ function KnowledgeBasePanel() {
             Materi jawaban untuk auto-reply. Tambah satu per satu, tempel artikel panjang, atau upload file.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setImportOpen(true)}>
             <Upload className="w-4 h-4 mr-2" /> Tempel / Upload Materi
           </Button>
           <Button onClick={openNew}>
             <Plus className="w-4 h-4 mr-2" /> Tambah Manual
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={items.length === 0 || removeAll.isPending}
+            onClick={async () => {
+              if (confirm(`Hapus SEMUA ${items.length} knowledge base? Tindakan ini tidak dapat dibatalkan.`)) {
+                try {
+                  await removeAll.mutateAsync();
+                  toast.success("Semua knowledge base dihapus");
+                } catch {
+                  toast.error("Gagal menghapus semua");
+                }
+              }
+            }}
+          >
+            <Trash2 className="w-4 h-4 mr-2" /> Hapus Semua
           </Button>
         </div>
       </div>
