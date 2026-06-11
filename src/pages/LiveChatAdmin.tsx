@@ -182,7 +182,7 @@ interface KbForm {
 }
 
 function KnowledgeBasePanel() {
-  const { data: items = [], create, update, remove } = useKnowledgeBase();
+  const { data: items = [], create, update, remove, removeAll } = useKnowledgeBase();
   const [open, setOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const qc = useQueryClient();
