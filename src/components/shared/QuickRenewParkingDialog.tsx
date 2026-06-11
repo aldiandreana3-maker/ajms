@@ -183,6 +183,11 @@ export function QuickRenewParkingDialog({
     return monthsToInsert[monthsToInsert.length - 1].label;
   }, [monthsToInsert, computedTargetDate]);
 
+  const totalFee = useMemo(() => {
+    if (!monthlyFee) return null;
+    return monthlyFee * selectedMonths;
+  }, [monthlyFee, selectedMonths]);
+
   // Ambil context subscription untuk menyimpan ke history
   const fetchSubContext = async () => {
     const { data } = await supabase
