@@ -45,6 +45,8 @@ export function QuickRenewParkingDialog({
   const [preview, setPreview] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Basis: end_date abonemen saat ini → perpanjangan mengikuti masa berlaku, bukan tanggal transaksi
+  const [baseEndDate, setBaseEndDate] = useState<string | null>(null);
 
   // Camera state
   const [showCamera, setShowCamera] = useState(false);
@@ -57,8 +59,18 @@ export function QuickRenewParkingDialog({
       setSelectedMonths(1);
       setFile(null);
       setPreview(null);
+      setBaseEndDate(null);
+      return;
     }
-  }, [open, enableMonthSelection]);
+    (async () => {
+      const { data } = await supabase
+        .from("parking_subscriptions")
+        .select("end_date")
+        .eq("id", subscriptionId)
+        .maybeSingle();
+      setBaseEndDate(data?.end_date ?? null);
+    })();
+  }, [open, enableMonthSelection, subscriptionId]);
 
   const stopCamera = useCallback(() => {
     if (stream) {
