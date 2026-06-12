@@ -25,6 +25,7 @@ import {
   MessageCircle,
   HardHat,
   ShoppingCart,
+  Monitor,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -62,6 +63,7 @@ const kepengelolaanItems = [
 const adminMenuItems = [
   { icon: Shield, label: "Manajemen User", path: "/manajemen-user", adminOnly: true },
   { icon: MessageCircle, label: "Live Chat", path: "/live-chat-admin", adminOnly: true, badgeKey: "chat" as const },
+  { icon: Monitor, label: "IT", path: "/it", adminOnly: true },
   { icon: Settings, label: "Aktivasi Sistem", path: "/aktivasi-sistem", adminOnly: false },
 ];
 

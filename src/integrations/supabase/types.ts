@@ -1022,6 +1022,107 @@ export type Database = {
         }
         Relationships: []
       }
+      data_token_history: {
+        Row: {
+          changed_by: string | null
+          changed_by_name: string | null
+          created_at: string
+          data_token_id: string | null
+          id: string
+          new_catatan: string | null
+          new_status: string | null
+          old_catatan: string | null
+          old_status: string | null
+          unit_number: string
+        }
+        Insert: {
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          data_token_id?: string | null
+          id?: string
+          new_catatan?: string | null
+          new_status?: string | null
+          old_catatan?: string | null
+          old_status?: string | null
+          unit_number: string
+        }
+        Update: {
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          data_token_id?: string | null
+          id?: string
+          new_catatan?: string | null
+          new_status?: string | null
+          old_catatan?: string | null
+          old_status?: string | null
+          unit_number?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_token_history_data_token_id_fkey"
+            columns: ["data_token_id"]
+            isOneToOne: false
+            referencedRelation: "data_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      data_tokens: {
+        Row: {
+          catatan: string | null
+          created_at: string
+          created_by: string | null
+          floor: number
+          id: string
+          kwh_id: string | null
+          sisa_kwh: number | null
+          status: string
+          tanggal_bypass: string | null
+          tanggal_normalisasi: string | null
+          tower: string
+          unit_no: number
+          unit_number: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          catatan?: string | null
+          created_at?: string
+          created_by?: string | null
+          floor: number
+          id?: string
+          kwh_id?: string | null
+          sisa_kwh?: number | null
+          status?: string
+          tanggal_bypass?: string | null
+          tanggal_normalisasi?: string | null
+          tower: string
+          unit_no: number
+          unit_number: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          catatan?: string | null
+          created_at?: string
+          created_by?: string | null
+          floor?: number
+          id?: string
+          kwh_id?: string | null
+          sisa_kwh?: number | null
+          status?: string
+          tanggal_bypass?: string | null
+          tanggal_normalisasi?: string | null
+          tower?: string
+          unit_no?: number
+          unit_number?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       electric_meters: {
         Row: {
           created_at: string
