@@ -1078,7 +1078,7 @@ export type Database = {
           id: string
           kwh_id: string | null
           sisa_kwh: number | null
-          status: string
+          status: string | null
           tanggal_bypass: string | null
           tanggal_normalisasi: string | null
           tower: string
@@ -1095,7 +1095,7 @@ export type Database = {
           id?: string
           kwh_id?: string | null
           sisa_kwh?: number | null
-          status?: string
+          status?: string | null
           tanggal_bypass?: string | null
           tanggal_normalisasi?: string | null
           tower: string
@@ -1112,7 +1112,7 @@ export type Database = {
           id?: string
           kwh_id?: string | null
           sisa_kwh?: number | null
-          status?: string
+          status?: string | null
           tanggal_bypass?: string | null
           tanggal_normalisasi?: string | null
           tower?: string
