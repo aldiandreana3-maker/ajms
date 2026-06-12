@@ -77,6 +77,8 @@ import Izin from "./pages/karyawan/Izin";
 import JadwalKerja from "./pages/kepengelolaan/hrd-ga/JadwalKerja";
 import JadwalSaya from "./pages/karyawan/JadwalSaya";
 import LiveChatAdmin from "./pages/LiveChatAdmin";
+import IT from "./pages/it/IT";
+import DataTokenPage from "./pages/it/DataToken";
 import { LiveChatWidget } from "./components/chat/LiveChatWidget";
 import NotFound from "./pages/NotFound";
 
@@ -170,6 +172,8 @@ const App = () => (
               <Route path="/karyawan/lembur" element={guarded(<Lembur />)} />
               <Route path="/karyawan/izin" element={guarded(<Izin />)} />
               <Route path="/live-chat-admin" element={guarded(<LiveChatAdmin />)} />
+              <Route path="/it" element={guarded(<IT />)} />
+              <Route path="/it/data-token" element={guarded(<DataTokenPage />)} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <LiveChatWidget />
