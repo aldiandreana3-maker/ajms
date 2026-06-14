@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Zap, Plus, Edit2, Trash2, History, Search, Sparkles, ShieldAlert } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDataTokens, useDataTokenHistory, DataToken, generateAllUnits } from "@/hooks/useDataTokens";
 import { TablePagination } from "@/components/shared/TablePagination";
