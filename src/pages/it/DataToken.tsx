@@ -53,7 +53,11 @@ export default function DataTokenPage() {
     return tokens.filter((t) => {
       if (filterTower !== "all" && t.tower !== filterTower) return false;
       if (filterFloor !== "all" && String(t.floor) !== filterFloor) return false;
-      if (filterStatus !== "all" && t.status !== filterStatus) return false;
+      if (filterStatus !== "all") {
+        if (filterStatus === "kosong") {
+          if (t.status) return false;
+        } else if (t.status !== filterStatus) return false;
+      }
       if (filterBypassDate && t.tanggal_bypass !== filterBypassDate) return false;
       if (search) {
         const q = search.toLowerCase();
@@ -62,6 +66,26 @@ export default function DataTokenPage() {
       return true;
     });
   }, [tokens, filterTower, filterFloor, filterStatus, filterBypassDate, search]);
+
+  const stats = useMemo(() => {
+    const total = tokens.length;
+    let bypass = 0, normalisasi = 0, kosong = 0;
+    for (const t of tokens) {
+      if (t.status === "bypass") bypass++;
+      else if (t.status === "normalisasi") normalisasi++;
+      else kosong++;
+    }
+    const pct = (n: number) => (total > 0 ? (n / total) * 100 : 0);
+    return {
+      total, bypass, normalisasi, kosong,
+      bypassPct: pct(bypass), normalisasiPct: pct(normalisasi), kosongPct: pct(kosong),
+      chartData: [
+        { name: "Bypass", value: bypass, color: "hsl(var(--destructive))" },
+        { name: "Normalisasi", value: normalisasi, color: "hsl(142 71% 45%)" },
+        { name: "Belum Ternormalisasi", value: kosong, color: "hsl(var(--muted-foreground))" },
+      ],
+    };
+  }, [tokens]);
 
   const totalPages = Math.ceil(filtered.length / perPage);
   const paginated = filtered.slice((page - 1) * perPage, page * perPage);
