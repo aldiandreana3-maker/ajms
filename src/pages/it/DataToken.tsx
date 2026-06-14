@@ -202,24 +202,25 @@ export default function DataTokenPage() {
         <Card>
           <CardContent className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-              <div className="h-64">
+              <div className="h-72">
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
+                  <PieChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                     <Pie
                       data={stats.chartData}
                       dataKey="value"
                       nameKey="name"
                       cx="50%"
-                      cy="50%"
-                      outerRadius={90}
-                      label={(e: any) => `${e.name}: ${((e.value / (stats.total || 1)) * 100).toFixed(1)}%`}
+                      cy="45%"
+                      outerRadius="70%"
+                      label={(e: any) => `${((e.value / (stats.total || 1)) * 100).toFixed(1)}%`}
+                      labelLine={false}
                     >
                       {stats.chartData.map((d, i) => (
                         <Cell key={i} fill={d.color} />
                       ))}
                     </Pie>
-                    <Tooltip />
-                    <Legend />
+                    <Tooltip formatter={(v: any, n: any) => [`${v} unit`, n]} />
+                    <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: 12 }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
