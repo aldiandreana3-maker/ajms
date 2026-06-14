@@ -233,6 +233,7 @@ export default function DataTokenPage() {
                 <SelectItem value="all">Semua Status</SelectItem>
                 <SelectItem value="bypass">Bypass</SelectItem>
                 <SelectItem value="normalisasi">Normalisasi</SelectItem>
+                <SelectItem value="kosong">Belum Ternormalisasi</SelectItem>
               </SelectContent>
             </Select>
             <div>
