@@ -198,6 +198,64 @@ export default function DataTokenPage() {
           </div>
         </div>
 
+        {/* Statistik Status */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={stats.chartData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={90}
+                      label={(e: any) => `${e.name}: ${((e.value / (stats.total || 1)) * 100).toFixed(1)}%`}
+                    >
+                      {stats.chartData.map((d, i) => (
+                        <Cell key={i} fill={d.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="space-y-3">
+                <h3 className="font-semibold text-lg">Ringkasan Status kWh</h3>
+                <p className="text-sm text-muted-foreground">
+                  Total {stats.total} unit kartu kWh
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                    <div>
+                      <p className="text-sm font-medium">Bypass / Jumper</p>
+                      <p className="text-xs text-muted-foreground">{stats.bypass} unit</p>
+                    </div>
+                    <span className="text-2xl font-bold text-destructive">{stats.bypassPct.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <div>
+                      <p className="text-sm font-medium">Normalisasi</p>
+                      <p className="text-xs text-muted-foreground">{stats.normalisasi} unit</p>
+                    </div>
+                    <span className="text-2xl font-bold text-green-600">{stats.normalisasiPct.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+                    <div>
+                      <p className="text-sm font-medium">Kartu Belum Ternormalisasi</p>
+                      <p className="text-xs text-muted-foreground">{stats.kosong} unit (belum di-bypass &amp; belum dinormalisasi)</p>
+                    </div>
+                    <span className="text-2xl font-bold text-muted-foreground">{stats.kosongPct.toFixed(1)}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Filters */}
         <Card>
           <CardContent className="p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
