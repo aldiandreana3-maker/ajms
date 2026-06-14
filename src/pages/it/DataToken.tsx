@@ -335,8 +335,8 @@ export default function DataTokenPage() {
                       <TableCell>{t.tanggal_bypass ? format(new Date(t.tanggal_bypass), "dd/MM/yyyy") : "-"}</TableCell>
                       <TableCell>{t.tanggal_normalisasi ? format(new Date(t.tanggal_normalisasi), "dd/MM/yyyy") : "-"}</TableCell>
                       <TableCell>
-                        <Badge variant={t.status === "bypass" ? "destructive" : "default"}>
-                          {t.status}
+                        <Badge variant={t.status === "bypass" ? "destructive" : t.status === "normalisasi" ? "default" : "outline"}>
+                          {t.status || "Belum"}
                         </Badge>
                       </TableCell>
                       <TableCell className="max-w-[200px] truncate" title={t.catatan || ""}>{t.catatan || "-"}</TableCell>
