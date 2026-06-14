@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Zap, Plus, Edit2, Trash2, History, Search, Sparkles, ShieldAlert } from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDataTokens, useDataTokenHistory, DataToken, generateAllUnits } from "@/hooks/useDataTokens";
 import { TablePagination } from "@/components/shared/TablePagination";
@@ -52,7 +53,11 @@ export default function DataTokenPage() {
     return tokens.filter((t) => {
       if (filterTower !== "all" && t.tower !== filterTower) return false;
       if (filterFloor !== "all" && String(t.floor) !== filterFloor) return false;
-      if (filterStatus !== "all" && t.status !== filterStatus) return false;
+      if (filterStatus !== "all") {
+        if (filterStatus === "kosong") {
+          if (t.status) return false;
+        } else if (t.status !== filterStatus) return false;
+      }
       if (filterBypassDate && t.tanggal_bypass !== filterBypassDate) return false;
       if (search) {
         const q = search.toLowerCase();
@@ -61,6 +66,26 @@ export default function DataTokenPage() {
       return true;
     });
   }, [tokens, filterTower, filterFloor, filterStatus, filterBypassDate, search]);
+
+  const stats = useMemo(() => {
+    const total = tokens.length;
+    let bypass = 0, normalisasi = 0, kosong = 0;
+    for (const t of tokens) {
+      if (t.status === "bypass") bypass++;
+      else if (t.status === "normalisasi") normalisasi++;
+      else kosong++;
+    }
+    const pct = (n: number) => (total > 0 ? (n / total) * 100 : 0);
+    return {
+      total, bypass, normalisasi, kosong,
+      bypassPct: pct(bypass), normalisasiPct: pct(normalisasi), kosongPct: pct(kosong),
+      chartData: [
+        { name: "Bypass", value: bypass, color: "hsl(var(--destructive))" },
+        { name: "Normalisasi", value: normalisasi, color: "hsl(142 71% 45%)" },
+        { name: "Belum Ternormalisasi", value: kosong, color: "hsl(var(--muted-foreground))" },
+      ],
+    };
+  }, [tokens]);
 
   const totalPages = Math.ceil(filtered.length / perPage);
   const paginated = filtered.slice((page - 1) * perPage, page * perPage);
@@ -173,6 +198,64 @@ export default function DataTokenPage() {
           </div>
         </div>
 
+        {/* Statistik Status */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={stats.chartData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={90}
+                      label={(e: any) => `${e.name}: ${((e.value / (stats.total || 1)) * 100).toFixed(1)}%`}
+                    >
+                      {stats.chartData.map((d, i) => (
+                        <Cell key={i} fill={d.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="space-y-3">
+                <h3 className="font-semibold text-lg">Ringkasan Status kWh</h3>
+                <p className="text-sm text-muted-foreground">
+                  Total {stats.total} unit kartu kWh
+                </p>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                    <div>
+                      <p className="text-sm font-medium">Bypass / Jumper</p>
+                      <p className="text-xs text-muted-foreground">{stats.bypass} unit</p>
+                    </div>
+                    <span className="text-2xl font-bold text-destructive">{stats.bypassPct.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <div>
+                      <p className="text-sm font-medium">Normalisasi</p>
+                      <p className="text-xs text-muted-foreground">{stats.normalisasi} unit</p>
+                    </div>
+                    <span className="text-2xl font-bold text-green-600">{stats.normalisasiPct.toFixed(1)}%</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+                    <div>
+                      <p className="text-sm font-medium">Kartu Belum Ternormalisasi</p>
+                      <p className="text-xs text-muted-foreground">{stats.kosong} unit (belum di-bypass &amp; belum dinormalisasi)</p>
+                    </div>
+                    <span className="text-2xl font-bold text-muted-foreground">{stats.kosongPct.toFixed(1)}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Filters */}
         <Card>
           <CardContent className="p-4 grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -208,6 +291,7 @@ export default function DataTokenPage() {
                 <SelectItem value="all">Semua Status</SelectItem>
                 <SelectItem value="bypass">Bypass</SelectItem>
                 <SelectItem value="normalisasi">Normalisasi</SelectItem>
+                <SelectItem value="kosong">Belum Ternormalisasi</SelectItem>
               </SelectContent>
             </Select>
             <div>
@@ -251,8 +335,8 @@ export default function DataTokenPage() {
                       <TableCell>{t.tanggal_bypass ? format(new Date(t.tanggal_bypass), "dd/MM/yyyy") : "-"}</TableCell>
                       <TableCell>{t.tanggal_normalisasi ? format(new Date(t.tanggal_normalisasi), "dd/MM/yyyy") : "-"}</TableCell>
                       <TableCell>
-                        <Badge variant={t.status === "bypass" ? "destructive" : "default"}>
-                          {t.status}
+                        <Badge variant={t.status === "bypass" ? "destructive" : t.status === "normalisasi" ? "default" : "outline"}>
+                          {t.status || "Belum"}
                         </Badge>
                       </TableCell>
                       <TableCell className="max-w-[200px] truncate" title={t.catatan || ""}>{t.catatan || "-"}</TableCell>
