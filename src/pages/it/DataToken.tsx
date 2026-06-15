@@ -342,15 +342,16 @@ export default function DataTokenPage() {
                   <TableHead>Tgl Bypass</TableHead>
                   <TableHead>Tgl Normalisasi</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>No. WA</TableHead>
                   <TableHead>Catatan</TableHead>
                   <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Memuat...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Memuat...</TableCell></TableRow>
                 ) : paginated.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Tidak ada data</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Tidak ada data</TableCell></TableRow>
                 ) : (
                   paginated.map((t) => (
                     <TableRow key={t.id}>
@@ -363,6 +364,19 @@ export default function DataTokenPage() {
                         <Badge variant={t.status === "bypass" ? "destructive" : t.status === "normalisasi" ? "default" : "outline"}>
                           {t.status || "Belum"}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {(t as any).no_wa ? (
+                          <a
+                            href={waLink((t as any).no_wa)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-green-600 hover:underline"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            {(t as any).no_wa}
+                          </a>
+                        ) : "-"}
                       </TableCell>
                       <TableCell className="max-w-[200px] truncate" title={t.catatan || ""}>{t.catatan || "-"}</TableCell>
                       <TableCell className="text-right space-x-1 whitespace-nowrap">
@@ -404,8 +418,8 @@ export default function DataTokenPage() {
             </DialogHeader>
             <div className="space-y-3">
               <div className="space-y-2">
-                <Label>Nomor Unit (cth: A0101)</Label>
-                <Input value={fUnit} onChange={(e) => setFUnit(e.target.value.toUpperCase())} maxLength={5} disabled={!!editRow} />
+                <Label>Nomor Unit (cth: A0101 / KOA18 / THD05)</Label>
+                <Input value={fUnit} onChange={(e) => setFUnit(e.target.value.toUpperCase())} maxLength={6} disabled={!!editRow} />
               </div>
               <div className="space-y-2">
                 <Label>ID kWh</Label>
@@ -436,6 +450,17 @@ export default function DataTokenPage() {
                 </Select>
               </div>
               <div className="space-y-2">
+                <Label>Nomor WhatsApp Pemilik / Penghuni</Label>
+                <Input
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="cth: 081234567890"
+                  value={fNoWa}
+                  onChange={(e) => setFNoWa(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">Akan dapat diklik untuk membuka WhatsApp.</p>
+              </div>
+              <div className="space-y-2">
                 <Label>Catatan</Label>
                 <Textarea
                   rows={3}
@@ -444,7 +469,7 @@ export default function DataTokenPage() {
                   onChange={(e) => setFCatatan(e.target.value)}
                 />
               </div>
-              <Button className="w-full" onClick={handleSave} disabled={!fUnit || fUnit.length !== 5}>
+              <Button className="w-full" onClick={handleSave} disabled={!fUnit || fUnit.length < 4}>
                 {editRow ? "Simpan Perubahan" : "Tambah"}
               </Button>
             </div>
