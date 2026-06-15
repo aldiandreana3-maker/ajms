@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Zap, Plus, Edit2, Trash2, History, Search, Sparkles, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Zap, Plus, Edit2, Trash2, History, Search, Sparkles, ShieldAlert, MessageCircle } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDataTokens, useDataTokenHistory, DataToken, generateAllUnits } from "@/hooks/useDataTokens";
@@ -48,6 +48,7 @@ export default function DataTokenPage() {
   const [fNormalisasi, setFNormalisasi] = useState("");
   const [fStatus, setFStatus] = useState("normalisasi");
   const [fCatatan, setFCatatan] = useState("");
+  const [fNoWa, setFNoWa] = useState("");
 
   const filtered = useMemo(() => {
     return tokens.filter((t) => {
@@ -98,6 +99,7 @@ export default function DataTokenPage() {
     setFNormalisasi("");
     setFStatus("normalisasi");
     setFCatatan("");
+    setFNoWa("");
     setEditRow(null);
   };
 
@@ -115,14 +117,28 @@ export default function DataTokenPage() {
     setFNormalisasi(row.tanggal_normalisasi || "");
     setFStatus(row.status);
     setFCatatan(row.catatan || "");
+    setFNoWa((row as any).no_wa || "");
     setDlgOpen(true);
   };
 
   const handleSave = async () => {
     const unitTrim = fUnit.trim().toUpperCase();
-    const tower = unitTrim[0];
-    const floor = parseInt(unitTrim.slice(1, 3), 10);
-    const unit_no = parseInt(unitTrim.slice(3, 5), 10);
+    let tower = "";
+    let floor = 0;
+    let unit_no = 0;
+    if (unitTrim.startsWith("KO") && unitTrim.length >= 4) {
+      tower = unitTrim[2];
+      floor = 0;
+      unit_no = parseInt(unitTrim.slice(3), 10) || 0;
+    } else if (unitTrim.startsWith("TH") && unitTrim.length >= 4) {
+      tower = unitTrim[2];
+      floor = 0;
+      unit_no = parseInt(unitTrim.slice(3), 10) || 0;
+    } else {
+      tower = unitTrim[0] || "";
+      floor = parseInt(unitTrim.slice(1, 3), 10) || 0;
+      unit_no = parseInt(unitTrim.slice(3, 5), 10) || 0;
+    }
     const payload: Partial<DataToken> = {
       unit_number: unitTrim,
       tower,
@@ -134,7 +150,8 @@ export default function DataTokenPage() {
       tanggal_normalisasi: fNormalisasi || null,
       status: fStatus,
       catatan: fCatatan || null,
-    };
+      no_wa: fNoWa.trim() || null,
+    } as any;
     if (editRow) {
       await updateOne.mutateAsync({
         id: editRow.id,
@@ -147,6 +164,13 @@ export default function DataTokenPage() {
     }
     setDlgOpen(false);
     resetForm();
+  };
+
+  const waLink = (no: string) => {
+    let d = no.replace(/\D/g, "");
+    if (d.startsWith("0")) d = "62" + d.slice(1);
+    else if (d.startsWith("8")) d = "62" + d;
+    return `https://wa.me/${d}`;
   };
 
   if (!user || !canManage) {
