@@ -1071,6 +1071,7 @@ export type Database = {
       }
       data_tokens: {
         Row: {
+          atas_nama: string | null
           catatan: string | null
           created_at: string
           created_by: string | null
@@ -1089,6 +1090,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          atas_nama?: string | null
           catatan?: string | null
           created_at?: string
           created_by?: string | null
@@ -1107,6 +1109,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          atas_nama?: string | null
           catatan?: string | null
           created_at?: string
           created_by?: string | null
