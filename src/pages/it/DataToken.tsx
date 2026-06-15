@@ -10,11 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Zap, Plus, Edit2, Trash2, History, Search, Sparkles, ShieldAlert, MessageCircle } from "lucide-react";
+import { ArrowLeft, Zap, Plus, Edit2, Trash2, History, Search, Sparkles, ShieldAlert, MessageCircle, Download } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDataTokens, useDataTokenHistory, DataToken, generateAllUnits } from "@/hooks/useDataTokens";
 import { TablePagination } from "@/components/shared/TablePagination";
+import { exportToExcel } from "@/lib/exportExcel";
 import { format } from "date-fns";
 
 const TOWERS = ["A", "B", "C", "D"];
@@ -49,6 +50,7 @@ export default function DataTokenPage() {
   const [fStatus, setFStatus] = useState("normalisasi");
   const [fCatatan, setFCatatan] = useState("");
   const [fNoWa, setFNoWa] = useState("");
+  const [fAtasNama, setFAtasNama] = useState("");
 
   const filtered = useMemo(() => {
     return tokens.filter((t) => {
@@ -62,7 +64,11 @@ export default function DataTokenPage() {
       if (filterBypassDate && t.tanggal_bypass !== filterBypassDate) return false;
       if (search) {
         const q = search.toLowerCase();
-        if (!t.unit_number.toLowerCase().includes(q) && !(t.kwh_id || "").toLowerCase().includes(q)) return false;
+        if (
+          !t.unit_number.toLowerCase().includes(q) &&
+          !(t.kwh_id || "").toLowerCase().includes(q) &&
+          !((t as any).atas_nama || "").toLowerCase().includes(q)
+        ) return false;
       }
       return true;
     });
@@ -100,6 +106,7 @@ export default function DataTokenPage() {
     setFStatus("normalisasi");
     setFCatatan("");
     setFNoWa("");
+    setFAtasNama("");
     setEditRow(null);
   };
 
@@ -118,6 +125,7 @@ export default function DataTokenPage() {
     setFStatus(row.status);
     setFCatatan(row.catatan || "");
     setFNoWa((row as any).no_wa || "");
+    setFAtasNama((row as any).atas_nama || "");
     setDlgOpen(true);
   };
 
@@ -151,6 +159,7 @@ export default function DataTokenPage() {
       status: fStatus,
       catatan: fCatatan || null,
       no_wa: fNoWa.trim() || null,
+      atas_nama: fAtasNama.trim() || null,
     } as any;
     if (editRow) {
       await updateOne.mutateAsync({
