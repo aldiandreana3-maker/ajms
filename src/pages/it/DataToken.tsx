@@ -224,6 +224,50 @@ export default function DataTokenPage() {
                 Generate Unit
               </Button>
             )}
+            <Button
+              variant="outline"
+              onClick={() => {
+                const rows = filtered.map((t) => ({
+                  unit_number: t.unit_number,
+                  tower: t.tower,
+                  floor: t.floor,
+                  unit_no: t.unit_no,
+                  atas_nama: (t as any).atas_nama || "",
+                  kwh_id: t.kwh_id || "",
+                  sisa_kwh: Number(t.sisa_kwh ?? 0),
+                  tanggal_bypass: t.tanggal_bypass ? format(new Date(t.tanggal_bypass), "dd/MM/yyyy") : "",
+                  tanggal_normalisasi: t.tanggal_normalisasi ? format(new Date(t.tanggal_normalisasi), "dd/MM/yyyy") : "",
+                  status: t.status || "Belum Ternormalisasi",
+                  no_wa: (t as any).no_wa || "",
+                  catatan: t.catatan || "",
+                  updated_at: t.updated_at ? format(new Date(t.updated_at), "dd/MM/yyyy HH:mm") : "",
+                }));
+                exportToExcel({
+                  filename: `data-token-${format(new Date(), "yyyyMMdd-HHmm")}`,
+                  sheetName: "Data Token",
+                  data: rows,
+                  columns: [
+                    { header: "Unit", key: "unit_number", width: 12 },
+                    { header: "Tower", key: "tower", width: 8 },
+                    { header: "Lantai", key: "floor", width: 8 },
+                    { header: "No Unit", key: "unit_no", width: 8 },
+                    { header: "Atas Nama", key: "atas_nama", width: 25 },
+                    { header: "ID kWh", key: "kwh_id", width: 16 },
+                    { header: "Sisa kWh", key: "sisa_kwh", width: 12 },
+                    { header: "Tgl Bypass", key: "tanggal_bypass", width: 14 },
+                    { header: "Tgl Normalisasi", key: "tanggal_normalisasi", width: 16 },
+                    { header: "Status", key: "status", width: 16 },
+                    { header: "No. WhatsApp", key: "no_wa", width: 16 },
+                    { header: "Catatan", key: "catatan", width: 40 },
+                    { header: "Diperbarui", key: "updated_at", width: 18 },
+                  ],
+                });
+              }}
+              disabled={filtered.length === 0}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Export Excel ({filtered.length})
+            </Button>
             <Button onClick={openAdd}>
               <Plus className="w-4 h-4 mr-2" />
               Tambah
@@ -296,7 +340,7 @@ export default function DataTokenPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Cari unit / ID kWh..."
+                placeholder="Cari unit / ID kWh / nama..."
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -346,6 +390,7 @@ export default function DataTokenPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Unit</TableHead>
+                  <TableHead>Atas Nama</TableHead>
                   <TableHead>ID kWh</TableHead>
                   <TableHead className="text-right">Sisa kWh</TableHead>
                   <TableHead>Tgl Bypass</TableHead>
@@ -358,13 +403,14 @@ export default function DataTokenPage() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Memuat...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Memuat...</TableCell></TableRow>
                 ) : paginated.length === 0 ? (
-                  <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Tidak ada data</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={10} className="text-center py-8 text-muted-foreground">Tidak ada data</TableCell></TableRow>
                 ) : (
                   paginated.map((t) => (
                     <TableRow key={t.id}>
                       <TableCell className="font-mono font-medium">{t.unit_number}</TableCell>
+                      <TableCell>{(t as any).atas_nama || "-"}</TableCell>
                       <TableCell>{t.kwh_id || "-"}</TableCell>
                       <TableCell className="text-right">{Number(t.sisa_kwh).toFixed(2)}</TableCell>
                       <TableCell>{t.tanggal_bypass ? format(new Date(t.tanggal_bypass), "dd/MM/yyyy") : "-"}</TableCell>
@@ -429,6 +475,10 @@ export default function DataTokenPage() {
               <div className="space-y-2">
                 <Label>Nomor Unit (cth: A0101 / KOA18 / THD05)</Label>
                 <Input value={fUnit} onChange={(e) => setFUnit(e.target.value.toUpperCase())} maxLength={6} disabled={!!editRow} />
+              </div>
+              <div className="space-y-2">
+                <Label>Atas Nama (Pemilik / Penghuni)</Label>
+                <Input value={fAtasNama} onChange={(e) => setFAtasNama(e.target.value)} placeholder="cth: Budi Santoso" />
               </div>
               <div className="space-y-2">
                 <Label>ID kWh</Label>
