@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Zap, Plus, Edit2, Trash2, History, Search, Sparkles, ShieldAlert } from "lucide-react";
+import { ArrowLeft, Zap, Plus, Edit2, Trash2, History, Search, Sparkles, ShieldAlert, MessageCircle } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDataTokens, useDataTokenHistory, DataToken, generateAllUnits } from "@/hooks/useDataTokens";
@@ -48,6 +48,7 @@ export default function DataTokenPage() {
   const [fNormalisasi, setFNormalisasi] = useState("");
   const [fStatus, setFStatus] = useState("normalisasi");
   const [fCatatan, setFCatatan] = useState("");
+  const [fNoWa, setFNoWa] = useState("");
 
   const filtered = useMemo(() => {
     return tokens.filter((t) => {
@@ -98,6 +99,7 @@ export default function DataTokenPage() {
     setFNormalisasi("");
     setFStatus("normalisasi");
     setFCatatan("");
+    setFNoWa("");
     setEditRow(null);
   };
 
@@ -115,14 +117,28 @@ export default function DataTokenPage() {
     setFNormalisasi(row.tanggal_normalisasi || "");
     setFStatus(row.status);
     setFCatatan(row.catatan || "");
+    setFNoWa((row as any).no_wa || "");
     setDlgOpen(true);
   };
 
   const handleSave = async () => {
     const unitTrim = fUnit.trim().toUpperCase();
-    const tower = unitTrim[0];
-    const floor = parseInt(unitTrim.slice(1, 3), 10);
-    const unit_no = parseInt(unitTrim.slice(3, 5), 10);
+    let tower = "";
+    let floor = 0;
+    let unit_no = 0;
+    if (unitTrim.startsWith("KO") && unitTrim.length >= 4) {
+      tower = unitTrim[2];
+      floor = 0;
+      unit_no = parseInt(unitTrim.slice(3), 10) || 0;
+    } else if (unitTrim.startsWith("TH") && unitTrim.length >= 4) {
+      tower = unitTrim[2];
+      floor = 0;
+      unit_no = parseInt(unitTrim.slice(3), 10) || 0;
+    } else {
+      tower = unitTrim[0] || "";
+      floor = parseInt(unitTrim.slice(1, 3), 10) || 0;
+      unit_no = parseInt(unitTrim.slice(3, 5), 10) || 0;
+    }
     const payload: Partial<DataToken> = {
       unit_number: unitTrim,
       tower,
@@ -134,7 +150,8 @@ export default function DataTokenPage() {
       tanggal_normalisasi: fNormalisasi || null,
       status: fStatus,
       catatan: fCatatan || null,
-    };
+      no_wa: fNoWa.trim() || null,
+    } as any;
     if (editRow) {
       await updateOne.mutateAsync({
         id: editRow.id,
@@ -147,6 +164,13 @@ export default function DataTokenPage() {
     }
     setDlgOpen(false);
     resetForm();
+  };
+
+  const waLink = (no: string) => {
+    let d = no.replace(/\D/g, "");
+    if (d.startsWith("0")) d = "62" + d.slice(1);
+    else if (d.startsWith("8")) d = "62" + d;
+    return `https://wa.me/${d}`;
   };
 
   if (!user || !canManage) {
@@ -318,15 +342,16 @@ export default function DataTokenPage() {
                   <TableHead>Tgl Bypass</TableHead>
                   <TableHead>Tgl Normalisasi</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>No. WA</TableHead>
                   <TableHead>Catatan</TableHead>
                   <TableHead className="text-right">Aksi</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Memuat...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Memuat...</TableCell></TableRow>
                 ) : paginated.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Tidak ada data</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground">Tidak ada data</TableCell></TableRow>
                 ) : (
                   paginated.map((t) => (
                     <TableRow key={t.id}>
@@ -339,6 +364,19 @@ export default function DataTokenPage() {
                         <Badge variant={t.status === "bypass" ? "destructive" : t.status === "normalisasi" ? "default" : "outline"}>
                           {t.status || "Belum"}
                         </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {(t as any).no_wa ? (
+                          <a
+                            href={waLink((t as any).no_wa)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-green-600 hover:underline"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                            {(t as any).no_wa}
+                          </a>
+                        ) : "-"}
                       </TableCell>
                       <TableCell className="max-w-[200px] truncate" title={t.catatan || ""}>{t.catatan || "-"}</TableCell>
                       <TableCell className="text-right space-x-1 whitespace-nowrap">
@@ -380,8 +418,8 @@ export default function DataTokenPage() {
             </DialogHeader>
             <div className="space-y-3">
               <div className="space-y-2">
-                <Label>Nomor Unit (cth: A0101)</Label>
-                <Input value={fUnit} onChange={(e) => setFUnit(e.target.value.toUpperCase())} maxLength={5} disabled={!!editRow} />
+                <Label>Nomor Unit (cth: A0101 / KOA18 / THD05)</Label>
+                <Input value={fUnit} onChange={(e) => setFUnit(e.target.value.toUpperCase())} maxLength={6} disabled={!!editRow} />
               </div>
               <div className="space-y-2">
                 <Label>ID kWh</Label>
@@ -412,6 +450,17 @@ export default function DataTokenPage() {
                 </Select>
               </div>
               <div className="space-y-2">
+                <Label>Nomor WhatsApp Pemilik / Penghuni</Label>
+                <Input
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="cth: 081234567890"
+                  value={fNoWa}
+                  onChange={(e) => setFNoWa(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">Akan dapat diklik untuk membuka WhatsApp.</p>
+              </div>
+              <div className="space-y-2">
                 <Label>Catatan</Label>
                 <Textarea
                   rows={3}
@@ -420,7 +469,7 @@ export default function DataTokenPage() {
                   onChange={(e) => setFCatatan(e.target.value)}
                 />
               </div>
-              <Button className="w-full" onClick={handleSave} disabled={!fUnit || fUnit.length !== 5}>
+              <Button className="w-full" onClick={handleSave} disabled={!fUnit || fUnit.length < 4}>
                 {editRow ? "Simpan Perubahan" : "Tambah"}
               </Button>
             </div>

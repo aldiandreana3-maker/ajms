@@ -14,6 +14,7 @@ export interface DataToken {
   tanggal_normalisasi: string | null;
   status: string;
   catatan: string | null;
+  no_wa: string | null;
   created_by: string | null;
   updated_by: string | null;
   created_at: string;
