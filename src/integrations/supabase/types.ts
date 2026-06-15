@@ -1077,6 +1077,7 @@ export type Database = {
           floor: number
           id: string
           kwh_id: string | null
+          no_wa: string | null
           sisa_kwh: number | null
           status: string | null
           tanggal_bypass: string | null
@@ -1094,6 +1095,7 @@ export type Database = {
           floor: number
           id?: string
           kwh_id?: string | null
+          no_wa?: string | null
           sisa_kwh?: number | null
           status?: string | null
           tanggal_bypass?: string | null
@@ -1111,6 +1113,7 @@ export type Database = {
           floor?: number
           id?: string
           kwh_id?: string | null
+          no_wa?: string | null
           sisa_kwh?: number | null
           status?: string | null
           tanggal_bypass?: string | null
