@@ -1,0 +1,1 @@
+ALTER TABLE public.data_tokens ADD COLUMN IF NOT EXISTS atas_nama text;
