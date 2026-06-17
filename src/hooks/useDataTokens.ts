@@ -106,15 +106,17 @@ export function useDataTokens() {
 
   const createOne = useMutation({
     mutationFn: async (row: Partial<DataToken>) => {
-      const { error } = await supabase.from("data_tokens" as any).insert(row as any);
+      const { error } = await supabase
+        .from("data_tokens" as any)
+        .upsert(row as any, { onConflict: "unit_number" });
       if (error) throw error;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["data-tokens"] });
-      toast({ title: "Data token ditambahkan" });
+      toast({ title: "Data token disimpan" });
     },
     onError: (e: any) =>
-      toast({ title: "Gagal menambahkan", description: e.message, variant: "destructive" }),
+      toast({ title: "Gagal menyimpan", description: e.message, variant: "destructive" }),
   });
 
   const updateOne = useMutation({
