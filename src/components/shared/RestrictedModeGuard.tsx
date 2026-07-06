@@ -50,7 +50,7 @@ export function RestrictedModeGuard({ children }: { children: ReactNode }) {
     ?.monthly_status;
 
   const active =
-    !!user && monthlyStatus === "dibatasi" && !isMasterDev && !isTroPath(location.pathname);
+    !!user && monthlyStatus === "dibatasi" && !isMasterDev && !isExemptPath(location.pathname);
 
   const handleCaptureClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
