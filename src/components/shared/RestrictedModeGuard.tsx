@@ -117,12 +117,6 @@ export function RestrictedModeGuard({ children }: { children: ReactNode }) {
 
   return (
     <div className="relative">
-      <div className="sticky top-16 z-20 bg-red-600 text-white px-4 py-2 flex items-center gap-2 text-sm shadow">
-        <Ban className="w-4 h-4 flex-shrink-0" />
-        <span className="font-medium">
-          Mode Dibatasi — hanya melihat & ekspor data. Fitur Tenant Relation Officer tetap berjalan normal.
-        </span>
-      </div>
       <div
         onClickCapture={handleCaptureClick}
         onKeyDownCapture={(e) => {
