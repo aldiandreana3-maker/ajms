@@ -33,8 +33,11 @@ const ALLOWED_PATTERNS = [
   "lihat", "detail", "view",
 ];
 
-function isTroPath(pathname: string) {
-  return pathname.startsWith("/kepengelolaan/tro");
+function isExemptPath(pathname: string) {
+  return (
+    pathname.startsWith("/kepengelolaan/tro") ||
+    pathname.startsWith("/kepenghunian")
+  );
 }
 
 export function RestrictedModeGuard({ children }: { children: ReactNode }) {
