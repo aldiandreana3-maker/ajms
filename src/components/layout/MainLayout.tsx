@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AlertTriangle } from "lucide-react";
 import { MonthlyPaymentBanner } from "@/components/shared/MonthlyPaymentBanner";
+import { RestrictedModeGuard } from "@/components/shared/RestrictedModeGuard";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -65,7 +66,9 @@ export function MainLayout({ children }: MainLayoutProps) {
           </div>
         )}
         <MonthlyPaymentBanner />
-        <div className="p-4 md:p-6">{children}</div>
+        <RestrictedModeGuard>
+          <div className="p-4 md:p-6">{children}</div>
+        </RestrictedModeGuard>
       </main>
     </div>
   );
