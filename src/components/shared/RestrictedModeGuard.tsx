@@ -38,6 +38,7 @@ const ALLOWED_PATTERNS = [
 function isExemptPath(pathname: string) {
   return (
     pathname.startsWith("/kepengelolaan/tro") ||
+    pathname === "/kepenghunian/pelayanan-paket" ||
     pathname.startsWith("/kepenghunian")
   );
 }
