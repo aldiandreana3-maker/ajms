@@ -98,11 +98,13 @@ export function RestrictedModeGuard({ children }: { children: ReactNode }) {
       // Whitelist dulu
       if (ALLOWED_PATTERNS.some((p) => combined.includes(p))) return;
 
-      // Blokir kalau mengandung kata mutasi ATAU merupakan submit form
-      const isSubmit = (btn as HTMLButtonElement).type === "submit";
+      // Hanya blokir kalau MENGANDUNG kata mutasi,
+      // atau submit button yang benar-benar berada di dalam <form>.
       const isMutating = MUTATING_PATTERNS.some((p) => combined.includes(p));
+      const isFormSubmit =
+        (btn as HTMLButtonElement).type === "submit" && !!btn.closest("form");
 
-      if (isSubmit || isMutating) {
+      if (isMutating || isFormSubmit) {
         e.preventDefault();
         e.stopPropagation();
         toast({
@@ -112,6 +114,7 @@ export function RestrictedModeGuard({ children }: { children: ReactNode }) {
           variant: "destructive",
         });
       }
+
     },
     [active, toast]
   );
