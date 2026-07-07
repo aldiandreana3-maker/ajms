@@ -10,7 +10,9 @@ import { Ban } from "lucide-react";
  * - Master Dev: bypass, akses normal.
  * - Semua role lain (termasuk admin/super admin): mode read-only.
  *   Hanya bisa melihat & mengekspor data, tidak bisa menambah / mengubah / menghapus.
- * - Pengecualian: halaman Tenant Relation Officer (/kepengelolaan/tro) tetap berjalan normal.
+ * - Pengecualian (tetap normal):
+ *   • Tenant Relation Officer (/kepengelolaan/tro)
+ *   • Seluruh layanan Kepenghunian, termasuk Pelayanan Paket (/kepenghunian/*)
  */
 
 // Kata kunci yang menandakan tombol MUTASI (diblokir saat restricted).
@@ -36,6 +38,7 @@ const ALLOWED_PATTERNS = [
 function isExemptPath(pathname: string) {
   return (
     pathname.startsWith("/kepengelolaan/tro") ||
+    pathname === "/kepenghunian/pelayanan-paket" ||
     pathname.startsWith("/kepenghunian")
   );
 }
