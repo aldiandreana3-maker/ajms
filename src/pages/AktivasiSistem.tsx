@@ -297,7 +297,7 @@ function printPaymentReceipt(p: any) {
         <div class="pi-title">PAYMENT INFORMATION</div>
         <p>${p.status === "berhasil" ? "Pembayaran telah diterima penuh." : p.status === "pending" ? "Pembayaran sedang diproses." : "Pembayaran belum diterima."}</p>
         <p>Terima kasih atas kepercayaan Anda.</p>
-        <p style="margin-top:10px;"><strong>Payment Method:</strong> Midtrans (AndreaPrint)</p>
+        <p style="margin-top:10px;"><strong>Payment Method:</strong> Bank Transfer</p>
         ${p.notes ? `<p style="margin-top:6px;"><strong>Catatan:</strong> ${p.notes}</p>` : ""}
       </div>
       <div class="totals">
