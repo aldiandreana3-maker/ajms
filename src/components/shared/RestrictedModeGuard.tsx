@@ -73,23 +73,7 @@ export function RestrictedModeGuard({ children }: { children: ReactNode }) {
       if (roleTab) return;
 
       const btn = target.closest("button, [role='button'], input[type='submit'], input[type='button']");
-      if (!btn) {
-        // Blokir juga input teks/select/textarea agar tidak bisa mengetik data baru
-        const inputEl = target.closest(
-          "input:not([type='search']):not([type='hidden']), select, textarea, [contenteditable='true']"
-        );
-        if (inputEl) {
-          // Cegah fokus / mengetik pada field mutasi
-          e.preventDefault();
-          e.stopPropagation();
-          toast({
-            title: "Sistem dibatasi",
-            description: "Input dinonaktifkan. Hanya dapat melihat & mengekspor data.",
-            variant: "destructive",
-          });
-        }
-        return;
-      }
+      if (!btn) return;
 
       const text = (btn.textContent || "").toLowerCase().trim();
       const ariaLabel = (btn.getAttribute("aria-label") || "").toLowerCase();
