@@ -111,7 +111,6 @@ export function RestrictedModeGuard({ children }: { children: ReactNode }) {
         onClickCapture={handleCaptureClick}
         className="[&_button:not([data-allow-restricted='true']):not([role='tab'])]:cursor-default"
       >
-      >
         {children}
       </div>
     </div>
