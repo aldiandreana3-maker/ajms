@@ -109,18 +109,8 @@ export function RestrictedModeGuard({ children }: { children: ReactNode }) {
     <div className="relative">
       <div
         onClickCapture={handleCaptureClick}
-        onKeyDownCapture={(e) => {
-          // Blokir Enter pada input non-search
-          if (e.key !== "Enter") return;
-          const el = e.target as HTMLElement;
-          if (el.closest("input[type='search']")) return;
-          if (el.closest('[data-allow-restricted="true"]')) return;
-          if (el.matches("input, textarea")) {
-            e.preventDefault();
-            e.stopPropagation();
-          }
-        }}
-        className="opacity-95 [&_button:not([data-allow-restricted='true']):not([role='tab']):not([aria-label*='close' i]):not([aria-label*='tutup' i])]:cursor-not-allowed"
+        className="[&_button:not([data-allow-restricted='true']):not([role='tab'])]:cursor-default"
+      >
       >
         {children}
       </div>
