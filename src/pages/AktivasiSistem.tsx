@@ -147,78 +147,178 @@ async function sendBulananNotification() {
 }
 
 function printPaymentReceipt(p: any) {
-  const fmt = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
-  const tgl = format(new Date(p.tanggal_bayar), "dd MMMM yyyy", { locale: idLocale });
-  const jenis = p.jenis_pembayaran === "aktivasi" ? "Aktivasi Tahunan Sistem AJMS" : "Operasional Bulanan Sistem AJMS";
-  const statusLabel = p.status === "berhasil" ? "BERHASIL / LUNAS" : p.status === "pending" ? "PENDING" : "GAGAL";
-  const refNo = `AJMS-${String(p.id).slice(0, 8).toUpperCase()}`;
-  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Bukti Pembayaran ${refNo}</title>
+  const fmt = (n: number) => "IDR " + new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+  const d = new Date(p.tanggal_bayar);
+  const tglLong = format(d, "MMMM dd, yyyy", { locale: idLocale });
+  const yy = String(d.getFullYear()).slice(-2);
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  // Sequence: derive stable 3-digit number from id
+  const idHex = String(p.id).replace(/-/g, "").slice(0, 8);
+  const seq = String((parseInt(idHex, 16) % 999) + 1).padStart(3, "0");
+  const isAktivasi = p.jenis_pembayaran === "aktivasi";
+  const refNo = `AJMS-AKTIVASI-${yy}${mm}${dd}-${seq}`;
+  const projectNo = `PRJ-${yy}${mm}${dd}-${seq}`;
+  const dueDate = new Date(d); dueDate.setFullYear(dueDate.getFullYear() + (isAktivasi ? 1 : 0));
+  if (!isAktivasi) dueDate.setMonth(dueDate.getMonth() + 1);
+  const dueLong = format(dueDate, "MMMM dd, yyyy", { locale: idLocale });
+  const statusText = p.status === "berhasil" ? "PAID" : p.status === "pending" ? "PENDING" : "UNPAID";
+  const statusColor = p.status === "berhasil" ? "#16a34a" : p.status === "pending" ? "#d97706" : "#dc2626";
+  const nominal = Number(p.nominal);
+  const paid = p.status === "berhasil" ? nominal : 0;
+  const due = nominal - paid;
+
+  const items = isAktivasi
+    ? [
+        { desc: "Aktivasi Sistem AJMS", detail: "Aktivasi lisensi sistem AJMS selama 1 tahun", qty: 1, price: nominal },
+      ]
+    : [
+        { desc: "Operasional Bulanan", detail: "Biaya operasional & maintenance sistem AJMS 1 bulan", qty: 1, price: nominal },
+      ];
+
+  const rows = items.map((it, i) => `
+    <tr>
+      <td style="padding:14px 8px;border-bottom:1px solid #e5e7eb;font-size:12px;">${i + 1}</td>
+      <td style="padding:14px 8px;border-bottom:1px solid #e5e7eb;font-size:12px;font-weight:600;">${it.desc}</td>
+      <td style="padding:14px 8px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#4b5563;">${it.detail}</td>
+      <td style="padding:14px 8px;border-bottom:1px solid #e5e7eb;font-size:12px;text-align:center;">${it.qty}</td>
+      <td style="padding:14px 8px;border-bottom:1px solid #e5e7eb;font-size:12px;text-align:right;">${new Intl.NumberFormat("en-US",{minimumFractionDigits:2}).format(it.price)}</td>
+      <td style="padding:14px 8px;border-bottom:1px solid #e5e7eb;font-size:12px;text-align:right;font-weight:600;">${new Intl.NumberFormat("en-US",{minimumFractionDigits:2}).format(it.qty * it.price)}</td>
+    </tr>`).join("");
+
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Invoice ${refNo}</title>
   <style>
-    *{box-sizing:border-box;font-family:'Segoe UI',Arial,sans-serif;}
-    body{padding:32px;color:#0f172a;max-width:720px;margin:0 auto;}
-    .header{display:flex;justify-content:space-between;align-items:start;border-bottom:3px solid #0f1b3d;padding-bottom:16px;margin-bottom:24px;}
-    .brand{font-size:22px;font-weight:bold;color:#0f1b3d;}
-    .brand small{display:block;font-size:11px;color:#64748b;font-weight:normal;margin-top:4px;}
-    .title{text-align:right;}
-    .title h1{margin:0;font-size:20px;color:#0f1b3d;letter-spacing:1px;}
-    .title p{margin:4px 0 0;font-size:12px;color:#64748b;}
-    .status{display:inline-block;padding:6px 14px;border-radius:6px;font-weight:bold;font-size:12px;letter-spacing:1px;}
-    .status.ok{background:#dcfce7;color:#166534;border:1px solid #86efac;}
-    .status.pending{background:#fef3c7;color:#92400e;border:1px solid #fcd34d;}
-    .status.fail{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;}
-    table{width:100%;border-collapse:collapse;margin-top:16px;}
-    td{padding:10px 12px;font-size:13px;border-bottom:1px solid #e2e8f0;vertical-align:top;}
-    td.label{color:#64748b;width:200px;}
-    td.value{font-weight:600;}
-    .total-box{margin-top:24px;padding:18px;background:#f1f5f9;border-left:5px solid #0f1b3d;border-radius:4px;}
-    .total-box .lbl{font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:1px;}
-    .total-box .amt{font-size:28px;font-weight:bold;color:#0f1b3d;margin-top:4px;}
-    .footer{margin-top:40px;padding-top:16px;border-top:1px dashed #cbd5e1;font-size:11px;color:#64748b;text-align:center;line-height:1.6;}
-    .signature{margin-top:48px;display:flex;justify-content:flex-end;}
-    .signature .box{text-align:center;width:220px;}
-    .signature .box p{margin:0;font-size:12px;}
-    .signature .box .line{margin-top:60px;border-top:1px solid #0f172a;padding-top:6px;font-weight:600;}
-    @media print{body{padding:16px;}}
+    *{box-sizing:border-box;}
+    body{font-family:'Segoe UI',Arial,sans-serif;color:#111827;margin:0;padding:40px;max-width:900px;margin:0 auto;background:#fff;}
+    .top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;}
+    .brand{display:flex;align-items:center;gap:12px;}
+    .brand .logo{width:44px;height:44px;border:2px solid #111827;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;}
+    .brand .name{font-size:22px;font-weight:800;letter-spacing:1px;}
+    .brand .tag{font-size:11px;color:#6b7280;margin-top:2px;}
+    .invoice-title{font-size:42px;font-weight:800;letter-spacing:2px;}
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:24px;}
+    .info-grid .left{font-size:12px;line-height:1.7;color:#374151;}
+    .info-grid .right{font-size:12px;}
+    .info-grid .right .row{display:flex;justify-content:space-between;padding:4px 0;}
+    .info-grid .right .row .lbl{color:#6b7280;}
+    .info-grid .right .row .val{font-weight:700;}
+    hr{border:none;border-top:1px solid #d1d5db;margin:20px 0;}
+    .billed-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:32px;}
+    .section-title{font-size:12px;font-weight:800;letter-spacing:1px;margin-bottom:10px;}
+    .billed-to{font-size:12px;line-height:1.7;color:#374151;}
+    .summary-box{border:1px solid #d1d5db;padding:16px;border-radius:2px;}
+    .summary-box .st{font-size:12px;font-weight:800;letter-spacing:1px;margin-bottom:8px;}
+    .summary-box p{font-size:11px;line-height:1.6;color:#4b5563;margin:0;}
+    table.items{width:100%;border-collapse:collapse;margin-bottom:20px;}
+    table.items thead th{text-align:left;padding:10px 8px;font-size:11px;font-weight:800;letter-spacing:0.5px;border-bottom:2px solid #111827;color:#111827;}
+    table.items thead th.num{text-align:center;}
+    table.items thead th.right{text-align:right;}
+    .totals-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:16px;}
+    .payment-info .pi-title{font-size:12px;font-weight:800;letter-spacing:1px;margin-bottom:8px;}
+    .payment-info p{font-size:11px;color:#4b5563;line-height:1.6;margin:0 0 6px;}
+    .totals .trow{display:flex;justify-content:space-between;padding:6px 0;font-size:12px;}
+    .totals .trow .lbl{color:#6b7280;}
+    .totals .divider{border-top:1px solid #d1d5db;margin:6px 0;}
+    .totals .total{font-weight:800;font-size:13px;}
+    .totals .paid{color:#4b5563;}
+    .totals .due{background:#dcfce7;padding:10px 12px;font-weight:800;font-size:14px;color:#111827;margin-top:8px;display:flex;justify-content:space-between;}
+    .footer{margin-top:40px;padding-top:16px;border-top:1px solid #e5e7eb;text-align:center;font-size:11px;color:#6b7280;}
+    .footer strong{color:#111827;}
+    @media print{body{padding:20px;}}
   </style></head><body>
-    <div class="header">
-      <div class="brand">AJMS<small>Apartemen Jarrdin Management System<br/>The Jarrdin Cihampelas, Bandung</small></div>
-      <div class="title"><h1>BUKTI PEMBAYARAN</h1><p>No. Ref: ${refNo}</p><p>Tanggal: ${tgl}</p></div>
+
+    <div class="top">
+      <div class="brand">
+        <div class="logo">A</div>
+        <div>
+          <div class="name">AJMS</div>
+          <div class="tag">Apartemen Jarrdin Management System</div>
+        </div>
+      </div>
+      <div class="invoice-title">INVOICE</div>
     </div>
 
-    <div style="margin-bottom:16px;">
-      <span class="status ${p.status === "berhasil" ? "ok" : p.status === "pending" ? "pending" : "fail"}">${statusLabel}</span>
+    <div class="info-grid">
+      <div class="left">
+        <strong>Badan Pengelola PPPSRS The Jarrdin</strong><br/>
+        Jl. Cihampelas No.160,<br/>
+        Cipaganti, Kec. Coblong,<br/>
+        Kota Bandung, Jawa Barat 40131<br/>
+        Indonesia
+      </div>
+      <div class="right">
+        <div class="row"><span class="lbl">Invoice #</span><span class="val">${refNo}</span></div>
+        <div class="row"><span class="lbl">Invoice Date</span><span class="val">${tglLong}</span></div>
+        <div class="row"><span class="lbl">Due Date</span><span class="val">${dueLong}</span></div>
+        <div class="row"><span class="lbl">Status</span><span class="val" style="color:${statusColor};">${statusText}</span></div>
+        <div class="row"><span class="lbl">Order / Project #</span><span class="val">${projectNo}</span></div>
+      </div>
     </div>
 
-    <table>
-      <tr><td class="label">Jenis Pembayaran</td><td class="value">${jenis}</td></tr>
-      <tr><td class="label">Periode</td><td class="value">${p.jenis_pembayaran === "aktivasi" ? "1 Tahun" : "1 Bulan"}</td></tr>
-      <tr><td class="label">Tanggal Bayar</td><td class="value">${tgl}</td></tr>
-      <tr><td class="label">Metode</td><td class="value">Midtrans Payment Gateway (AndreaPrint)</td></tr>
-      <tr><td class="label">Status</td><td class="value">${statusLabel}</td></tr>
-      <tr><td class="label">Catatan</td><td class="value">${p.notes || "-"}</td></tr>
+    <hr/>
+
+    <div class="billed-grid">
+      <div>
+        <div class="section-title">BILLED TO</div>
+        <div class="billed-to">
+          ${p.penanggung_jawab || "Badan Pengelola AJMS"}<br/>
+          The Jarrdin Cihampelas<br/>
+          Bandung, Jawa Barat<br/>
+          Indonesia
+        </div>
+      </div>
+      <div>
+        <div class="summary-box">
+          <div class="st">PROJECT SUMMARY</div>
+          <p>${isAktivasi
+            ? "Invoice ini mencakup biaya aktivasi & lisensi sistem AJMS untuk periode 1 (satu) tahun, termasuk pemeliharaan, pembaruan sistem, dan dukungan teknis."
+            : "Invoice ini mencakup biaya operasional bulanan sistem AJMS, termasuk hosting, maintenance, dan dukungan teknis untuk periode 1 (satu) bulan."}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <table class="items">
+      <thead>
+        <tr>
+          <th class="num" style="width:40px;">NO.</th>
+          <th style="width:22%;">DESCRIPTION</th>
+          <th>DETAILS</th>
+          <th class="num" style="width:60px;">QTY</th>
+          <th class="right" style="width:130px;">UNIT PRICE (IDR)</th>
+          <th class="right" style="width:130px;">AMOUNT (IDR)</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
     </table>
 
-    <div class="total-box">
-      <div class="lbl">Total Pembayaran</div>
-      <div class="amt">${fmt(Number(p.nominal))}</div>
-    </div>
-
-    <div class="signature">
-      <div class="box">
-        <p>Bandung, ${tgl}</p>
-        <p>Hormat kami,</p>
-        <div class="line">Badan Pengelola AJMS</div>
+    <div class="totals-grid">
+      <div class="payment-info">
+        <div class="pi-title">PAYMENT INFORMATION</div>
+        <p>${p.status === "berhasil" ? "Pembayaran telah diterima penuh." : p.status === "pending" ? "Pembayaran sedang diproses." : "Pembayaran belum diterima."}</p>
+        <p>Terima kasih atas kepercayaan Anda.</p>
+        <p style="margin-top:10px;"><strong>Payment Method:</strong> Midtrans (AndreaPrint)</p>
+        ${p.notes ? `<p style="margin-top:6px;"><strong>Catatan:</strong> ${p.notes}</p>` : ""}
+      </div>
+      <div class="totals">
+        <div class="trow"><span class="lbl">SUBTOTAL</span><span>${fmt(nominal)}</span></div>
+        <div class="trow"><span class="lbl">DISCOUNT</span><span>IDR 0.00</span></div>
+        <div class="trow"><span class="lbl">TAX (0%)</span><span>IDR 0.00</span></div>
+        <div class="divider"></div>
+        <div class="trow total"><span>TOTAL</span><span>${fmt(nominal)}</span></div>
+        <div class="trow paid"><span>AMOUNT PAID</span><span>(${fmt(paid)})</span></div>
+        <div class="due"><span>AMOUNT DUE</span><span>${fmt(due)}</span></div>
       </div>
     </div>
 
     <div class="footer">
-      Dokumen ini merupakan bukti pembayaran sah yang dihasilkan secara otomatis oleh sistem AJMS.<br/>
-      Untuk verifikasi, hubungi Badan Pengelola The Jarrdin Cihampelas.
+      Invoice ini sah dan berlaku sebagai bukti pembayaran yang sah.<br/>
+      <strong>Badan Pengelola PPPSRS The Jarrdin — Sistem AJMS</strong>
     </div>
 
     <script>window.onload=function(){setTimeout(function(){window.print();},300);}</script>
   </body></html>`;
-  const w = window.open("", "_blank", "width=900,height=700");
+  const w = window.open("", "_blank", "width=960,height=800");
   if (!w) return;
   w.document.write(html);
   w.document.close();
