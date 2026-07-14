@@ -271,6 +271,75 @@ export type Database = {
         }
         Relationships: []
       }
+      berita_acara_koreksi: {
+        Row: {
+          action_type: string
+          applied: boolean
+          attachment_url: string | null
+          ba_number: string
+          created_at: string
+          id: string
+          old_data: Json | null
+          proposed_new_data: Json | null
+          reason: string
+          requested_by: string | null
+          requested_by_name: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewed_by_name: string | null
+          signature_url: string | null
+          status: string
+          target_record_id: string
+          target_table: string
+          updated_at: string
+        }
+        Insert: {
+          action_type?: string
+          applied?: boolean
+          attachment_url?: string | null
+          ba_number: string
+          created_at?: string
+          id?: string
+          old_data?: Json | null
+          proposed_new_data?: Json | null
+          reason: string
+          requested_by?: string | null
+          requested_by_name?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewed_by_name?: string | null
+          signature_url?: string | null
+          status?: string
+          target_record_id: string
+          target_table: string
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          applied?: boolean
+          attachment_url?: string | null
+          ba_number?: string
+          created_at?: string
+          id?: string
+          old_data?: Json | null
+          proposed_new_data?: Json | null
+          reason?: string
+          requested_by?: string | null
+          requested_by_name?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewed_by_name?: string | null
+          signature_url?: string | null
+          status?: string
+          target_record_id?: string
+          target_table?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bicycles: {
         Row: {
           brand: string
@@ -1755,6 +1824,48 @@ export type Database = {
           },
         ]
       }
+      finance_audit_log: {
+        Row: {
+          action: string
+          changed_by: string | null
+          changed_by_name: string | null
+          changed_by_role: string | null
+          created_at: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          reason: string | null
+          record_id: string | null
+          table_name: string
+        }
+        Insert: {
+          action: string
+          changed_by?: string | null
+          changed_by_name?: string | null
+          changed_by_role?: string | null
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          reason?: string | null
+          record_id?: string | null
+          table_name: string
+        }
+        Update: {
+          action?: string
+          changed_by?: string | null
+          changed_by_name?: string | null
+          changed_by_role?: string | null
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          reason?: string | null
+          record_id?: string | null
+          table_name?: string
+        }
+        Relationships: []
+      }
       foreign_guest_reports: {
         Row: {
           birth_date: string
@@ -3139,6 +3250,42 @@ export type Database = {
         }
         Relationships: []
       }
+      unit_billing_status: {
+        Row: {
+          cutoff_at: string | null
+          cutoff_reason: string | null
+          id: string
+          last_paid_period: string | null
+          outstanding_amount: number
+          overdue_months: number
+          status: string
+          unit_id: string
+          updated_at: string
+        }
+        Insert: {
+          cutoff_at?: string | null
+          cutoff_reason?: string | null
+          id?: string
+          last_paid_period?: string | null
+          outstanding_amount?: number
+          overdue_months?: number
+          status?: string
+          unit_id: string
+          updated_at?: string
+        }
+        Update: {
+          cutoff_at?: string | null
+          cutoff_reason?: string | null
+          id?: string
+          last_paid_period?: string | null
+          outstanding_amount?: number
+          overdue_months?: number
+          status?: string
+          unit_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       units: {
         Row: {
           area_sqm: number | null
@@ -3616,6 +3763,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_ba_number: { Args: never; Returns: string }
       get_user_unit_id: { Args: { _user_id: string }; Returns: string }
       get_user_unit_ids: { Args: { _user_id: string }; Returns: string[] }
       has_role: {
@@ -3627,6 +3775,11 @@ export type Database = {
       }
       is_admin_or_above: { Args: { _user_id: string }; Returns: boolean }
       is_staff_or_above: { Args: { _user_id: string }; Returns: boolean }
+      is_super_admin_or_master: { Args: { _user_id: string }; Returns: boolean }
+      refresh_unit_billing_status: {
+        Args: { _unit_id?: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
@@ -3658,7 +3811,7 @@ export type Database = {
       card_status: "active" | "inactive" | "lost" | "damaged"
       complaint_status: "pending" | "proses" | "selesai"
       news_status: "draft" | "published"
-      payment_status: "unpaid" | "paid" | "overdue" | "partial"
+      payment_status: "unpaid" | "paid" | "overdue" | "partial" | "cicilan"
       permit_status: "pending" | "approved" | "rejected"
       work_order_status: "pending" | "in_progress" | "completed"
     }
@@ -3819,7 +3972,7 @@ export const Constants = {
       card_status: ["active", "inactive", "lost", "damaged"],
       complaint_status: ["pending", "proses", "selesai"],
       news_status: ["draft", "published"],
-      payment_status: ["unpaid", "paid", "overdue", "partial"],
+      payment_status: ["unpaid", "paid", "overdue", "partial", "cicilan"],
       permit_status: ["pending", "approved", "rejected"],
       work_order_status: ["pending", "in_progress", "completed"],
     },
