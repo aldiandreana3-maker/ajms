@@ -117,6 +117,56 @@ export default function Finance() {
             </Card>
           )}
 
+          {/* Berita Acara Koreksi */}
+          {canManage && (
+            <Card
+              className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all duration-200 group"
+              onClick={() => navigate("/kepengelolaan/finance/berita-acara")}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
+                    <FileWarning className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Berita Acara Koreksi</CardTitle>
+                    <CardDescription>Ajukan & setujui koreksi transaksi</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Admin mengajukan koreksi atau reversal transaksi. Hanya Super Admin yang dapat menyetujui.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Audit Log */}
+          {canManage && (
+            <Card
+              className="cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all duration-200 group"
+              onClick={() => navigate("/kepengelolaan/finance/audit-log")}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
+                    <History className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Audit Log Finance</CardTitle>
+                    <CardDescription>Riwayat semua perubahan data keuangan</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Lacak siapa mengubah apa dan kapan — tagihan, pembayaran, kasir, jurnal, pengeluaran.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Akuntansi - Admin */}
           {canManage && (
             <Card
