@@ -49,6 +49,8 @@ import Rekonsiliasi from "./pages/kepengelolaan/akuntansi/Rekonsiliasi";
 import LaporanLabaRugi from "./pages/kepengelolaan/akuntansi/LaporanLabaRugi";
 import LaporanNeraca from "./pages/kepengelolaan/akuntansi/LaporanNeraca";
 import LaporanArusKas from "./pages/kepengelolaan/akuntansi/LaporanArusKas";
+import BeritaAcara from "./pages/kepengelolaan/finance/BeritaAcara";
+import FinanceAuditLog from "./pages/kepengelolaan/finance/AuditLog";
 import HrdGa from "./pages/kepengelolaan/HrdGa";
 import RekapKaryawan from "./pages/kepengelolaan/RekapKaryawan";
 import SlipGaji from "./pages/kepengelolaan/SlipGaji";
@@ -146,6 +148,8 @@ const App = () => (
               <Route path="/kepengelolaan/finance/akuntansi/laporan-laba-rugi" element={guarded(<LaporanLabaRugi />)} />
               <Route path="/kepengelolaan/finance/akuntansi/laporan-neraca" element={guarded(<LaporanNeraca />)} />
               <Route path="/kepengelolaan/finance/akuntansi/laporan-arus-kas" element={guarded(<LaporanArusKas />)} />
+              <Route path="/kepengelolaan/finance/berita-acara" element={guarded(<BeritaAcara />)} />
+              <Route path="/kepengelolaan/finance/audit-log" element={guarded(<FinanceAuditLog />)} />
               <Route path="/kepengelolaan/hrd-ga" element={guarded(<HrdGa />)} />
               <Route path="/kepengelolaan/hrd-ga/rekap" element={guarded(<RekapKaryawan />)} />
               <Route path="/kepengelolaan/hrd-ga/slip-gaji" element={guarded(<SlipGaji />)} />
