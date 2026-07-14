@@ -1,59 +1,75 @@
-## Tambah Fitur Pengaturan Jadwal Kerja (Shift) di HRD & GA
 
-Menu baru "Jadwal Kerja" pada dashboard HRD & GA untuk mengelola shift karyawan dengan kalender view, integrasi ke absensi, dan notifikasi otomatis.
+# Rencana Penyempurnaan Finance
 
-### 1. Database (migration)
+Bekerja bertahap. Turn ini fokus pondasi DB + fitur inti. Modul lanjutan (Aging AR & Depresiasi) menyusul setelah fondasi tervalidasi.
 
-**Tabel baru:**
+## Fase 1 — Database & Backend (migration)
 
-- `shift_definitions` — master shift
-  - `name` (Pagi/Siang/Malam/custom), `start_time`, `end_time`, `late_tolerance_minutes` (default 15), `working_days` (int[] 0-6, Min-Sab), `color` (hex token), `is_default`, `is_active`, `created_by`
-  - Seed: Pagi (07:00–15:00, biru), Siang (15:00–23:00, oranye), Malam (23:00–07:00, ungu)
+Buat/perkuat tabel:
 
-- `employee_shift_schedules` — assignment per karyawan per tanggal
-  - `user_id`, `employee_name`, `shift_id`, `schedule_date`, `notes`, `created_by`
-  - Unique (`user_id`, `schedule_date`)
+1. `finance_audit_log` — audit universal untuk semua tabel finance (bills, bill_payments, cashier_transactions, journal_entries, expenses).
+   - Fields: table_name, record_id, action (create/update/delete/reverse), old_data (jsonb), new_data (jsonb), changed_by, changed_by_name, changed_by_role, ip_address, created_at.
+   - Trigger otomatis di 5 tabel di atas → tulis ke log.
 
-- `shift_rotation_rules` — rotasi otomatis (opsional)
-  - `user_ids` (uuid[]), `shift_ids` (uuid[]), `start_date`, `end_date`, `rotation_type` (daily/weekly/monthly), `cycle_days`, `is_active`
+2. `berita_acara_koreksi` — request koreksi/reversal.
+   - Fields: ba_number (auto `BA-YYMMDD-XXX`), target_table, target_record_id, requested_by, requested_by_name, reason (text), old_data (jsonb), proposed_new_data (jsonb), attachment_url, signature_url, status (`pending`/`approved`/`rejected`), reviewed_by, reviewed_by_name, reviewed_at, review_notes.
+   - Function `generate_ba_number()` untuk penomoran harian.
+   - Trigger: saat status → `approved`, otomatis apply perubahan ke record target + log ke `finance_audit_log` (action=`reverse` / `update`).
 
-**RLS:**
-- Admin/HRD (`is_admin_or_above` atau `staff_hrd_ga`): full manage
-- Staff lain: hanya SELECT jadwal milik sendiri (`user_id = auth.uid()`)
+3. `unit_billing_status` — status cut-off unit.
+   - Fields: unit_id (unique), status (`aktif`/`peringatan`/`cut_off`), overdue_months, last_paid_month, cutoff_at, cutoff_reason, updated_at.
+   - Function `refresh_unit_billing_status()` — hitung bulan tunggakan berturut-turut dari `bills` (bill_type=IPL, unpaid). Set `cut_off` bila ≥ 3 bulan.
 
-**Notifikasi:** trigger AFTER INSERT/UPDATE pada `employee_shift_schedules` → insert ke `broadcast_messages` (target_type=`user`, target_value=[user_id]) dengan judul "Perubahan Jadwal Shift".
+4. Perkuat `bills` untuk cicilan (kolom sudah ada `paid_amount`) — tambah trigger auto-update `payment_status`:
+   - `paid_amount = 0` → `belum_bayar`
+   - `0 < paid_amount < amount` → `cicilan`
+   - `paid_amount ≥ amount` → `lunas`
 
-**Integrasi absensi:** kolom `shift_id` ditambahkan ke `employee_attendance`. Saat check-in, sistem cari jadwal hari itu, hitung status (`hadir`/`terlambat`) berdasarkan `start_time + late_tolerance` shift tersebut.
+5. RLS/GRANT lengkap; hanya Super Admin/Master Dev boleh `UPDATE` bills/bill_payments/cashier_transactions langsung. Admin/staff_finance hanya `INSERT`. `DELETE` diblokir kecuali via approved BA.
 
-### 2. Halaman & Komponen Baru
+## Fase 2 — UI Finance
 
-- `src/pages/kepengelolaan/hrd-ga/JadwalKerja.tsx` — halaman utama (Admin/HRD only) dengan 3 tab:
-  1. **Kalender** — calendar view bulanan (pakai `react-day-picker` yg sudah ada), tiap sel menampilkan badge berwarna shift per karyawan; klik sel → dialog assign/edit
-  2. **Pengaturan Shift** — CRUD `shift_definitions` (form: nama, jam masuk/pulang, toleransi, hari kerja multi-select, color picker)
-  3. **Rotasi & Assignment** — assign shift batch (pilih karyawan + range tanggal + pola: harian/mingguan/bulanan + rotasi auto)
+**Halaman baru** `src/pages/kepengelolaan/finance/BeritaAcara.tsx`
+- List BA (pending/approved/rejected) dengan filter.
+- Tombol "Buat Berita Acara" (Admin/Kasir) — form: pilih transaksi target, alasan, proposed changes, upload lampiran, canvas tanda tangan.
+- Tombol "Approve/Reject" (Super Admin only) + WA notifikasi via existing `send-whatsapp-fonnte` edge function.
+- Cetak BA sebagai PDF (window.print template).
 
-- `src/pages/karyawan/JadwalSaya.tsx` — read-only calendar untuk karyawan lihat shift sendiri (kartu di EmployeeGrid)
+**Halaman baru** `src/pages/kepengelolaan/finance/AuditLog.tsx`
+- Riwayat semua perubahan finance, filter by table/user/date, side-by-side diff old vs new.
 
-- Komponen pendukung di `src/components/shift/`:
-  - `ShiftFormDialog.tsx`
-  - `ShiftCalendarView.tsx`
-  - `AssignShiftDialog.tsx`
-  - `ShiftBadge.tsx` (pill berwarna per shift)
+**Update** `BillTable`, `CashierTransactions`, kartu invoice:
+- Sembunyikan tombol Edit/Delete untuk non-Super-Admin, ganti dengan tombol "Ajukan Koreksi (BA)".
+- Tambah dialog "Bayar Sebagian" — input nominal < total, catat ke `bill_payments`, update `paid_amount`, tampilkan sisa tunggakan.
 
-- Hooks: `src/hooks/useShifts.ts`, `src/hooks/useShiftSchedules.ts`
+**Update** kartu Finance hub — tambah 2 card: "Berita Acara Koreksi" & "Audit Log".
 
-### 3. Integrasi UI
+## Fase 3 — Cut-off Automation
 
-- Tambah card "Jadwal Kerja" (icon `CalendarClock`, warna warning) di `src/pages/kepengelolaan/HrdGa.tsx` → route `/kepengelolaan/hrd-ga/jadwal-kerja`
-- Tambah card "Jadwal Saya" di `EmployeeGrid.tsx` (visible untuk semua staff) → route `/karyawan/jadwal-saya`
-- Routes baru di `src/App.tsx` (ProtectedRoute)
-- Sidebar: tambah submenu jadwal kerja jika ada submenu HRD
+**Edge function** `supabase/functions/check-unit-cutoff/index.ts` (cron harian):
+- Panggil `refresh_unit_billing_status()`.
+- Unit yang baru masuk status `cut_off` → kirim WA ke penghuni + broadcast ke admin.
 
-### 4. Integrasi Absensi (update `useEmployeeAttendance.ts`)
+**Guard baru** `src/components/shared/CutoffGuard.tsx`:
+- Cek `unit_billing_status` user aktif. Bila `cut_off`, blokir submit form di: Keluhan, Paket, Izin Kerja, Kartu Akses, Keluar Masuk Barang (tampilkan banner "Unit Anda cut-off — lunasi tunggakan").
+- Tetap boleh view & bayar tagihan.
 
-Pada `useCheckIn`: query `employee_shift_schedules` untuk user+today, ambil `shift.start_time + late_tolerance`, set status `terlambat` jika check-in > batas, simpan `shift_id` ke attendance row. Fallback ke logika lama jika tidak ada jadwal.
+## Fase 4 — Laporan Lanjutan (turn berikutnya)
 
-### Catatan Teknis
-- Warna shift disimpan sebagai HSL token-friendly hex; rendering pakai inline style background untuk badge (sudah pola yang ada)
-- Rotasi otomatis: dihitung client-side saat assign batch lalu insert banyak baris ke `employee_shift_schedules` (idempotent via upsert on conflict user_id+date)
-- Lembur tetap independen; tampilkan jadwal sebagai konteks di rekap karyawan (read-only join nanti)
+- Halaman `AgingAR.tsx` — bucket 0-30 / 31-60 / 61-90 / >90 hari, group per unit, export Excel.
+- Halaman `DepresiasiAset.tsx` — tabel aset (nama, tanggal perolehan, harga, umur ekonomis, metode straight-line), auto-post jurnal depresiasi bulanan ke `journal_entries`.
+
+## Fase 5 — Test & Verifikasi
+
+- Playwright: submit cicilan → cek sisa, buat BA → approve sbg super admin → verifikasi record berubah + log tercatat.
+
+---
+
+## Catatan Teknis
+
+- BA approval flow: DB trigger jadi single source of truth agar tak bisa diakali dari client.
+- Semua perubahan `bills.amount` / `bill_payments.amount` di luar alur BA akan ditolak trigger (raise exception bila `current_setting('app.bypass_audit', true) IS NULL AND user bukan master_dev`).
+- WA menggunakan FONNTE token yang sudah tersedia.
+- Notifikasi Super Admin ambil daftar user dari `user_roles` role `super_admin`/`master_dev`.
+
+Fase 1–3 dikerjakan turn ini. Konfirmasi lanjut?
