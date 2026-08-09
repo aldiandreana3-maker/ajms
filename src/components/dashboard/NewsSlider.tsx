@@ -79,9 +79,14 @@ export function NewsSlider({ news }: NewsSliderProps) {
 
       <div
         ref={scrollRef}
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+        onTouchStart={() => setPaused(true)}
+        onTouchEnd={() => setPaused(false)}
         className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
+
         {news.map((item) => (
           <article
             key={item.id}
