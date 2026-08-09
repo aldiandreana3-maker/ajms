@@ -377,10 +377,16 @@ export function QuickRenewParkingDialog({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,.heic,.heif,application/pdf"
                   className="hidden"
-                  onChange={(e) => pickFile(e.target.files?.[0] || null)}
+                  onChange={(e) => { pickFile(e.target.files?.[0] || null); e.target.value = ""; }}
                 />
+                {file && (
+                  <p className="text-xs text-muted-foreground">
+                    {file.name} — {(file.size / 1024).toFixed(0)} KB
+                  </p>
+                )}
+
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
