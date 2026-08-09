@@ -37,6 +37,22 @@ export function NewsSlider({ news }: NewsSliderProps) {
     return () => el.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Auto-slide ke kiri setiap 3 detik (berhenti saat dialog detail terbuka / hover)
+  const [paused, setPaused] = useState(false);
+  useEffect(() => {
+    if (open || paused || news.length <= 1) return;
+    const id = setInterval(() => {
+      const el = scrollRef.current;
+      if (!el) return;
+      const cardWidth = (el.firstElementChild?.clientWidth || 320) + 16;
+      const nextLeft = el.scrollLeft + cardWidth;
+      const maxLeft = el.scrollWidth - el.clientWidth - 4;
+      el.scrollTo({ left: nextLeft > maxLeft ? 0 : nextLeft, behavior: "smooth" });
+    }, 3000);
+    return () => clearInterval(id);
+  }, [open, paused, news.length]);
+
+
   const openDetail = (item: NewsItem) => {
     if (!item.content) return;
     setSelected({
@@ -63,9 +79,14 @@ export function NewsSlider({ news }: NewsSliderProps) {
 
       <div
         ref={scrollRef}
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+        onTouchStart={() => setPaused(true)}
+        onTouchEnd={() => setPaused(false)}
         className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
+
         {news.map((item) => (
           <article
             key={item.id}

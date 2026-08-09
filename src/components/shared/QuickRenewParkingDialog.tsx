@@ -121,9 +121,14 @@ export function QuickRenewParkingDialog({
 
   const pickFile = (f: File | null) => {
     if (!f) return;
+    if (f.size > 15 * 1024 * 1024) {
+      toast.error("Ukuran file terlalu besar (maks 15MB).");
+      return;
+    }
     setFile(f);
-    setPreview(URL.createObjectURL(f));
+    setPreview(f.type.startsWith("image/") ? URL.createObjectURL(f) : null);
   };
+
 
   const copyRekening = () => {
     navigator.clipboard.writeText(REKENING.nomor);
@@ -377,10 +382,16 @@ export function QuickRenewParkingDialog({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,.heic,.heif,application/pdf"
                   className="hidden"
-                  onChange={(e) => pickFile(e.target.files?.[0] || null)}
+                  onChange={(e) => { pickFile(e.target.files?.[0] || null); e.target.value = ""; }}
                 />
+                {file && (
+                  <p className="text-xs text-muted-foreground">
+                    {file.name} — {(file.size / 1024).toFixed(0)} KB
+                  </p>
+                )}
+
               </div>
 
               <div className="flex justify-end gap-2 pt-2">

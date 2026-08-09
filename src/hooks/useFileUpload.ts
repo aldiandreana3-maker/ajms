@@ -26,24 +26,29 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
         return null;
       }
 
-      // Validasi format (untuk gambar: hanya JPG/JPEG/PNG; lainnya dilewati)
-      if (file.type.startsWith("image/")) {
-        const ok = ["image/jpeg", "image/jpg", "image/png"].includes(file.type);
-        if (!ok) {
-          toast.error("Format foto tidak didukung. Gunakan JPG, JPEG, atau PNG.");
-          return null;
-        }
+      // Validasi ukuran maksimal 15MB
+      if (file.size > 15 * 1024 * 1024) {
+        toast.error("Ukuran file terlalu besar (maks 15MB).");
+        return null;
       }
 
-      // Compress image if enabled and file is an image
+      const isImage = file.type.startsWith("image/") || /\.(jpe?g|png|webp|heic|heif|gif|bmp)$/i.test(file.name);
+      const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+      if (!isImage && !isPdf) {
+        toast.error("Format file tidak didukung. Gunakan foto (JPG/PNG/HEIC/WEBP) atau PDF.");
+        return null;
+      }
+
+      // Compress/convert image (HEIC/WEBP → JPG). Jika gagal, pakai file asli.
       let fileToUpload = file;
-      if (compressImages && file.type.startsWith("image/")) {
+      if (compressImages && isImage) {
         try {
           fileToUpload = await compressImage(file, maxWidth, maxHeight, quality);
         } catch (compressionError) {
           console.warn("Image compression failed, using original:", compressionError);
         }
       }
+
 
       const userId = sessionData.session.user.id;
       const fileExt = (fileToUpload.name.split(".").pop() || "bin").toLowerCase();
