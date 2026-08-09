@@ -121,9 +121,14 @@ export function QuickRenewParkingDialog({
 
   const pickFile = (f: File | null) => {
     if (!f) return;
+    if (f.size > 15 * 1024 * 1024) {
+      toast.error("Ukuran file terlalu besar (maks 15MB).");
+      return;
+    }
     setFile(f);
-    setPreview(URL.createObjectURL(f));
+    setPreview(f.type.startsWith("image/") ? URL.createObjectURL(f) : null);
   };
+
 
   const copyRekening = () => {
     navigator.clipboard.writeText(REKENING.nomor);
