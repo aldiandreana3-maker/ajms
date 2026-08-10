@@ -191,21 +191,4 @@
   }
 }
 
-@keyframes marquee-left {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
-.news-marquee {
-  animation: marquee-left var(--marquee-duration, 30s) linear infinite;
-}
-
-.news-marquee:hover,
-.news-marquee.is-paused {
-  animation-play-state: paused;
-}
 

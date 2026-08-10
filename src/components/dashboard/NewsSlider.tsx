@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Calendar, ArrowRight, Newspaper } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { NewsDetailDialog, type NewsDetailItem } from "./NewsDetailDialog";
 
 interface NewsItem {
@@ -23,6 +22,8 @@ export function NewsSlider({ news }: NewsSliderProps) {
   const [selected, setSelected] = useState<NewsDetailItem | null>(null);
   const [open, setOpen] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [index, setIndex] = useState(0);
+  const trackRef = useRef<HTMLDivElement>(null);
 
   const openDetail = (item: NewsItem) => {
     if (!item.content) return;
@@ -39,9 +40,13 @@ export function NewsSlider({ news }: NewsSliderProps) {
     setOpen(true);
   };
 
-  const shouldAnimate = news.length > 1 && !open && !paused;
-  // 3 detik per kartu agar semua berita bergantian maju ke kiri
-  const durationSeconds = Math.max(news.length * 3, 6);
+  useEffect(() => {
+    if (news.length <= 1 || open || paused) return;
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % news.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [news.length, open, paused]);
 
   return (
     <div className="space-y-3">
@@ -60,25 +65,16 @@ export function NewsSlider({ news }: NewsSliderProps) {
         onTouchEnd={() => setPaused(false)}
       >
         <div
-          className={cn(
-            "flex gap-4 w-max",
-            shouldAnimate && "news-marquee",
-            paused && "is-paused"
-          )}
-          style={
-            {
-              "--marquee-duration": `${durationSeconds}s`,
-            } as React.CSSProperties
-          }
+          ref={trackRef}
+          className="flex gap-4 transition-transform duration-500 ease-in-out"
+          style={{ transform: `translateX(-${index * 340}px)` }}
         >
-          {/* Duplikat konten untuk loop seamless */}
-          {[...news, ...news].map((item, idx) => (
+          {news.map((item) => (
             <article
-              key={`${item.id}-${idx}`}
+              key={item.id}
               onClick={() => openDetail(item)}
               className="flex-shrink-0 w-[320px] sm:w-[380px] lg:w-[440px] rounded-2xl overflow-hidden bg-card border border-border shadow-card cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
             >
-              {/* Banner image — BCA-style 16:9 */}
               <div className="relative w-full aspect-[16/9] bg-gradient-to-br from-primary/20 to-info/20 overflow-hidden">
                 {item.image_url ? (
                   <img
@@ -118,3 +114,4 @@ export function NewsSlider({ news }: NewsSliderProps) {
     </div>
   );
 }
+
