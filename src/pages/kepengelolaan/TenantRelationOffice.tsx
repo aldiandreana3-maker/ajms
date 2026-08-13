@@ -9,6 +9,13 @@ import { Button } from "@/components/ui/button";
 const troServices = [
   {
     icon: UserCheck,
+    title: "Pemutakhiran Data Penghuni",
+    description: "Monitoring pemutakhiran data penghuni per unit",
+    color: "accent",
+    path: "/kepengelolaan/tro/pemutakhiran-data",
+  },
+  {
+    icon: UserCheck,
     title: "Data Penghuni",
     description: "Kelola data penghuni apartemen",
     color: "primary",
