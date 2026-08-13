@@ -88,6 +88,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const canAccessKepengelolaan = fullAccess || role === "staff_purchasing" || visibleKepengelolaan.length > 0;
   const canAccessFinance = !!user; // All logged-in users can access Finance
 
+  // Badge status pemutakhiran data penghuni
+  const { data: myUpdate } = useMyPenghuniUpdate();
+  const dataUpdated = myUpdate?.status === "sudah_diperbarui";
+
   // Live Chat unread badge for admins
   const canSeeAdminChat = isAdmin;
   const { data: convs = [] } = useAdminConversations({ enabled: canSeeAdminChat });
