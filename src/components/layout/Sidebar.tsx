@@ -225,6 +225,43 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           </>
         )}
 
+        {/* Layanan Kepenghunian shortcut for penghuni/agent */}
+        {!canAccessKepengelolaan && !!user && (
+          <>
+            {!collapsed && (
+              <div className="pt-4 pb-2">
+                <span className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider px-3">
+                  Layanan Kepenghunian
+                </span>
+              </div>
+            )}
+            <NavLink
+              to="/kepenghunian/pemutakhiran-data"
+              className={cn(
+                "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group",
+                location.pathname === "/kepenghunian/pemutakhiran-data"
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              )}
+            >
+              <ClipboardCheck className={cn("w-5 h-5 flex-shrink-0", collapsed && "mx-auto")} />
+              {!collapsed && (
+                <>
+                  <span className="font-medium text-sm truncate flex-1">Pemutakhiran Data Penghuni</span>
+                  <span
+                    className={cn(
+                      "text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap",
+                      dataUpdated ? "bg-success text-success-foreground" : "bg-warning text-white"
+                    )}
+                  >
+                    {dataUpdated ? "🟢" : "🟠"}
+                  </span>
+                </>
+              )}
+            </NavLink>
+          </>
+        )}
+
         {/* Tagihan Saya shortcut for penghuni/agent (limited access users) */}
         {!canAccessKepengelolaan && canAccessFinance && (
           <NavLink
