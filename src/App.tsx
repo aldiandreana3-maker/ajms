@@ -128,8 +128,10 @@ const App = () => (
               <Route path="/kepenghunian/tamu-asing" element={guarded(<TamuAsing />)} />
               <Route path="/kepenghunian/work-order" element={guarded(<WorkOrder />)} />
               <Route path="/kepenghunian/wa-blast" element={guarded(<WaBlast />)} />
+              <Route path="/kepenghunian/pemutakhiran-data" element={<PemutakhiranData />} />
               <Route path="/kepengelolaan/data-penghuni" element={guarded(<DataPenghuni />)} />
               <Route path="/kepengelolaan/tro" element={guarded(<TenantRelationOffice />)} />
+              <Route path="/kepengelolaan/tro/pemutakhiran-data" element={<PemutakhiranDataTRO />} />
               <Route path="/kepengelolaan/finance" element={guarded(<Finance />)} />
               <Route path="/kepengelolaan/finance/kasir" element={guarded(<SistemKasir />)} />
               <Route path="/kepengelolaan/finance/kelistrikan" element={guarded(<Kelistrikan />)} />
