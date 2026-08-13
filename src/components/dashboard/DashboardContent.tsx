@@ -16,6 +16,8 @@ import { WorkReportChart } from "./WorkReportChart";
 import { EmployeeGrid } from "./EmployeeGrid";
 import { EditStatDialog } from "./EditStatDialog";
 import { StorageWarning } from "./StorageWarning";
+import { PemutakhiranDataModal } from "@/components/shared/PemutakhiranDataModal";
+import { useMyPenghuniUpdate } from "@/hooks/usePenghuniUpdates";
 
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useDashboardSettings } from "@/hooks/useDashboardSettings";
@@ -40,6 +42,7 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
   const { data: newsData, isLoading: newsLoading } = usePublishedNews();
   const { user, isSuperAdmin, isLimitedAccess } = useAuth();
   const navigate = useNavigate();
+  const { data: myUpdate } = useMyPenghuniUpdate();
 
   const [editDialog, setEditDialog] = useState<EditDialogState>({
     open: false,
@@ -122,6 +125,8 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
 
   return (
     <div className="space-y-6">
+      <PemutakhiranDataModal />
+
       {/* Welcome Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -132,6 +137,22 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
         </div>
         
       </div>
+
+      {/* Reminder pemutakhiran data penghuni */}
+      {user && isLimitedAccess && myUpdate?.status !== "sudah_diperbarui" && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border border-warning/40 bg-warning/10">
+          <p className="flex-1 text-sm text-foreground">
+            ⚠️ Data penghuni unit Anda belum diperbarui. Silakan lakukan pemutakhiran data untuk
+            memastikan pelayanan kepenghunian berjalan dengan baik.
+          </p>
+          <button
+            onClick={() => navigate("/kepenghunian/pemutakhiran-data")}
+            className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+          >
+            Perbarui Sekarang
+          </button>
+        </div>
+      )}
 
       {/* Storage Warning for Super Admin */}
       <StorageWarning />

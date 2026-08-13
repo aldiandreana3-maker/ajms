@@ -26,10 +26,12 @@ import {
   HardHat,
   ShoppingCart,
   Monitor,
+  ClipboardCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminConversations } from "@/hooks/useLiveChat";
+import { useMyPenghuniUpdate } from "@/hooks/usePenghuniUpdates";
 import { canAccessPath, isFullAccessRole, type AppRole } from "@/lib/rolePermissions";
 import {
   Collapsible,
@@ -86,6 +88,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const visibleKepengelolaan = kepengelolaanItems.filter((it) => canAccessPath(r, it.path));
   const canAccessKepengelolaan = fullAccess || role === "staff_purchasing" || visibleKepengelolaan.length > 0;
   const canAccessFinance = !!user; // All logged-in users can access Finance
+
+  // Badge status pemutakhiran data penghuni
+  const { data: myUpdate } = useMyPenghuniUpdate();
+  const dataUpdated = myUpdate?.status === "sudah_diperbarui";
 
   // Live Chat unread badge for admins
   const canSeeAdminChat = isAdmin;
@@ -222,6 +228,43 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 </CollapsibleContent>
               </Collapsible>
             )}
+          </>
+        )}
+
+        {/* Layanan Kepenghunian shortcut for penghuni/agent */}
+        {!canAccessKepengelolaan && !!user && (
+          <>
+            {!collapsed && (
+              <div className="pt-4 pb-2">
+                <span className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider px-3">
+                  Layanan Kepenghunian
+                </span>
+              </div>
+            )}
+            <NavLink
+              to="/kepenghunian/pemutakhiran-data"
+              className={cn(
+                "flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group",
+                location.pathname === "/kepenghunian/pemutakhiran-data"
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              )}
+            >
+              <ClipboardCheck className={cn("w-5 h-5 flex-shrink-0", collapsed && "mx-auto")} />
+              {!collapsed && (
+                <>
+                  <span className="font-medium text-sm truncate flex-1">Pemutakhiran Data Penghuni</span>
+                  <span
+                    className={cn(
+                      "text-[10px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap",
+                      dataUpdated ? "bg-success text-success-foreground" : "bg-warning text-white"
+                    )}
+                  >
+                    {dataUpdated ? "🟢" : "🟠"}
+                  </span>
+                </>
+              )}
+            </NavLink>
           </>
         )}
 

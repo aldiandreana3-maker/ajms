@@ -19,6 +19,13 @@ interface KepenghunianSectionProps {
 
 const services = [
   {
+    icon: ClipboardCheck,
+    title: "Pemutakhiran Data Penghuni",
+    description: "Perbarui data penghuni unit Anda",
+    color: "accent",
+    path: "/kepenghunian/pemutakhiran-data",
+  },
+  {
     icon: Car,
     title: "Daftar Abonemen Parkir",
     description: "Kelola langganan parkir penghuni",
