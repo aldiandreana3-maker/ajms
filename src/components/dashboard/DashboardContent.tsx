@@ -16,6 +16,8 @@ import { WorkReportChart } from "./WorkReportChart";
 import { EmployeeGrid } from "./EmployeeGrid";
 import { EditStatDialog } from "./EditStatDialog";
 import { StorageWarning } from "./StorageWarning";
+import { PemutakhiranDataModal } from "@/components/shared/PemutakhiranDataModal";
+import { useMyPenghuniUpdate } from "@/hooks/usePenghuniUpdates";
 
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import { useDashboardSettings } from "@/hooks/useDashboardSettings";
