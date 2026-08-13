@@ -2722,6 +2722,137 @@ export type Database = {
           },
         ]
       }
+      penghuni_update_history: {
+        Row: {
+          changed_by: string | null
+          changed_by_name: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          penghuni_update_id: string | null
+          unit_number: string | null
+        }
+        Insert: {
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          penghuni_update_id?: string | null
+          unit_number?: string | null
+        }
+        Update: {
+          changed_by?: string | null
+          changed_by_name?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          penghuni_update_id?: string | null
+          unit_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "penghuni_update_history_penghuni_update_id_fkey"
+            columns: ["penghuni_update_id"]
+            isOneToOne: false
+            referencedRelation: "penghuni_updates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      penghuni_updates: {
+        Row: {
+          balita_name: string | null
+          created_at: string
+          declaration_accepted: boolean
+          email: string | null
+          emergency_name: string | null
+          emergency_phone: string | null
+          emergency_relation: string | null
+          full_name: string
+          health_name: string | null
+          health_note: string | null
+          ibu_hamil_name: string | null
+          id: string
+          lama_tinggal: string | null
+          lansia_name: string | null
+          last_updated_at: string | null
+          other_condition_note: string | null
+          owner_agent_name: string | null
+          penghuni_status: string | null
+          phone: string | null
+          special_conditions: string[]
+          status: string
+          tower: string | null
+          unit_number: string
+          updated_at: string
+          updated_by: string | null
+          updated_by_name: string | null
+        }
+        Insert: {
+          balita_name?: string | null
+          created_at?: string
+          declaration_accepted?: boolean
+          email?: string | null
+          emergency_name?: string | null
+          emergency_phone?: string | null
+          emergency_relation?: string | null
+          full_name: string
+          health_name?: string | null
+          health_note?: string | null
+          ibu_hamil_name?: string | null
+          id?: string
+          lama_tinggal?: string | null
+          lansia_name?: string | null
+          last_updated_at?: string | null
+          other_condition_note?: string | null
+          owner_agent_name?: string | null
+          penghuni_status?: string | null
+          phone?: string | null
+          special_conditions?: string[]
+          status?: string
+          tower?: string | null
+          unit_number: string
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
+        }
+        Update: {
+          balita_name?: string | null
+          created_at?: string
+          declaration_accepted?: boolean
+          email?: string | null
+          emergency_name?: string | null
+          emergency_phone?: string | null
+          emergency_relation?: string | null
+          full_name?: string
+          health_name?: string | null
+          health_note?: string | null
+          ibu_hamil_name?: string | null
+          id?: string
+          lama_tinggal?: string | null
+          lansia_name?: string | null
+          last_updated_at?: string | null
+          other_condition_note?: string | null
+          owner_agent_name?: string | null
+          penghuni_status?: string | null
+          phone?: string | null
+          special_conditions?: string[]
+          status?: string
+          tower?: string | null
+          unit_number?: string
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
