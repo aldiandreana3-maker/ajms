@@ -42,6 +42,7 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
   const { data: newsData, isLoading: newsLoading } = usePublishedNews();
   const { user, isSuperAdmin, isLimitedAccess } = useAuth();
   const navigate = useNavigate();
+  const { data: myUpdate } = useMyPenghuniUpdate();
 
   const [editDialog, setEditDialog] = useState<EditDialogState>({
     open: false,
