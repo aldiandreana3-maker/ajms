@@ -186,9 +186,6 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
       {/* Service Grid - Kepenghunian */}
       <ServiceGrid />
 
-      {/* Work Report Chart */}
-      <WorkReportChart />
-
       {/* News Slider */}
       {newsLoading ? (
         <div className="flex justify-center py-8">
@@ -207,6 +204,10 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
           ]} 
         />
       )}
+
+      {/* Work Report Chart */}
+      <WorkReportChart />
+
 
       {/* Edit Dialog for Super Admin */}
       <EditStatDialog
