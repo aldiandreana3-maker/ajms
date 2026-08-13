@@ -27,6 +27,8 @@ import TamuAsing from "./pages/kepenghunian/TamuAsing";
 import WorkOrder from "./pages/kepenghunian/WorkOrder";
 import PelayananPaket from "./pages/kepenghunian/PelayananPaket";
 import WaBlast from "./pages/kepenghunian/WaBlast";
+import PemutakhiranData from "./pages/kepenghunian/PemutakhiranData";
+import PemutakhiranDataTRO from "./pages/kepengelolaan/PemutakhiranDataTRO";
 import BroadcastPesan from "./pages/BroadcastPesan";
 import PesanPenghuni from "./pages/kepenghunian/PesanPenghuni";
 import DataPenghuni from "./pages/kepengelolaan/DataPenghuni";
