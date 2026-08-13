@@ -12,11 +12,18 @@ import {
   Megaphone,
   Bell,
   Send,
+  UserCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 
 const services = [
+  {
+    icon: UserCheck,
+    title: "Pemutakhiran Data",
+    color: "bg-success",
+    path: "/kepenghunian/pemutakhiran-data",
+  },
   {
     icon: Car,
     title: "Abonemen Parkir",
