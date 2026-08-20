@@ -188,7 +188,12 @@ export function useRecentPenghuniUpdates(limit = 10) {
 }
 
 /** Ambil satu record lengkap (untuk mode edit) */
-export function fetchPenghuniUpdateById = undefined as never;
+export async function fetchPenghuniUpdateById(id: string) {
+  const { data, error } = await supabase.from("penghuni_updates").select("*").eq("id", id).single();
+  if (error) throw error;
+  return data as PenghuniUpdate;
+}
+
 
 
 
