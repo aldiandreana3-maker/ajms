@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, Loader2, ShieldAlert, Search, Pencil, UserSearch } from "lucide-react";
+import * as XLSX from "xlsx";
+import { ArrowLeft, CheckCircle2, Loader2, ShieldAlert, Search, Pencil, UserSearch, FileSpreadsheet } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -100,7 +102,57 @@ export default function PemutakhiranData() {
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const { data: results, isFetching: searching } = useSearchPenghuniUpdates(searchTerm);
-  const { data: recent, isLoading: loadingRecent } = useRecentPenghuniUpdates(10);
+  const { data: recent, isLoading: loadingRecent } = useRecentPenghuniUpdates(50);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const { data, error } = await supabase
+        .from("penghuni_updates")
+        .select("*")
+        .order("unit_number", { ascending: true });
+      if (error) throw error;
+      const rows = (data || []).map((r: any) => ({
+        "Nomor Unit": r.unit_number || "",
+        Tower: r.tower || "",
+        "Nama Lengkap": r.full_name || "",
+        "Status Kepenghunian": r.penghuni_status || "",
+        "Nama Pemilik/Agen": r.owner_agent_name || "",
+        "Lama Tinggal": r.lama_tinggal || "",
+        "No. WhatsApp/Telepon": r.phone || "",
+        Email: r.email || "",
+        "Kontak Darurat": r.emergency_name || "",
+        "No. Kontak Darurat": r.emergency_phone || "",
+        Hubungan: r.emergency_relation || "",
+        "Penghuni Khusus": (r.special_conditions || []).join(", "),
+        Lansia: r.lansia_name || "",
+        Balita: r.balita_name || "",
+        "Ibu Hamil": r.ibu_hamil_name || "",
+        "Kondisi Kesehatan": r.health_name || "",
+        "Catatan Kesehatan": r.health_note || "",
+        "Catatan Lainnya": r.other_condition_note || "",
+        Status: r.status === "sudah_diperbarui" ? "Sudah Diperbarui" : "Belum Diperbarui",
+        "Terakhir Diperbarui": r.last_updated_at || r.updated_at
+          ? new Date(r.last_updated_at || r.updated_at).toLocaleString("id-ID")
+          : "",
+        "Diperbarui Oleh": r.updated_by_name || "",
+      }));
+      if (rows.length === 0) {
+        toast({ title: "Tidak ada data", description: "Belum ada data untuk diekspor." });
+        return;
+      }
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Pemutakhiran Data");
+      XLSX.writeFile(wb, `pemutakhiran-data-penghuni-${new Date().toISOString().slice(0, 10)}.xlsx`);
+      toast({ title: "Export berhasil", description: `${rows.length} data diekspor.` });
+    } catch (e: any) {
+      toast({ title: "Export gagal", description: e.message, variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // Debounce live search
   useEffect(() => {
@@ -135,10 +187,13 @@ export default function PemutakhiranData() {
   };
 
 
-  // Prefill dari data pemutakhiran sebelumnya, fallback data penghuni
+  // Prefill dari data pemutakhiran sebelumnya, fallback data penghuni (sekali saja)
+  const prefilled = useRef(false);
   useEffect(() => {
     if (isLoading) return;
     if (editingId) return; // jangan timpa form saat sedang mengedit data pilihan
+    if (prefilled.current) return;
+    prefilled.current = true;
     if (myUpdate) {
       setForm({
         unit_number: myUpdate.unit_number || "",
@@ -208,8 +263,12 @@ export default function PemutakhiranData() {
         unit: form.unit_number.toUpperCase(),
         date: new Date().toLocaleString("id-ID"),
       });
-      if (searchTerm.trim()) setSearchTerm((s) => s);
+      // reset form ke kondisi awal
+      setEditingId(undefined);
+      setForm(emptyForm);
+      setDeclared(false);
       toast({ title: "Berhasil", description: "Data penghuni berhasil disimpan dan diperbarui." });
+
 
     } catch (e: any) {
       toast({ title: "Gagal menyimpan", description: e.message, variant: "destructive" });
@@ -438,10 +497,18 @@ export default function PemutakhiranData() {
         {/* Panel kanan: pencarian data penghuni */}
         <div className="space-y-4 min-w-0 lg:sticky lg:top-4">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
               <CardTitle className="text-base flex items-center gap-2">
                 <UserSearch className="w-4 h-4" /> Cari Data Penghuni
               </CardTitle>
+              <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+                {exporting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                )}
+                Export Excel
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="relative">
