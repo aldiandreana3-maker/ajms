@@ -3911,6 +3911,10 @@ export type Database = {
         Args: { _unit_id?: string }
         Returns: undefined
       }
+      user_owns_unit_number: {
+        Args: { _unit_number: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role:
