@@ -902,10 +902,10 @@ export default function AbonemenParkir() {
             )}
 
             <div className="mb-2 flex items-center gap-2">
-              <Badge variant="default" className="bg-success text-success-foreground">Aktif</Badge>
-              <span className="text-sm font-medium">Tabel Bulan Berjalan — {monthLabel(currentMonthKey)}</span>
-              <Badge variant="secondary" className="text-xs">{currentAndFutureData.length}</Badge>
+              <Badge variant="secondary" className="text-xs">Total {filteredData.length}</Badge>
+              <span className="text-sm font-medium">Semua Data Abonemen Parkir</span>
             </div>
+
 
             {isLoading ? (
               <div className="flex justify-center py-8">
