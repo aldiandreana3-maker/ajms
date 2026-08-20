@@ -23,6 +23,7 @@ import {
   useMyPenghuniUpdate,
   useSavePenghuniUpdate,
   useSearchPenghuniUpdates,
+  useRecentPenghuniUpdates,
   type PenghuniUpdate,
 } from "@/hooks/usePenghuniUpdates";
 
