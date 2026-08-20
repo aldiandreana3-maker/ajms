@@ -186,40 +186,8 @@ export default function AbonemenParkir() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   };
 
-  const { pastGroups, currentAndFutureData } = useMemo(() => {
-    const past: Record<string, any[]> = {};
-    const cur: any[] = [];
-    for (const sub of filteredData) {
-      const key = getMonthKey(sub);
-      // "0000-00" (tanpa end_date) tidak masuk grup riwayat — ditampilkan di tabel "Belum Diperpanjang"
-      if (key === "0000-00") {
-        cur.push(sub);
-        continue;
-      }
-      if (key < currentMonthKey) {
-        (past[key] = past[key] || []).push(sub);
-      } else {
-        cur.push(sub);
-      }
-    }
-    const pastEntries = Object.entries(past).sort(([a], [b]) => b.localeCompare(a));
-    return { pastGroups: pastEntries, currentAndFutureData: cur };
-  }, [filteredData, currentMonthKey]);
-
-  const paginatedData = usePagination(currentAndFutureData, itemsPerPage, currentPage);
-
-  // Grup riwayat pembayaran parkir per bulan (dari tabel parking_payment_history)
-  // Hanya tampilkan bulan-bulan yang sudah lewat (< bulan berjalan) sebagai "Riwayat per Bulan"
-  const historyGroups = useMemo(() => {
-    if (!paymentHistory || paymentHistory.length === 0) return [] as [string, any[]][];
-    const groups: Record<string, any[]> = {};
-    for (const h of paymentHistory) {
-      const key = `${h.period_year}-${String(h.period_month).padStart(2, "0")}`;
-      if (key >= currentMonthKey) continue; // bulan berjalan/masa depan tidak masuk riwayat
-      (groups[key] = groups[key] || []).push(h);
-    }
-    return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a));
-  }, [paymentHistory, currentMonthKey]);
+  // Semua data ditampilkan dalam satu tabel (tempat penyimpanan data)
+  const paginatedData = usePagination(filteredData, itemsPerPage, currentPage);
 
   // 1-klik Perpanjang (penghuni): buka dialog kecil untuk upload bukti transfer
   const [renewDialog, setRenewDialog] = useState<{ id: string; vehicle: string | null; fee: number | null } | null>(null);
@@ -227,59 +195,8 @@ export default function AbonemenParkir() {
     setRenewDialog({ id, vehicle, fee });
   };
 
-  // Dialog perpanjang untuk tabel Belum Diperpanjang (admin/staff)
   const [notRenewedDialog, setNotRenewedDialog] = useState<{ id: string; vehicle: string | null; fee: number | null } | null>(null);
 
-  // ===== Notifikasi Pengingat Perpanjangan Abonemen Parkir =====
-  // - Penghuni/Agent: hanya melihat abonemen miliknya (created_by = userId atau penghuni terkait)
-  // - Master Dev / Super Admin / Admin: melihat semua data
-  const reminderRows = useMemo(() => {
-    if (!subscriptions || subscriptions.length === 0) return [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Filter berdasarkan kepemilikan untuk non-admin
-    let scoped = subscriptions;
-    if (!canSeeAllNotifications) {
-      if (!userId) return [];
-      scoped = subscriptions.filter((s: any) => s.created_by === userId);
-    }
-
-    return scoped
-      .filter((s) => {
-        if (!s.end_date) return false;
-        const end = new Date(s.end_date);
-        end.setHours(0, 0, 0, 0);
-        const diffDays = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        return diffDays <= 7; // expired atau akan habis ≤ 7 hari
-      })
-      .map((s) => {
-        const end = new Date(s.end_date);
-        end.setHours(0, 0, 0, 0);
-        const diffDays = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        return { sub: s, diffDays, expired: diffDays < 0 };
-      })
-      .sort((a, b) => a.diffDays - b.diffDays);
-  }, [subscriptions, canSeeAllNotifications, userId]);
-
-  const filteredNotifRows = useMemo(() => {
-    let rows = reminderRows;
-    if (notifFilter === "expired") rows = rows.filter((r) => r.expired);
-    else if (notifFilter === "soon") rows = rows.filter((r) => !r.expired);
-    if (notifSearch.trim()) {
-      const q = notifSearch.toLowerCase();
-      rows = rows.filter(
-        (r) =>
-          r.sub.vehicle_number?.toLowerCase().includes(q) ||
-          r.sub.unit_number?.toLowerCase().includes(q) ||
-          r.sub.units?.unit_number?.toLowerCase().includes(q) ||
-          r.sub.penghuni_name?.toLowerCase().includes(q)
-      );
-    }
-    return rows;
-  }, [reminderRows, notifFilter, notifSearch]);
-
-  const expiredCount = reminderRows.filter((r) => r.expired).length;
 
   const handleExport = () => {
     if (!filteredData.length) return;
