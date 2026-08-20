@@ -251,3 +251,20 @@ export function useUpdatePenghuniUpdateStatus() {
     },
   });
 }
+
+export function useDeletePenghuniUpdate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("penghuni_updates").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["penghuni-updates"] });
+      qc.invalidateQueries({ queryKey: ["penghuni-updates-recent"] });
+      qc.invalidateQueries({ queryKey: ["penghuni-updates-search"] });
+      qc.invalidateQueries({ queryKey: ["penghuni-update-stats"] });
+      qc.invalidateQueries({ queryKey: ["my-penghuni-update"] });
+    },
+  });
+}
