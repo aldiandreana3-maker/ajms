@@ -186,40 +186,8 @@ export default function AbonemenParkir() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
   };
 
-  const { pastGroups, currentAndFutureData } = useMemo(() => {
-    const past: Record<string, any[]> = {};
-    const cur: any[] = [];
-    for (const sub of filteredData) {
-      const key = getMonthKey(sub);
-      // "0000-00" (tanpa end_date) tidak masuk grup riwayat — ditampilkan di tabel "Belum Diperpanjang"
-      if (key === "0000-00") {
-        cur.push(sub);
-        continue;
-      }
-      if (key < currentMonthKey) {
-        (past[key] = past[key] || []).push(sub);
-      } else {
-        cur.push(sub);
-      }
-    }
-    const pastEntries = Object.entries(past).sort(([a], [b]) => b.localeCompare(a));
-    return { pastGroups: pastEntries, currentAndFutureData: cur };
-  }, [filteredData, currentMonthKey]);
-
-  const paginatedData = usePagination(currentAndFutureData, itemsPerPage, currentPage);
-
-  // Grup riwayat pembayaran parkir per bulan (dari tabel parking_payment_history)
-  // Hanya tampilkan bulan-bulan yang sudah lewat (< bulan berjalan) sebagai "Riwayat per Bulan"
-  const historyGroups = useMemo(() => {
-    if (!paymentHistory || paymentHistory.length === 0) return [] as [string, any[]][];
-    const groups: Record<string, any[]> = {};
-    for (const h of paymentHistory) {
-      const key = `${h.period_year}-${String(h.period_month).padStart(2, "0")}`;
-      if (key >= currentMonthKey) continue; // bulan berjalan/masa depan tidak masuk riwayat
-      (groups[key] = groups[key] || []).push(h);
-    }
-    return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a));
-  }, [paymentHistory, currentMonthKey]);
+  // Semua data ditampilkan dalam satu tabel (tempat penyimpanan data)
+  const paginatedData = usePagination(filteredData, itemsPerPage, currentPage);
 
   // 1-klik Perpanjang (penghuni): buka dialog kecil untuk upload bukti transfer
   const [renewDialog, setRenewDialog] = useState<{ id: string; vehicle: string | null; fee: number | null } | null>(null);
@@ -227,59 +195,8 @@ export default function AbonemenParkir() {
     setRenewDialog({ id, vehicle, fee });
   };
 
-  // Dialog perpanjang untuk tabel Belum Diperpanjang (admin/staff)
   const [notRenewedDialog, setNotRenewedDialog] = useState<{ id: string; vehicle: string | null; fee: number | null } | null>(null);
 
-  // ===== Notifikasi Pengingat Perpanjangan Abonemen Parkir =====
-  // - Penghuni/Agent: hanya melihat abonemen miliknya (created_by = userId atau penghuni terkait)
-  // - Master Dev / Super Admin / Admin: melihat semua data
-  const reminderRows = useMemo(() => {
-    if (!subscriptions || subscriptions.length === 0) return [];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Filter berdasarkan kepemilikan untuk non-admin
-    let scoped = subscriptions;
-    if (!canSeeAllNotifications) {
-      if (!userId) return [];
-      scoped = subscriptions.filter((s: any) => s.created_by === userId);
-    }
-
-    return scoped
-      .filter((s) => {
-        if (!s.end_date) return false;
-        const end = new Date(s.end_date);
-        end.setHours(0, 0, 0, 0);
-        const diffDays = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        return diffDays <= 7; // expired atau akan habis ≤ 7 hari
-      })
-      .map((s) => {
-        const end = new Date(s.end_date);
-        end.setHours(0, 0, 0, 0);
-        const diffDays = Math.round((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        return { sub: s, diffDays, expired: diffDays < 0 };
-      })
-      .sort((a, b) => a.diffDays - b.diffDays);
-  }, [subscriptions, canSeeAllNotifications, userId]);
-
-  const filteredNotifRows = useMemo(() => {
-    let rows = reminderRows;
-    if (notifFilter === "expired") rows = rows.filter((r) => r.expired);
-    else if (notifFilter === "soon") rows = rows.filter((r) => !r.expired);
-    if (notifSearch.trim()) {
-      const q = notifSearch.toLowerCase();
-      rows = rows.filter(
-        (r) =>
-          r.sub.vehicle_number?.toLowerCase().includes(q) ||
-          r.sub.unit_number?.toLowerCase().includes(q) ||
-          r.sub.units?.unit_number?.toLowerCase().includes(q) ||
-          r.sub.penghuni_name?.toLowerCase().includes(q)
-      );
-    }
-    return rows;
-  }, [reminderRows, notifFilter, notifSearch]);
-
-  const expiredCount = reminderRows.filter((r) => r.expired).length;
 
   const handleExport = () => {
     if (!filteredData.length) return;
@@ -700,212 +617,14 @@ export default function AbonemenParkir() {
               searchPlaceholder="Cari plat, unit, nama, kartu member..."
             />
 
-            {/* Tabel Belum Diperpanjang — dikelompokkan per BULAN tertunggak */}
-            {canVerify && (() => {
-              const notRenewed = filteredData.filter((s: any) => getMonthKey(s) < currentMonthKey);
-              if (notRenewed.length === 0) return null;
-
-              // Kelompokkan berdasarkan bulan terakhir berakhir (atau "Belum Pernah" untuk null)
-              const groups: Record<string, any[]> = {};
-              for (const s of notRenewed) {
-                const key = getMonthKey(s); // "0000-00" untuk tanpa end_date
-                (groups[key] = groups[key] || []).push(s);
-              }
-              // Urutkan: bulan terbaru di atas, "Belum Pernah" (0000-00) paling bawah
-              const groupKeys = Object.keys(groups).sort((a, b) => {
-                if (a === "0000-00") return 1;
-                if (b === "0000-00") return -1;
-                return b.localeCompare(a);
-              });
-
-              // Pagination global per-grup gabungan (sederhana): tampilkan semua grup,
-              // tiap grup dipotong sesuai notRenewedPerPage; tombol halaman berlaku ke seluruh grup.
-              const totalPages = Math.ceil(notRenewed.length / notRenewedPerPage);
-
-              // Flatten dengan label grup → slice → group ulang untuk tampilan
-              const flat: { key: string; sub: any }[] = [];
-              for (const k of groupKeys) for (const s of groups[k]) flat.push({ key: k, sub: s });
-              const start = (notRenewedPage - 1) * notRenewedPerPage;
-              const pageSlice = flat.slice(start, start + notRenewedPerPage);
-              const visibleGroups: Record<string, any[]> = {};
-              for (const row of pageSlice) (visibleGroups[row.key] = visibleGroups[row.key] || []).push(row.sub);
-              const visibleKeys = Object.keys(visibleGroups).sort((a, b) => {
-                if (a === "0000-00") return 1;
-                if (b === "0000-00") return -1;
-                return b.localeCompare(a);
-              });
-
-              return (
-                <div className="my-4 rounded-md border border-destructive/40 bg-destructive/5">
-                  <div className="px-3 py-2 border-b border-destructive/30 flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-semibold text-destructive">
-                      Belum Diperpanjang per Bulan
-                    </span>
-                    <Badge variant="destructive" className="text-xs">Total {notRenewed.length}</Badge>
-                    <span className="text-xs text-muted-foreground">
-                      Tertunggak sampai {monthLabel(currentMonthKey)}
-                    </span>
-                  </div>
-
-                  {visibleKeys.map((gk) => (
-                    <div key={gk} className="border-b border-destructive/20 last:border-b-0">
-                      <div className="px-3 py-1.5 bg-destructive/10 flex items-center gap-2">
-                        <span className="text-xs font-semibold text-destructive">
-                          {gk === "0000-00" ? "Belum Pernah Diperpanjang" : `Bulan ${monthLabel(gk)}`}
-                        </span>
-                        <Badge variant="destructive" className="text-[10px] h-4 px-1.5">
-                          {groups[gk].length}
-                        </Badge>
-                      </div>
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead className="h-9">Unit</TableHead>
-                              <TableHead className="h-9">Nama</TableHead>
-                              <TableHead className="h-9">Plat</TableHead>
-                              <TableHead className="h-9">Kendaraan</TableHead>
-                              <TableHead className="h-9">Telepon</TableHead>
-                              <TableHead className="h-9">Terakhir Berakhir</TableHead>
-                              <TableHead className="h-9 text-right">Aksi</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {visibleGroups[gk].map((s: any) => (
-                              <TableRow key={s.id}>
-                                <TableCell className="font-medium">{s.unit_number || s.units?.unit_number || "-"}</TableCell>
-                                <TableCell>{s.penghuni_name || s.penghuni?.full_name || "-"}</TableCell>
-                                <TableCell>{s.vehicle_number || "-"}</TableCell>
-                                <TableCell>{s.vehicle_type || "-"}</TableCell>
-                                <TableCell>{s.phone || "-"}</TableCell>
-                                <TableCell>{s.end_date ? new Date(s.end_date).toLocaleDateString("id-ID") : "-"}</TableCell>
-                                <TableCell className="text-right">
-                                  <Button
-                                    size="sm"
-                                    className="h-7 text-xs bg-success hover:bg-success/90 text-success-foreground"
-                                    onClick={() => setNotRenewedDialog({ id: s.id, vehicle: s.vehicle_number, fee: s.monthly_fee })}
-                                  >
-                                    Perpanjang
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Pagination Belum Diperpanjang */}
-                  <div className="px-3 py-2 border-t border-destructive/20 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">Tampilkan</span>
-                      <Select value={String(notRenewedPerPage)} onValueChange={(v) => { setNotRenewedPerPage(Number(v)); setNotRenewedPage(1); }}>
-                        <SelectTrigger className="h-7 w-[70px] text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="5">5</SelectItem>
-                          <SelectItem value="10">10</SelectItem>
-                          <SelectItem value="50">50</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <span className="text-xs text-muted-foreground">data</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" className="h-7 text-xs" disabled={notRenewedPage <= 1} onClick={() => setNotRenewedPage((p) => Math.max(1, p - 1))}>
-                        Sebelumnya
-                      </Button>
-                      <span className="text-xs text-muted-foreground">
-                        Hal {notRenewedPage} / {totalPages || 1}
-                      </span>
-                      <Button variant="outline" size="sm" className="h-7 text-xs" disabled={notRenewedPage >= totalPages} onClick={() => setNotRenewedPage((p) => Math.min(totalPages, p + 1))}>
-                        Berikutnya
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
 
 
-            {/* Riwayat per Bulan — diambil dari parking_payment_history (per-bulan + bukti pembayaran) */}
-            {historyGroups.length > 0 && (
-              <Accordion type="multiple" className="mb-4 rounded-md border bg-muted/30">
-                {historyGroups.map(([key, items]) => {
-                  const [y, m] = key.split("-").map(Number);
-                  const label = new Date(y, m - 1, 1).toLocaleDateString("id-ID", { month: "long", year: "numeric" });
-                  return (
-                    <AccordionItem key={key} value={key} className="border-b last:border-b-0 px-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <AccordionTrigger className="text-sm py-2 hover:no-underline flex-1">
-                          <span className="flex items-center gap-2">
-                            <span className="font-medium">Riwayat {label}</span>
-                            <Badge variant="secondary" className="text-xs">{items.length}</Badge>
-                          </span>
-                        </AccordionTrigger>
-                        {canExport && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 px-2 text-xs shrink-0"
-                            onClick={(e) => { e.stopPropagation(); handleExportMonth(key, items); }}
-                          >
-                            <Download className="w-3 h-3 mr-1" /> Export {label}
-                          </Button>
-                        )}
-                      </div>
-                      <AccordionContent>
-                        <div className="overflow-x-auto rounded-md border bg-background">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="h-9">Unit</TableHead>
-                                <TableHead className="h-9">Pemilik</TableHead>
-                                <TableHead className="h-9">Plat</TableHead>
-                                <TableHead className="h-9">Nominal</TableHead>
-                                <TableHead className="h-9">Metode</TableHead>
-                                <TableHead className="h-9">Bukti</TableHead>
-                                <TableHead className="h-9">Status</TableHead>
-                                <TableHead className="h-9">Tgl Bayar</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {items.map((h: any) => (
-                                <TableRow key={h.id}>
-                                  <TableCell className="py-2">{h.unit_number || "-"}</TableCell>
-                                  <TableCell className="py-2">{h.owner_name || "-"}</TableCell>
-                                  <TableCell className="py-2 font-mono text-xs">{h.vehicle_number || "-"}</TableCell>
-                                  <TableCell className="py-2 text-sm">Rp {Number(h.nominal || 0).toLocaleString("id-ID")}</TableCell>
-                                  <TableCell className="py-2 capitalize text-sm">{h.payment_method || "-"}</TableCell>
-                                  <TableCell className="py-2">
-                                    {h.payment_proof_url ? (
-                                      <PhotoCell photos={[{ url: h.payment_proof_url, label: `Bukti ${label}` }]} showThumbnail />
-                                    ) : (
-                                      <span className="text-xs text-muted-foreground">-</span>
-                                    )}
-                                  </TableCell>
-                                  <TableCell className="py-2 text-xs capitalize">{h.verification_status}</TableCell>
-                                  <TableCell className="py-2 text-xs whitespace-nowrap">
-                                    {h.payment_date ? format(new Date(h.payment_date), "dd/MM/yyyy") : "-"}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  );
-                })}
-              </Accordion>
-            )}
 
             <div className="mb-2 flex items-center gap-2">
-              <Badge variant="default" className="bg-success text-success-foreground">Aktif</Badge>
-              <span className="text-sm font-medium">Tabel Bulan Berjalan — {monthLabel(currentMonthKey)}</span>
-              <Badge variant="secondary" className="text-xs">{currentAndFutureData.length}</Badge>
+              <Badge variant="secondary" className="text-xs">Total {filteredData.length}</Badge>
+              <span className="text-sm font-medium">Semua Data Abonemen Parkir</span>
             </div>
+
 
             {isLoading ? (
               <div className="flex justify-center py-8">
