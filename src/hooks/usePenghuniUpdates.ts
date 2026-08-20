@@ -178,7 +178,21 @@ export function useRecentPenghuniUpdates(limit = 10) {
       return (data || []) as PenghuniUpdate[];
     },
   });
+
+/** Total data pemutakhiran yang sudah terdaftar */
+export function usePenghuniUpdatesCount() {
+  return useQuery({
+    queryKey: ["penghuni-updates-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("penghuni_updates")
+        .select("id", { count: "exact", head: true });
+      if (error) throw error;
+      return count || 0;
+    },
+  });
 }
+
 
 
 export interface PenghuniUpdateFilters {
