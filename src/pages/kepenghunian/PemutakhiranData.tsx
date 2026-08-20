@@ -556,7 +556,19 @@ export default function PemutakhiranData() {
                     Masukkan nama penghuni atau nomor unit untuk mencari, atau lihat data terbaru
                     yang sudah diinput di bawah ini.
                   </p>
-                  <p className="text-xs font-medium">Data Terbaru Diinput</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-medium">Data Terbaru Diinput</p>
+                    <Select value={recentLimit} onValueChange={setRecentLimit}>
+                      <SelectTrigger className="h-8 w-[110px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10 data</SelectItem>
+                        <SelectItem value="50">50 data</SelectItem>
+                        <SelectItem value="100">100 data</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                   {loadingRecent ? (
                     <div className="flex justify-center py-8">
                       <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
