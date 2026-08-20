@@ -99,6 +99,7 @@ export default function PemutakhiranData() {
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const { data: results, isFetching: searching } = useSearchPenghuniUpdates(searchTerm);
+  const { data: recent, isLoading: loadingRecent } = useRecentPenghuniUpdates(10);
 
   // Debounce live search
   useEffect(() => {
