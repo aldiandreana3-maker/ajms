@@ -226,34 +226,9 @@ export default function PemutakhiranData() {
     );
   }
 
-  if (success) {
-    return (
-      <MainLayout>
-        <div className="max-w-md mx-auto py-12 animate-fade-in">
-          <Card className="text-center">
-            <CardContent className="pt-8 space-y-4">
-              <CheckCircle2 className="w-16 h-16 text-success mx-auto" />
-              <h2 className="text-xl font-bold">Pemutakhiran Data Berhasil</h2>
-              <p className="text-muted-foreground text-sm">
-                Terima kasih. Data penghuni unit Anda telah berhasil diperbarui.
-              </p>
-              <Badge className="bg-success text-success-foreground">DATA SUDAH DIPERBARUI</Badge>
-              <div className="text-sm text-left border rounded-lg p-4 space-y-1">
-                <p><span className="text-muted-foreground">Nama:</span> {success.name}</p>
-                <p><span className="text-muted-foreground">Nomor Unit:</span> {success.unit}</p>
-                <p><span className="text-muted-foreground">Tanggal Pemutakhiran:</span> {success.date}</p>
-              </div>
-              <Button className="w-full" onClick={() => navigate("/")}>Kembali ke Dashboard</Button>
-            </CardContent>
-          </Card>
-        </div>
-      </MainLayout>
-    );
-  }
-
   return (
     <MainLayout>
-      <div className="space-y-6 animate-fade-in max-w-3xl">
+      <div className="space-y-6 animate-fade-in">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-5 h-5" />
@@ -272,6 +247,22 @@ export default function PemutakhiranData() {
             {myUpdate?.status === "sudah_diperbarui" ? "Sudah Diperbarui" : "Belum Diperbarui"}
           </Badge>
         </div>
+
+      <div className="grid gap-6 lg:grid-cols-2 items-start">
+        <div className="space-y-6 min-w-0">
+        {success && (
+          <Card className="border-success/40 bg-success/5">
+            <CardContent className="pt-6 space-y-2">
+              <div className="flex items-center gap-2 font-semibold text-success">
+                <CheckCircle2 className="w-5 h-5" /> Data penghuni berhasil disimpan dan diperbarui.
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {success.unit} — {success.name} · {success.date}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
 
         <Card>
           <CardHeader><CardTitle className="text-base">A. Data Unit & Penghuni</CardTitle></CardHeader>
