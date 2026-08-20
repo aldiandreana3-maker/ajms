@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, Loader2, ShieldAlert } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, ShieldAlert, Search, Pencil, UserSearch } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +22,10 @@ import {
   useMyPenghuniProfile,
   useMyPenghuniUpdate,
   useSavePenghuniUpdate,
+  useSearchPenghuniUpdates,
+  type PenghuniUpdate,
 } from "@/hooks/usePenghuniUpdates";
+
 
 const STATUS_OPTIONS = [
   "Pemilik",
