@@ -130,6 +130,7 @@ export function useSavePenghuniUpdate() {
       qc.invalidateQueries({ queryKey: ["my-penghuni-update"] });
       qc.invalidateQueries({ queryKey: ["penghuni-updates"] });
       qc.invalidateQueries({ queryKey: ["penghuni-updates-search"] });
+      qc.invalidateQueries({ queryKey: ["penghuni-updates-recent"] });
     },
   });
 }
