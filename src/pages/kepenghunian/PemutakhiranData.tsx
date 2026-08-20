@@ -95,6 +95,43 @@ export default function PemutakhiranData() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [declared, setDeclared] = useState(false);
   const [success, setSuccess] = useState<{ name: string; unit: string; date: string } | null>(null);
+  const [editingId, setEditingId] = useState<string | undefined>(undefined);
+  const [searchInput, setSearchInput] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const { data: results, isFetching: searching } = useSearchPenghuniUpdates(searchTerm);
+
+  // Debounce live search
+  useEffect(() => {
+    const t = setTimeout(() => setSearchTerm(searchInput), 400);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  const fillFormFrom = (r: PenghuniUpdate) => {
+    setEditingId(r.id);
+    setForm({
+      unit_number: r.unit_number || "",
+      full_name: r.full_name || "",
+      penghuni_status: r.penghuni_status || "",
+      owner_agent_name: r.owner_agent_name || "",
+      lama_tinggal: r.lama_tinggal || "",
+      phone: r.phone || "",
+      email: r.email || "",
+      emergency_name: r.emergency_name || "",
+      emergency_phone: r.emergency_phone || "",
+      emergency_relation: r.emergency_relation || "",
+      special_conditions: r.special_conditions || [],
+      lansia_name: r.lansia_name || "",
+      balita_name: r.balita_name || "",
+      ibu_hamil_name: r.ibu_hamil_name || "",
+      health_name: r.health_name || "",
+      health_note: r.health_note || "",
+      other_condition_note: r.other_condition_note || "",
+    });
+    setDeclared(!!r.declaration_accepted);
+    setSuccess(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
 
   // Prefill dari data pemutakhiran sebelumnya, fallback data penghuni
   useEffect(() => {
