@@ -446,10 +446,18 @@ export default function PemutakhiranData() {
         {/* Panel kanan: pencarian data penghuni */}
         <div className="space-y-4 min-w-0 lg:sticky lg:top-4">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
               <CardTitle className="text-base flex items-center gap-2">
                 <UserSearch className="w-4 h-4" /> Cari Data Penghuni
               </CardTitle>
+              <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+                {exporting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                )}
+                Export Excel
+              </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="relative">
