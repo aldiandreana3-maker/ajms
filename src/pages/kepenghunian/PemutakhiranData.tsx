@@ -26,6 +26,8 @@ import {
   useSavePenghuniUpdate,
   useSearchPenghuniUpdates,
   useRecentPenghuniUpdates,
+  usePenghuniUpdatesCount,
+
   useDeletePenghuniUpdate,
   type PenghuniUpdate,
 } from "@/hooks/usePenghuniUpdates";
@@ -115,7 +117,9 @@ export default function PemutakhiranData() {
   const { data: results, isFetching: searching } = useSearchPenghuniUpdates(searchTerm);
   const [recentLimit, setRecentLimit] = useState("10");
   const { data: recent, isLoading: loadingRecent } = useRecentPenghuniUpdates(Number(recentLimit));
+  const { data: totalTerdaftar } = usePenghuniUpdatesCount();
   const [exporting, setExporting] = useState(false);
+
   const del = useDeletePenghuniUpdate();
   const [toDelete, setToDelete] = useState<PenghuniUpdate | null>(null);
 
@@ -549,6 +553,15 @@ export default function PemutakhiranData() {
                   placeholder="Cari nama penghuni atau nomor unit..."
                 />
               </div>
+
+              <div className="flex items-center justify-between rounded-lg border bg-muted/40 px-3 py-2">
+                <span className="text-xs text-muted-foreground">Total data penghuni terdaftar</span>
+                <span className="text-lg font-bold text-primary">
+                  {(totalTerdaftar ?? 0).toLocaleString("id-ID")}
+                </span>
+              </div>
+
+
 
               {!searchTerm.trim() || searchTerm.trim().length < 2 ? (
                 <div className="space-y-3">

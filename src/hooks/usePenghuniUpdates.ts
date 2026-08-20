@@ -131,6 +131,7 @@ export function useSavePenghuniUpdate() {
       qc.invalidateQueries({ queryKey: ["penghuni-updates"] });
       qc.invalidateQueries({ queryKey: ["penghuni-updates-search"] });
       qc.invalidateQueries({ queryKey: ["penghuni-updates-recent"] });
+      qc.invalidateQueries({ queryKey: ["penghuni-updates-count"] });
     },
   });
 }
@@ -179,6 +180,22 @@ export function useRecentPenghuniUpdates(limit = 10) {
     },
   });
 }
+
+
+/** Total data pemutakhiran yang sudah terdaftar */
+export function usePenghuniUpdatesCount() {
+  return useQuery({
+    queryKey: ["penghuni-updates-count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("penghuni_updates")
+        .select("id", { count: "exact", head: true });
+      if (error) throw error;
+      return count || 0;
+    },
+  });
+}
+
 
 
 export interface PenghuniUpdateFilters {
@@ -262,6 +279,7 @@ export function useDeletePenghuniUpdate() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["penghuni-updates"] });
       qc.invalidateQueries({ queryKey: ["penghuni-updates-recent"] });
+      qc.invalidateQueries({ queryKey: ["penghuni-updates-count"] });
       qc.invalidateQueries({ queryKey: ["penghuni-updates-search"] });
       qc.invalidateQueries({ queryKey: ["penghuni-update-stats"] });
       qc.invalidateQueries({ queryKey: ["my-penghuni-update"] });
