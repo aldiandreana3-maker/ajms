@@ -138,6 +138,7 @@ export default function PemutakhiranData() {
   // Prefill dari data pemutakhiran sebelumnya, fallback data penghuni
   useEffect(() => {
     if (isLoading) return;
+    if (editingId) return; // jangan timpa form saat sedang mengedit data pilihan
     if (myUpdate) {
       setForm({
         unit_number: myUpdate.unit_number || "",
