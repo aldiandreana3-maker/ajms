@@ -23,6 +23,7 @@ import {
   useMyPenghuniUpdate,
   useSavePenghuniUpdate,
   useSearchPenghuniUpdates,
+  useRecentPenghuniUpdates,
   type PenghuniUpdate,
 } from "@/hooks/usePenghuniUpdates";
 
@@ -99,6 +100,7 @@ export default function PemutakhiranData() {
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const { data: results, isFetching: searching } = useSearchPenghuniUpdates(searchTerm);
+  const { data: recent, isLoading: loadingRecent } = useRecentPenghuniUpdates(10);
 
   // Debounce live search
   useEffect(() => {
@@ -434,12 +436,47 @@ export default function PemutakhiranData() {
               </div>
 
               {!searchTerm.trim() || searchTerm.trim().length < 2 ? (
-                <div className="text-center py-10 space-y-2">
-                  <Search className="w-10 h-10 mx-auto text-muted-foreground/50" />
-                  <p className="font-medium">Cari Data Penghuni</p>
+                <div className="space-y-3">
                   <p className="text-sm text-muted-foreground">
-                    Masukkan nama penghuni atau nomor unit untuk melihat data.
+                    Masukkan nama penghuni atau nomor unit untuk mencari, atau lihat data terbaru
+                    yang sudah diinput di bawah ini.
                   </p>
+                  <p className="text-xs font-medium">Data Terbaru Diinput</p>
+                  {loadingRecent ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : !recent || recent.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-6 text-center">
+                      Belum ada data yang diinput.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {recent.map((r) => (
+                        <div
+                          key={r.id}
+                          className="flex items-center justify-between gap-2 rounded-md border p-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-medium truncate">
+                              {r.unit_number} — {r.full_name}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {r.penghuni_status || "-"} • {r.phone || "-"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {r.last_updated_at || r.updated_at
+                                ? new Date(r.last_updated_at || r.updated_at).toLocaleString("id-ID")
+                                : "-"}
+                            </p>
+                          </div>
+                          <Button variant="outline" size="sm" onClick={() => fillFormFrom(r)}>
+                            <Pencil className="w-4 h-4 mr-1" /> Edit
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ) : searching && !results ? (
                 <div className="flex justify-center py-10">
