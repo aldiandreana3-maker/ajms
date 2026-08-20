@@ -165,21 +165,31 @@ export function useSearchPenghuniUpdates(term: string) {
   });
 }
 
-/** Data terbaru yang sudah diinput (untuk panel kanan) */
+/** Data terbaru yang sudah diinput (untuk panel kanan). limit 0 = semua data */
 export function useRecentPenghuniUpdates(limit = 10) {
   return useQuery({
     queryKey: ["penghuni-updates-recent", limit],
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+    placeholderData: (p) => p,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("penghuni_updates")
-        .select("*")
-        .order("updated_at", { ascending: false })
-        .limit(limit);
+        .select(
+          "id, unit_number, full_name, tower, penghuni_status, phone, status, last_updated_at, updated_at" as string
+        )
+        .order("updated_at", { ascending: false });
+      if (limit > 0) q = q.limit(limit);
+      const { data, error } = await q.returns<PenghuniUpdate[]>();
       if (error) throw error;
       return (data || []) as PenghuniUpdate[];
     },
   });
 }
+
+/** Ambil satu record lengkap (untuk mode edit) */
+export function fetchPenghuniUpdateById = undefined as never;
+
 
 
 /** Total data pemutakhiran yang sudah terdaftar */
