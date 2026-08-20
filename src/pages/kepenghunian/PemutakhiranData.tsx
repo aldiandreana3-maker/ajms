@@ -170,7 +170,7 @@ export default function PemutakhiranData() {
         penghuni_status: profile.is_owner ? "Pemilik" : f.penghuni_status,
       }));
     }
-  }, [myUpdate, profile, isLoading]);
+  }, [myUpdate, profile, isLoading, editingId]);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
