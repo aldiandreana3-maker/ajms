@@ -101,7 +101,57 @@ export default function PemutakhiranData() {
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const { data: results, isFetching: searching } = useSearchPenghuniUpdates(searchTerm);
-  const { data: recent, isLoading: loadingRecent } = useRecentPenghuniUpdates(10);
+  const { data: recent, isLoading: loadingRecent } = useRecentPenghuniUpdates(50);
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const { data, error } = await supabase
+        .from("penghuni_updates")
+        .select("*")
+        .order("unit_number", { ascending: true });
+      if (error) throw error;
+      const rows = (data || []).map((r: any) => ({
+        "Nomor Unit": r.unit_number || "",
+        Tower: r.tower || "",
+        "Nama Lengkap": r.full_name || "",
+        "Status Kepenghunian": r.penghuni_status || "",
+        "Nama Pemilik/Agen": r.owner_agent_name || "",
+        "Lama Tinggal": r.lama_tinggal || "",
+        "No. WhatsApp/Telepon": r.phone || "",
+        Email: r.email || "",
+        "Kontak Darurat": r.emergency_name || "",
+        "No. Kontak Darurat": r.emergency_phone || "",
+        Hubungan: r.emergency_relation || "",
+        "Penghuni Khusus": (r.special_conditions || []).join(", "),
+        Lansia: r.lansia_name || "",
+        Balita: r.balita_name || "",
+        "Ibu Hamil": r.ibu_hamil_name || "",
+        "Kondisi Kesehatan": r.health_name || "",
+        "Catatan Kesehatan": r.health_note || "",
+        "Catatan Lainnya": r.other_condition_note || "",
+        Status: r.status === "sudah_diperbarui" ? "Sudah Diperbarui" : "Belum Diperbarui",
+        "Terakhir Diperbarui": r.last_updated_at || r.updated_at
+          ? new Date(r.last_updated_at || r.updated_at).toLocaleString("id-ID")
+          : "",
+        "Diperbarui Oleh": r.updated_by_name || "",
+      }));
+      if (rows.length === 0) {
+        toast({ title: "Tidak ada data", description: "Belum ada data untuk diekspor." });
+        return;
+      }
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Pemutakhiran Data");
+      XLSX.writeFile(wb, `pemutakhiran-data-penghuni-${new Date().toISOString().slice(0, 10)}.xlsx`);
+      toast({ title: "Export berhasil", description: `${rows.length} data diekspor.` });
+    } catch (e: any) {
+      toast({ title: "Export gagal", description: e.message, variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // Debounce live search
   useEffect(() => {
