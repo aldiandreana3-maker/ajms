@@ -27,6 +27,7 @@ import {
   useSearchPenghuniUpdates,
   useRecentPenghuniUpdates,
   usePenghuniUpdatesCount,
+  fetchPenghuniUpdateById,
 
   useDeletePenghuniUpdate,
   type PenghuniUpdate,
@@ -586,6 +587,7 @@ export default function PemutakhiranData() {
                         <SelectItem value="10">10 data</SelectItem>
                         <SelectItem value="50">50 data</SelectItem>
                         <SelectItem value="100">100 data</SelectItem>
+                        <SelectItem value="0">Semua data</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
