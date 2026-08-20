@@ -193,8 +193,15 @@ export default function PemutakhiranData() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  const fillFormFrom = (r: PenghuniUpdate) => {
-    setEditingId(r.id);
+  const fillFormFrom = async (row: PenghuniUpdate) => {
+    setEditingId(row.id);
+    let r = row;
+    try {
+      r = await fetchPenghuniUpdateById(row.id);
+    } catch {
+      /* pakai data ringkas jika gagal */
+    }
+
     setForm({
       unit_number: r.unit_number || "",
       full_name: r.full_name || "",
