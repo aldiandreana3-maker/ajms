@@ -199,13 +199,15 @@ export default function PemutakhiranData() {
       return;
     }
     try {
-      await save.mutateAsync({ ...form, declaration_accepted: true } as any);
+      await save.mutateAsync({ ...form, id: editingId, declaration_accepted: true } as any);
       setSuccess({
         name: form.full_name,
         unit: form.unit_number.toUpperCase(),
         date: new Date().toLocaleString("id-ID"),
       });
-      toast({ title: "Pemutakhiran Data Berhasil", description: "Data penghuni unit Anda telah berhasil diperbarui." });
+      if (searchTerm.trim()) setSearchTerm((s) => s);
+      toast({ title: "Berhasil", description: "Data penghuni berhasil disimpan dan diperbarui." });
+
     } catch (e: any) {
       toast({ title: "Gagal menyimpan", description: e.message, variant: "destructive" });
     }
