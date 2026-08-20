@@ -117,7 +117,9 @@ export default function PemutakhiranData() {
   const { data: results, isFetching: searching } = useSearchPenghuniUpdates(searchTerm);
   const [recentLimit, setRecentLimit] = useState("10");
   const { data: recent, isLoading: loadingRecent } = useRecentPenghuniUpdates(Number(recentLimit));
+  const { data: totalTerdaftar } = usePenghuniUpdatesCount();
   const [exporting, setExporting] = useState(false);
+
   const del = useDeletePenghuniUpdate();
   const [toDelete, setToDelete] = useState<PenghuniUpdate | null>(null);
 
