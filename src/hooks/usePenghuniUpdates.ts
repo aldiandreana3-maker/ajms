@@ -133,7 +133,37 @@ export function useSavePenghuniUpdate() {
   });
 }
 
+/** Live search (debounce dilakukan di komponen) — unit_number atau full_name */
+export function useSearchPenghuniUpdates(term: string) {
+  const s = term.trim();
+  return useQuery({
+    queryKey: ["penghuni-updates-search", s],
+    enabled: s.length >= 2,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("penghuni_updates")
+        .select("*")
+        .or(`unit_number.ilike.%${s}%,full_name.ilike.%${s}%`)
+        .order("updated_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      const up = s.toUpperCase();
+      const low = s.toLowerCase();
+      const score = (r: PenghuniUpdate) => {
+        if ((r.unit_number || "").toUpperCase() === up) return 0;
+        if ((r.full_name || "").toLowerCase() === low) return 1;
+        if ((r.unit_number || "").toUpperCase().startsWith(up)) return 2;
+        if ((r.full_name || "").toLowerCase().startsWith(low)) return 3;
+        return 4;
+      };
+      return ((data || []) as PenghuniUpdate[]).sort((a, b) => score(a) - score(b));
+    },
+    placeholderData: (p) => p,
+  });
+}
+
 export interface PenghuniUpdateFilters {
+
   search?: string;
   status?: string;
   penghuniStatus?: string;
