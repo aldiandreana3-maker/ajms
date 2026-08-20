@@ -412,7 +412,118 @@ export default function PemutakhiranData() {
             </Button>
           </CardContent>
         </Card>
+        </div>
+
+        {/* Panel kanan: pencarian data penghuni */}
+        <div className="space-y-4 min-w-0 lg:sticky lg:top-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <UserSearch className="w-4 h-4" /> Cari Data Penghuni
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Cari nama penghuni atau nomor unit..."
+                />
+              </div>
+
+              {!searchTerm.trim() || searchTerm.trim().length < 2 ? (
+                <div className="text-center py-10 space-y-2">
+                  <Search className="w-10 h-10 mx-auto text-muted-foreground/50" />
+                  <p className="font-medium">Cari Data Penghuni</p>
+                  <p className="text-sm text-muted-foreground">
+                    Masukkan nama penghuni atau nomor unit untuk melihat data.
+                  </p>
+                </div>
+              ) : searching && !results ? (
+                <div className="flex justify-center py-10">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : !results || results.length === 0 ? (
+                <div className="text-center py-10 space-y-2">
+                  <p className="font-medium">Data belum ditemukan</p>
+                  <p className="text-sm text-muted-foreground">
+                    Belum terdapat data penghuni yang sesuai dengan pencarian.
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Silakan daftarkan data penghuni melalui formulir di sebelah kiri.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-xs text-muted-foreground">
+                    {results.length} data ditemukan
+                  </p>
+                  {results.map((r, i) => (
+                    <Card key={r.id} className={i === 0 ? "border-primary/50" : ""}>
+                      <CardContent className="pt-4 space-y-3">
+                        {i === 0 && (
+                          <Badge className="bg-success text-success-foreground">
+                            Data Penghuni Ditemukan
+                          </Badge>
+                        )}
+                        <div className="font-semibold">
+                          {r.unit_number} — {r.full_name}
+                        </div>
+                        <div className="grid gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
+                          <Field label="Nomor Unit" value={r.unit_number} />
+                          <Field label="Nama Lengkap" value={r.full_name} />
+                          <Field label="Status Kepenghunian" value={r.penghuni_status} />
+                          <Field label="Lama Tinggal" value={r.lama_tinggal} />
+                          <Field label="Nomor WhatsApp / Telepon" value={r.phone} />
+                          <Field label="Email" value={r.email} />
+                          <Field label="Kontak Darurat" value={r.emergency_name} />
+                          <Field label="Nomor Kontak Darurat" value={r.emergency_phone} />
+                          <Field label="Hubungan" value={r.emergency_relation} />
+                          <Field
+                            label="Penghuni Khusus"
+                            value={
+                              r.special_conditions?.length
+                                ? r.special_conditions.join(", ")
+                                : "Tidak Ada"
+                            }
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Terakhir diperbarui:{" "}
+                          {r.last_updated_at || r.updated_at
+                            ? new Date(r.last_updated_at || r.updated_at).toLocaleString("id-ID")
+                            : "-"}
+                        </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => fillFormFrom(r)}
+                        >
+                          <Pencil className="w-4 h-4 mr-2" /> Edit Data Ini
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
       </div>
     </MainLayout>
   );
 }
+
+function Field({ label, value }: { label: string; value?: string | null }) {
+  return (
+    <div>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="break-words">{value || "-"}</p>
+    </div>
+  );
+}
+
