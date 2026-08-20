@@ -178,6 +178,8 @@ export function useRecentPenghuniUpdates(limit = 10) {
       return (data || []) as PenghuniUpdate[];
     },
   });
+}
+
 
 /** Total data pemutakhiran yang sudah terdaftar */
 export function usePenghuniUpdatesCount() {
