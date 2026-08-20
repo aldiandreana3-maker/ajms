@@ -163,6 +163,23 @@ export function useSearchPenghuniUpdates(term: string) {
   });
 }
 
+/** Data terbaru yang sudah diinput (untuk panel kanan) */
+export function useRecentPenghuniUpdates(limit = 10) {
+  return useQuery({
+    queryKey: ["penghuni-updates-recent", limit],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("penghuni_updates")
+        .select("*")
+        .order("updated_at", { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return (data || []) as PenghuniUpdate[];
+    },
+  });
+}
+
+
 export interface PenghuniUpdateFilters {
 
   search?: string;
