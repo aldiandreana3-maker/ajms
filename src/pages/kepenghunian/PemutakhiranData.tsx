@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import { ArrowLeft, CheckCircle2, Loader2, ShieldAlert, Search, Pencil, UserSearch, FileSpreadsheet } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
