@@ -1,0 +1,2 @@
+DROP POLICY IF EXISTS "Admins can delete penghuni updates" ON public.penghuni_updates;
+CREATE POLICY "Admins can delete penghuni updates" ON public.penghuni_updates FOR DELETE TO authenticated USING (public.is_super_admin_or_master(auth.uid()));

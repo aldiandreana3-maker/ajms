@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
-import { ArrowLeft, CheckCircle2, Loader2, ShieldAlert, Search, Pencil, UserSearch, FileSpreadsheet } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, ShieldAlert, Search, Pencil, UserSearch, FileSpreadsheet, Trash2 } from "lucide-react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -26,8 +26,19 @@ import {
   useSavePenghuniUpdate,
   useSearchPenghuniUpdates,
   useRecentPenghuniUpdates,
+  useDeletePenghuniUpdate,
   type PenghuniUpdate,
 } from "@/hooks/usePenghuniUpdates";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 const STATUS_OPTIONS = [
@@ -90,7 +101,7 @@ const emptyForm: FormState = {
 export default function PemutakhiranData() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, isSuperAdmin } = useAuth();
   const { data: profile } = useMyPenghuniProfile();
   const { data: myUpdate, isLoading } = useMyPenghuniUpdate();
   const save = useSavePenghuniUpdate();
@@ -104,6 +115,23 @@ export default function PemutakhiranData() {
   const { data: results, isFetching: searching } = useSearchPenghuniUpdates(searchTerm);
   const { data: recent, isLoading: loadingRecent } = useRecentPenghuniUpdates(50);
   const [exporting, setExporting] = useState(false);
+  const del = useDeletePenghuniUpdate();
+  const [toDelete, setToDelete] = useState<PenghuniUpdate | null>(null);
+
+  const handleDelete = async () => {
+    if (!toDelete) return;
+    try {
+      await del.mutateAsync(toDelete.id);
+      if (editingId === toDelete.id) {
+        setEditingId(undefined);
+        setForm(emptyForm);
+      }
+      toast({ title: "Data dihapus", description: `${toDelete.unit_number} — ${toDelete.full_name}` });
+      setToDelete(null);
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Gagal menghapus", description: e.message });
+    }
+  };
 
   const handleExport = async () => {
     setExporting(true);
@@ -556,9 +584,20 @@ export default function PemutakhiranData() {
                                 : "-"}
                             </p>
                           </div>
-                          <Button variant="outline" size="sm" onClick={() => fillFormFrom(r)}>
-                            <Pencil className="w-4 h-4 mr-1" /> Edit
-                          </Button>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Button variant="outline" size="sm" onClick={() => fillFormFrom(r)}>
+                              <Pencil className="w-4 h-4 mr-1" /> Edit
+                            </Button>
+                            {isSuperAdmin && (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => setToDelete(r)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -619,14 +658,21 @@ export default function PemutakhiranData() {
                             ? new Date(r.last_updated_at || r.updated_at).toLocaleString("id-ID")
                             : "-"}
                         </p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full"
-                          onClick={() => fillFormFrom(r)}
-                        >
-                          <Pencil className="w-4 h-4 mr-2" /> Edit Data Ini
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => fillFormFrom(r)}
+                          >
+                            <Pencil className="w-4 h-4 mr-2" /> Edit Data Ini
+                          </Button>
+                          {isSuperAdmin && (
+                            <Button variant="destructive" size="sm" onClick={() => setToDelete(r)}>
+                              <Trash2 className="w-4 h-4 mr-2" /> Hapus
+                            </Button>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   ))}
@@ -637,6 +683,31 @@ export default function PemutakhiranData() {
         </div>
       </div>
       </div>
+
+      <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus data penghuni?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Data {toDelete?.unit_number} — {toDelete?.full_name} akan dihapus permanen dan tidak
+              dapat dikembalikan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+              disabled={del.isPending}
+            >
+              {del.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 }
