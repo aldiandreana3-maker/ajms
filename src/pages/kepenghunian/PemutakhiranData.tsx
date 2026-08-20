@@ -253,6 +253,24 @@ export default function PemutakhiranData() {
 
       <div className="grid gap-6 lg:grid-cols-2 items-start">
         <div className="space-y-6 min-w-0">
+        {editingId && (
+          <div className="flex items-center justify-between gap-2 rounded-md border border-primary/40 bg-primary/5 p-3">
+            <p className="text-sm">
+              Sedang mengedit data <span className="font-semibold">{form.unit_number}</span> — {form.full_name}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setEditingId(undefined);
+                setForm(emptyForm);
+                setDeclared(false);
+              }}
+            >
+              Batal Edit
+            </Button>
+          </div>
+        )}
         {success && (
           <Card className="border-success/40 bg-success/5">
             <CardContent className="pt-6 space-y-2">
