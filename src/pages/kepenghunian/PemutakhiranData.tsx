@@ -113,7 +113,8 @@ export default function PemutakhiranData() {
   const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const { data: results, isFetching: searching } = useSearchPenghuniUpdates(searchTerm);
-  const { data: recent, isLoading: loadingRecent } = useRecentPenghuniUpdates(50);
+  const [recentLimit, setRecentLimit] = useState("10");
+  const { data: recent, isLoading: loadingRecent } = useRecentPenghuniUpdates(Number(recentLimit));
   const [exporting, setExporting] = useState(false);
   const del = useDeletePenghuniUpdate();
   const [toDelete, setToDelete] = useState<PenghuniUpdate | null>(null);
