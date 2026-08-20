@@ -135,10 +135,13 @@ export default function PemutakhiranData() {
   };
 
 
-  // Prefill dari data pemutakhiran sebelumnya, fallback data penghuni
+  // Prefill dari data pemutakhiran sebelumnya, fallback data penghuni (sekali saja)
+  const prefilled = useRef(false);
   useEffect(() => {
     if (isLoading) return;
     if (editingId) return; // jangan timpa form saat sedang mengedit data pilihan
+    if (prefilled.current) return;
+    prefilled.current = true;
     if (myUpdate) {
       setForm({
         unit_number: myUpdate.unit_number || "",
