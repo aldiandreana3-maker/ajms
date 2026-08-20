@@ -578,7 +578,7 @@ export default function PemutakhiranData() {
                       Belum ada data yang diinput.
                     </p>
                   ) : (
-                    <div className="space-y-2">
+                     <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
                       {recent.map((r) => (
                         <div
                           key={r.id}
