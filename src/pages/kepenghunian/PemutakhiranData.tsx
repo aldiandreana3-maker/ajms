@@ -208,8 +208,12 @@ export default function PemutakhiranData() {
         unit: form.unit_number.toUpperCase(),
         date: new Date().toLocaleString("id-ID"),
       });
-      if (searchTerm.trim()) setSearchTerm((s) => s);
+      // reset form ke kondisi awal
+      setEditingId(undefined);
+      setForm(emptyForm);
+      setDeclared(false);
       toast({ title: "Berhasil", description: "Data penghuni berhasil disimpan dan diperbarui." });
+
 
     } catch (e: any) {
       toast({ title: "Gagal menyimpan", description: e.message, variant: "destructive" });
