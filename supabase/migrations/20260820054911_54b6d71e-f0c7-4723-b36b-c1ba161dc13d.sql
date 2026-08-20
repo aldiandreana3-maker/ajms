@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.user_owns_unit_number(uuid, text) FROM anon, authenticated, public;
