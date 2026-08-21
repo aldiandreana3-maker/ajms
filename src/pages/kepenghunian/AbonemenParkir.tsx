@@ -29,6 +29,7 @@ import { PhotoUpload } from "@/components/shared/PhotoUpload";
 import { NotesCell, ReceiptPhotoCell } from "@/components/shared/ParkingInlineCells";
 import { QuickRenewParkingDialog } from "@/components/shared/QuickRenewParkingDialog";
 import { useParkingPaymentHistory } from "@/hooks/useParkingPaymentHistory";
+import { ParkingReceiptHistoryDialog } from "@/components/shared/ParkingReceiptHistoryDialog";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -650,6 +651,7 @@ export default function AbonemenParkir() {
                       <TableHead>Perpanjang</TableHead>
                       <TableHead className="min-w-[200px]">Catatan</TableHead>
                       <TableHead>Foto Kwitansi</TableHead>
+                      <TableHead>Kwitansi Bulanan</TableHead>
                       {isSuperAdmin && <TableHead>Aksi</TableHead>}
                     </TableRow>
                   </TableHeader>
@@ -827,6 +829,15 @@ export default function AbonemenParkir() {
                             onClear={() => updateMetaMutation.mutate({ id: sub.id, receipt_photo_url: null })}
                           />
                         </TableCell>
+                        <TableCell>
+                          <ParkingReceiptHistoryDialog
+                            history={paymentHistory || []}
+                            subscriptionId={sub.id}
+                            vehicleNumber={sub.vehicle_number}
+                            unitNumber={sub.unit_number || sub.units?.unit_number || null}
+                            ownerName={sub.penghuni_name}
+                          />
+                        </TableCell>
                         {isSuperAdmin && (
                           <TableCell>
                             <AlertDialog>
@@ -859,7 +870,7 @@ export default function AbonemenParkir() {
                     ))}
                     {filteredData.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={isSuperAdmin ? 16 : 15} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={isSuperAdmin ? 17 : 16} className="text-center text-muted-foreground py-8">
                           {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada abonemen parkir"}
                         </TableCell>
                       </TableRow>
