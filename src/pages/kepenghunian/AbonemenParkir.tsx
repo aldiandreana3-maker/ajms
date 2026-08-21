@@ -870,7 +870,7 @@ export default function AbonemenParkir() {
                     ))}
                     {filteredData.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={isSuperAdmin ? 16 : 15} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={isSuperAdmin ? 17 : 16} className="text-center text-muted-foreground py-8">
                           {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada abonemen parkir"}
                         </TableCell>
                       </TableRow>
