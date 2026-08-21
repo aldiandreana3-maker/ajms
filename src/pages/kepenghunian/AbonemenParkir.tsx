@@ -29,6 +29,7 @@ import { PhotoUpload } from "@/components/shared/PhotoUpload";
 import { NotesCell, ReceiptPhotoCell } from "@/components/shared/ParkingInlineCells";
 import { QuickRenewParkingDialog } from "@/components/shared/QuickRenewParkingDialog";
 import { useParkingPaymentHistory } from "@/hooks/useParkingPaymentHistory";
+import { ParkingReceiptHistoryDialog } from "@/components/shared/ParkingReceiptHistoryDialog";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
 import { supabase } from "@/integrations/supabase/client";
