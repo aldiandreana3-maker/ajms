@@ -30,6 +30,7 @@ import { NotesCell, ReceiptPhotoCell } from "@/components/shared/ParkingInlineCe
 import { QuickRenewParkingDialog } from "@/components/shared/QuickRenewParkingDialog";
 import { useParkingPaymentHistory } from "@/hooks/useParkingPaymentHistory";
 import { ParkingReceiptHistoryDialog } from "@/components/shared/ParkingReceiptHistoryDialog";
+import { SyncParkingToDriveButton } from "@/components/shared/SyncParkingToDriveButton";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { ImportExcelDialog, ImportColumn } from "@/components/shared/ImportExcelDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -607,6 +608,7 @@ export default function AbonemenParkir() {
                   Export Excel
                 </Button>
               )}
+              {canExport && <SyncParkingToDriveButton />}
             </div>
           </CardHeader>
           <CardContent>
