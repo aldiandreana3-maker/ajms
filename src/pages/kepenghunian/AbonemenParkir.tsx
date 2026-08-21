@@ -650,6 +650,7 @@ export default function AbonemenParkir() {
                       <TableHead>Perpanjang</TableHead>
                       <TableHead className="min-w-[200px]">Catatan</TableHead>
                       <TableHead>Foto Kwitansi</TableHead>
+                      <TableHead>Kwitansi Bulanan</TableHead>
                       {isSuperAdmin && <TableHead>Aksi</TableHead>}
                     </TableRow>
                   </TableHeader>
