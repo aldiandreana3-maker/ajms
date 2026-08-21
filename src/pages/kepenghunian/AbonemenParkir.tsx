@@ -607,6 +607,7 @@ export default function AbonemenParkir() {
                   Export Excel
                 </Button>
               )}
+              {canExport && <SyncParkingToDriveButton />}
             </div>
           </CardHeader>
           <CardContent>
