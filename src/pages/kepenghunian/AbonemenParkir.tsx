@@ -828,6 +828,15 @@ export default function AbonemenParkir() {
                             onClear={() => updateMetaMutation.mutate({ id: sub.id, receipt_photo_url: null })}
                           />
                         </TableCell>
+                        <TableCell>
+                          <ParkingReceiptHistoryDialog
+                            history={paymentHistory || []}
+                            subscriptionId={sub.id}
+                            vehicleNumber={sub.vehicle_number}
+                            unitNumber={sub.unit_number || sub.units?.unit_number || null}
+                            ownerName={sub.penghuni_name}
+                          />
+                        </TableCell>
                         {isSuperAdmin && (
                           <TableCell>
                             <AlertDialog>
