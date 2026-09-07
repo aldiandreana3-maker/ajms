@@ -37,8 +37,8 @@ interface EditDialogState {
 }
 
 export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) {
-  const { data: stats, isLoading: statsLoading } = useDashboardStats();
-  const { data: settings, isLoading: settingsLoading } = useDashboardSettings();
+  const { data: stats } = useDashboardStats();
+  const { data: settings } = useDashboardSettings();
   const { data: newsData, isLoading: newsLoading } = usePublishedNews();
   const { user, isSuperAdmin, isLimitedAccess } = useAuth();
   const navigate = useNavigate();
@@ -114,14 +114,6 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
     published_at: n.published_at,
     scheduled_at: n.scheduled_at,
   })) || [];
-
-  if (statsLoading || settingsLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
