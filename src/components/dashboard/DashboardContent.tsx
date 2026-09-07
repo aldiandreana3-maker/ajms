@@ -115,14 +115,6 @@ export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) 
     scheduled_at: n.scheduled_at,
   })) || [];
 
-  if (statsLoading || settingsLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <PemutakhiranDataModal />
