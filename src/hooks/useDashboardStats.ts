@@ -28,6 +28,17 @@ export function useDashboardStats() {
     staleTime: 60_000,
     placeholderData: EMPTY_STATS,
     queryFn: async (): Promise<DashboardStats> => {
+      // setiap query dibungkus agar 1 kegagalan tidak menggagalkan semuanya
+      const safe = async <T,>(p: PromiseLike<T>, fallback: T): Promise<T> => {
+        try {
+          return await p;
+        } catch (e) {
+          console.warn("dashboard query failed", e);
+          return fallback;
+        }
+      };
+      const emptyCount = { count: 0 } as { count: number | null };
+      const emptyRows = { data: [] as { unit_number: string | null }[] };
       try {
 
       const [
@@ -44,17 +55,17 @@ export function useDashboardStats() {
         keluhanUnits,
         commercialUnits,
       ] = await Promise.all([
-        supabase.from("units").select("id", { count: "exact", head: true }),
-        supabase.from("commercial_tenants").select("id", { count: "exact", head: true }).eq("is_active", true),
-        supabase.from("access_cards").select("id", { count: "exact", head: true }).eq("status", "active"),
-        supabase.from("keluhan").select("id", { count: "exact", head: true }),
-        supabase.from("work_orders").select("id", { count: "exact", head: true }),
-        supabase.from("parking_subscriptions").select("id", { count: "exact", head: true }).eq("is_active", true),
-        supabase.from("parking_subscriptions").select("unit_number").eq("is_active", true).limit(10000),
-        supabase.from("access_cards").select("unit_number").limit(10000),
-        supabase.from("work_orders").select("unit_number").limit(10000),
-        supabase.from("keluhan").select("unit_number").limit(10000),
-        supabase.from("commercial_tenants").select("unit_number").eq("is_active", true).limit(10000),
+        safe(supabase.from("units").select("id", { count: "exact", head: true }), emptyCount as any),
+        safe(supabase.from("commercial_tenants").select("id", { count: "exact", head: true }).eq("is_active", true), emptyCount as any),
+        safe(supabase.from("access_cards").select("id", { count: "exact", head: true }).eq("status", "active"), emptyCount as any),
+        safe(supabase.from("keluhan").select("id", { count: "exact", head: true }), emptyCount as any),
+        safe(supabase.from("work_orders").select("id", { count: "exact", head: true }), emptyCount as any),
+        safe(supabase.from("parking_subscriptions").select("id", { count: "exact", head: true }).eq("is_active", true), emptyCount as any),
+        safe(supabase.from("parking_subscriptions").select("unit_number").eq("is_active", true).limit(10000), emptyRows as any),
+        safe(supabase.from("access_cards").select("unit_number").limit(10000), emptyRows as any),
+        safe(supabase.from("work_orders").select("unit_number").limit(10000), emptyRows as any),
+        safe(supabase.from("keluhan").select("unit_number").limit(10000), emptyRows as any),
+        safe(supabase.from("commercial_tenants").select("unit_number").eq("is_active", true).limit(10000), emptyRows as any),
       ]);
 
       const unitSet = new Set<string>();
