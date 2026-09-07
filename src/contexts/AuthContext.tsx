@@ -78,8 +78,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .from("user_roles")
           .select("role")
           .eq("user_id", userId)
-          .maybeSingle()
-          .abortSignal(controller.signal);
+          .abortSignal(controller.signal)
+          .maybeSingle();
 
         if (error) {
           console.error("Error fetching user role:", error);
