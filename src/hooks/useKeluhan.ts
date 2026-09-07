@@ -36,18 +36,24 @@ interface CreateKeluhanInput {
 export function useKeluhan() {
   return useQuery({
     queryKey: ["keluhan"],
+    retry: 1,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+    placeholderData: (previousData) => previousData,
     queryFn: async (): Promise<Keluhan[]> => {
       const { data, error } = await supabase
         .from("keluhan")
         .select(`
-          *,
+          id, penghuni_id, unit_id, subject, description, status, photo_url,
+          response, handled_by, created_at, updated_at, penghuni_name,
+          unit_number, phone,
           penghuni:penghuni_id(full_name),
           units:unit_id(unit_number)
         `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as Keluhan[];
+      return (data as Keluhan[]) || [];
     },
   });
 }
