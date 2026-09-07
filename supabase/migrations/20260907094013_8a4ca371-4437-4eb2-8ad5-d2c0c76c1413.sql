@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_keluhan_created_at_desc ON public.keluhan (created_at DESC);
