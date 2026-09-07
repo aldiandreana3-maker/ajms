@@ -11,10 +11,25 @@ interface DashboardStats {
   parkingSubscriptions: number;
 }
 
+const EMPTY_STATS: DashboardStats = {
+  totalUnits: 0,
+  activePenghuni: 0,
+  commercialTenants: 0,
+  accessCards: 0,
+  totalKeluhan: 0,
+  totalWorkOrders: 0,
+  parkingSubscriptions: 0,
+};
+
 export function useDashboardStats() {
   return useQuery({
     queryKey: ["dashboard-stats"],
+    retry: 1,
+    staleTime: 60_000,
+    placeholderData: EMPTY_STATS,
     queryFn: async (): Promise<DashboardStats> => {
+      try {
+
       const [
         unitsResult,
         commercialResult,
