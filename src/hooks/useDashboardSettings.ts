@@ -15,13 +15,21 @@ interface DashboardSetting {
 export function useDashboardSettings() {
   return useQuery({
     queryKey: ["dashboard-settings"],
+    retry: 1,
+    staleTime: 60_000,
+    placeholderData: [] as DashboardSetting[],
     queryFn: async (): Promise<DashboardSetting[]> => {
-      const { data, error } = await (supabase
-        .from("dashboard_settings" as any)
-        .select("*") as any);
+      try {
+        const { data, error } = await (supabase
+          .from("dashboard_settings" as any)
+          .select("*") as any);
 
-      if (error) throw error;
-      return data || [];
+        if (error) throw error;
+        return data || [];
+      } catch (e) {
+        console.warn("dashboard settings failed", e);
+        return [];
+      }
     },
   });
 }

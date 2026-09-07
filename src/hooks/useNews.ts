@@ -41,16 +41,24 @@ export function useNews() {
 export function usePublishedNews() {
   return useQuery({
     queryKey: ["published-news"],
+    retry: 1,
+    staleTime: 60_000,
+    placeholderData: [] as News[],
     queryFn: async (): Promise<News[]> => {
-      const { data, error } = await supabase
-        .from("news")
-        .select("*")
-        .eq("status", "published")
-        .order("published_at", { ascending: false })
-        .limit(5);
+      try {
+        const { data, error } = await supabase
+          .from("news")
+          .select("*")
+          .eq("status", "published")
+          .order("published_at", { ascending: false })
+          .limit(5);
 
-      if (error) throw error;
-      return data as News[];
+        if (error) throw error;
+        return (data as News[]) || [];
+      } catch (e) {
+        console.warn("published news failed", e);
+        return [];
+      }
     },
   });
 }

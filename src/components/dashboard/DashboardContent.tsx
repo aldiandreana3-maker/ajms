@@ -37,8 +37,8 @@ interface EditDialogState {
 }
 
 export function DashboardContent({ onOpenKepenghunian }: DashboardContentProps) {
-  const { data: stats, isLoading: statsLoading } = useDashboardStats();
-  const { data: settings, isLoading: settingsLoading } = useDashboardSettings();
+  const { data: stats } = useDashboardStats();
+  const { data: settings } = useDashboardSettings();
   const { data: newsData, isLoading: newsLoading } = usePublishedNews();
   const { user, isSuperAdmin, isLimitedAccess } = useAuth();
   const navigate = useNavigate();
