@@ -86,7 +86,27 @@ import DataTokenPage from "./pages/it/DataToken";
 import { LiveChatWidget } from "./components/chat/LiveChatWidget";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Cache lebih lama supaya data yang sudah dimuat langsung tampil
+      staleTime: 60_000,
+      gcTime: 10 * 60_000,
+      // Jangan mengulang permintaan berkali-kali saat jaringan/server lambat
+      retry: 1,
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 5000),
+      // Hindari permintaan berulang saat pindah tab / reconnect
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      refetchOnMount: false,
+      networkMode: "always",
+    },
+    mutations: {
+      retry: 0,
+      networkMode: "always",
+    },
+  },
+});
 
 /** Wrap a page component with SystemInactiveGuard */
 const guarded = (element: React.ReactNode) => (
