@@ -65,15 +65,20 @@ export function useDashboardStats() {
         }
       }
 
-      return {
-        totalUnits: unitsResult.count || 0,
-        activePenghuni: unitSet.size,
-        commercialTenants: commercialResult.count || 0,
-        accessCards: cardsResult.count || 0,
-        totalKeluhan: keluhanResult.count || 0,
-        totalWorkOrders: workOrdersResult.count || 0,
-        parkingSubscriptions: parkingResult.count || 0,
-      };
+        return {
+          totalUnits: unitsResult.count || 0,
+          activePenghuni: unitSet.size,
+          commercialTenants: commercialResult.count || 0,
+          accessCards: cardsResult.count || 0,
+          totalKeluhan: keluhanResult.count || 0,
+          totalWorkOrders: workOrdersResult.count || 0,
+          parkingSubscriptions: parkingResult.count || 0,
+        };
+      } catch (e) {
+        console.warn("dashboard stats failed", e);
+        return EMPTY_STATS;
+      }
     },
+
   });
 }
