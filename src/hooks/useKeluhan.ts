@@ -33,6 +33,19 @@ interface CreateKeluhanInput {
   phone?: string;
 }
 
+const KELUHAN_FETCH_TIMEOUT_MS = 12_000;
+
+async function fetchWithTimeout<T>(query: { abortSignal: (signal: AbortSignal) => PromiseLike<T> }) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), KELUHAN_FETCH_TIMEOUT_MS);
+
+  try {
+    return await query.abortSignal(controller.signal);
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
 export function useKeluhan() {
   return useQuery({
     queryKey: ["keluhan"],
@@ -41,7 +54,7 @@ export function useKeluhan() {
     gcTime: 5 * 60_000,
     placeholderData: (previousData) => previousData,
     queryFn: async (): Promise<Keluhan[]> => {
-      const { data, error } = await supabase
+      const query = supabase
         .from("keluhan")
         .select(`
           id, penghuni_id, unit_id, subject, description, status, photo_url,
@@ -51,6 +64,8 @@ export function useKeluhan() {
           units:unit_id(unit_number)
         `)
         .order("created_at", { ascending: false });
+
+      const { data, error } = await fetchWithTimeout(query);
 
       if (error) throw error;
       return (data as Keluhan[]) || [];
