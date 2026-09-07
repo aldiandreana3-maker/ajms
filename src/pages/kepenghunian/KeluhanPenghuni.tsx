@@ -48,7 +48,7 @@ export default function KeluhanPenghuni() {
   const navigate = useNavigate();
   const { getFeaturePermission, isAuthenticated, isAdmin, isSuperAdmin } = usePermissions();
   const permission = getFeaturePermission("keluhan");
-  const { data: keluhan, isLoading } = useKeluhan();
+  const { data: keluhan, isLoading, isError, refetch } = useKeluhan();
   const createMutation = useCreateKeluhan();
   const updateStatusMutation = useUpdateKeluhanStatus();
   const deleteMutation = useDeleteKeluhan();
@@ -367,6 +367,14 @@ export default function KeluhanPenghuni() {
               onDateFilterChange={handleDateFilterChange}
               searchPlaceholder="Cari keluhan, nama, unit..."
             />
+            {isError && (
+              <div className="mb-4 flex items-center justify-between gap-3 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                <span>Data belum dapat dimuat. Silakan coba kembali.</span>
+                <Button variant="outline" size="sm" onClick={() => refetch()}>
+                  Muat Ulang
+                </Button>
+              </div>
+            )}
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
