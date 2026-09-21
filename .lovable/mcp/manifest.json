@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "sdk_version": "3.0.1",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://yeehwobmpknqagcolkbo.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "andrea-jarrdin-management-system",
+      "version": "0.1.0",
+      "title": "Andrea Jarrdin Management System"
+    },
+    "tools": [
+      {
+        "name": "list_my_bills",
+        "title": "Daftar tagihan saya",
+        "description": "Menampilkan tagihan AJMS yang dapat diakses oleh pengguna yang sedang masuk.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": [
+                "all",
+                "unpaid",
+                "partial",
+                "paid"
+              ],
+              "default": "all",
+              "description": "Status pembayaran yang dicari."
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "description": "Jumlah maksimal tagihan."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "search_data_token",
+        "title": "Cari data token listrik",
+        "description": "Mencari status dan catatan token listrik unit yang dapat diakses pengguna AJMS.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "unit_number": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20,
+              "description": "Nomor unit, misalnya A0202 atau KOA1."
+            }
+          },
+          "required": [
+            "unit_number"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
