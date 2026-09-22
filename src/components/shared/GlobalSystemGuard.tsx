@@ -27,6 +27,7 @@ export function GlobalSystemGuard({ children }: GlobalSystemGuardProps) {
 
   // Halaman yang selalu bisa diakses tanpa blok
   const isAuthPage = location.pathname === "/auth";
+  const isOAuthConsentPage = location.pathname === "/.lovable/oauth/consent";
   // Halaman aktivasi bisa diakses oleh user yang sudah login (admin, staff finance, staff tro, dll)
   const isActivationPage = location.pathname === "/aktivasi-sistem";
 
@@ -36,7 +37,7 @@ export function GlobalSystemGuard({ children }: GlobalSystemGuardProps) {
   }
 
   // Jika sistem aktif / master dev / di halaman auth / di halaman aktivasi → tampil normal
-  if (!isSystemInactive || isMasterDev || isAuthPage || isActivationPage) {
+  if (!isSystemInactive || isMasterDev || isAuthPage || isOAuthConsentPage || isActivationPage) {
     return <>{children}</>;
   }
 

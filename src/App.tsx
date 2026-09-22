@@ -83,6 +83,7 @@ import JadwalSaya from "./pages/karyawan/JadwalSaya";
 import LiveChatAdmin from "./pages/LiveChatAdmin";
 import IT from "./pages/it/IT";
 import DataTokenPage from "./pages/it/DataToken";
+import OAuthConsent from "./pages/OAuthConsent";
 import { LiveChatWidget } from "./components/chat/LiveChatWidget";
 import NotFound from "./pages/NotFound";
 
@@ -125,6 +126,7 @@ const App = () => (
             <Routes>
               {/* Selalu accessible */}
               <Route path="/auth" element={<Auth />} />
+              <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
               <Route path="/" element={<Index />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/aktivasi-sistem" element={<AktivasiSistem />} />
