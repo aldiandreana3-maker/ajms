@@ -1,4 +1,4 @@
 # Roadmap
 
 - [x] Perbaiki loading lama pada halaman Home/Dashboard dan Keluhan agar data tampil normal.
-- [ ] Tambahkan integrasi agen MCP terlindungi login, persetujuan koneksi, dan alat AJMS.
+- [ ] Aktifkan login integrasi agen setelah Lovable Cloud kembali aktif; kode MCP dan layar persetujuan sudah siap.

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import logoTjms from "@/assets/logo-tjms.png";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,7 +40,13 @@ const forgotEmailSchema = z.object({
 
 export default function Auth() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, signIn, signUp, isLoading: authLoading } = useAuth();
+
+  const requestedNext = searchParams.get("next");
+  const nextPath = requestedNext?.startsWith("/") && !requestedNext.startsWith("//")
+    ? requestedNext
+    : "/";
   
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -65,9 +71,9 @@ export default function Auth() {
 
   useEffect(() => {
     if (user && !authLoading) {
-      navigate("/");
+      navigate(nextPath);
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, nextPath]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,7 +95,7 @@ export default function Auth() {
         }
       } else {
         toast.success("Login berhasil!");
-        navigate("/");
+        navigate(nextPath);
       }
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -112,7 +118,14 @@ export default function Auth() {
         confirmPassword: signupConfirmPassword,
       });
 
-      const { error } = await signUp(validated.email, validated.password, validated.fullName);
+      const { error } = await supabase.auth.signUp({
+        email: validated.email,
+        password: validated.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}${nextPath}`,
+          data: { full_name: validated.fullName },
+        },
+      });
       
       if (error) {
         if (error.message.includes("already registered")) {
