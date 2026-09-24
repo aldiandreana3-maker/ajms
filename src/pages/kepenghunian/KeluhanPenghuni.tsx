@@ -118,6 +118,7 @@ export default function KeluhanPenghuni() {
   const canEdit = isAdmin || isSuperAdmin;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
+    created_at: "",
     penghuni_name: "",
     unit_number: "",
     phone: "",
@@ -131,6 +132,7 @@ export default function KeluhanPenghuni() {
   const openEdit = (k: any) => {
     setEditingId(k.id);
     setEditForm({
+      created_at: format(new Date(k.created_at), "yyyy-MM-dd'T'HH:mm"),
       penghuni_name: k.penghuni_name || k.penghuni?.full_name || "",
       unit_number: k.unit_number || k.units?.unit_number || "",
       phone: k.phone || "",
@@ -153,6 +155,7 @@ export default function KeluhanPenghuni() {
       const { error } = await supabase
         .from("keluhan")
         .update({
+          created_at: new Date(editForm.created_at).toISOString(),
           penghuni_name: editForm.penghuni_name || null,
           unit_number: editForm.unit_number || null,
           phone: editForm.phone || null,
@@ -533,6 +536,15 @@ export default function KeluhanPenghuni() {
             <DialogTitle>Edit Keluhan</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Tanggal dan Waktu Keluhan</Label>
+              <Input
+                type="datetime-local"
+                value={editForm.created_at}
+                onChange={(e) => setEditForm({ ...editForm, created_at: e.target.value })}
+                required
+              />
+            </div>
             <div className="space-y-2">
               <Label>Nama Penghuni</Label>
               <Input
