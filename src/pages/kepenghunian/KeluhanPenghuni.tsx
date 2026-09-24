@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useKeluhan, useCreateKeluhan, useUpdateKeluhanStatus, useDeleteKeluhan } from "@/hooks/useKeluhan";
+import { useKeluhan, useCreateKeluhan, useUpdateKeluhanStatus, useDeleteKeluhan, type Keluhan } from "@/hooks/useKeluhan";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PermissionButton } from "@/components/ui/permission-button";
@@ -118,6 +118,7 @@ export default function KeluhanPenghuni() {
   const canEdit = isAdmin || isSuperAdmin;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({
+    created_at: "",
     penghuni_name: "",
     unit_number: "",
     phone: "",
@@ -128,9 +129,10 @@ export default function KeluhanPenghuni() {
   const [editMediaFile, setEditMediaFile] = useState<File | null>(null);
   const [editSaving, setEditSaving] = useState(false);
 
-  const openEdit = (k: any) => {
+  const openEdit = (k: Keluhan) => {
     setEditingId(k.id);
     setEditForm({
+      created_at: format(new Date(k.created_at), "yyyy-MM-dd'T'HH:mm"),
       penghuni_name: k.penghuni_name || k.penghuni?.full_name || "",
       unit_number: k.unit_number || k.units?.unit_number || "",
       phone: k.phone || "",
@@ -153,6 +155,7 @@ export default function KeluhanPenghuni() {
       const { error } = await supabase
         .from("keluhan")
         .update({
+          created_at: new Date(editForm.created_at).toISOString(),
           penghuni_name: editForm.penghuni_name || null,
           unit_number: editForm.unit_number || null,
           phone: editForm.phone || null,
@@ -165,8 +168,8 @@ export default function KeluhanPenghuni() {
       toast.success("Keluhan berhasil diperbarui");
       setEditingId(null);
       queryClient.invalidateQueries({ queryKey: ["keluhan"] });
-    } catch (e: any) {
-      toast.error("Gagal menyimpan: " + e.message);
+    } catch (e: unknown) {
+      toast.error("Gagal menyimpan: " + (e instanceof Error ? e.message : "Terjadi kesalahan"));
     } finally {
       setEditSaving(false);
     }
@@ -342,9 +345,9 @@ export default function KeluhanPenghuni() {
                           await supabase.from("keluhan").update({ created_at: ts }).eq("id", created.id);
                         }
                         success++;
-                      } catch (e: any) {
+                      } catch (e: unknown) {
                         failed++;
-                        errors.push(`Baris ${i + 2}: ${e.message}`);
+                        errors.push(`Baris ${i + 2}: ${e instanceof Error ? e.message : "Terjadi kesalahan"}`);
                       }
                     }
                     return { success, failed, errors };
@@ -533,6 +536,15 @@ export default function KeluhanPenghuni() {
             <DialogTitle>Edit Keluhan</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Tanggal dan Waktu Keluhan</Label>
+              <Input
+                type="datetime-local"
+                value={editForm.created_at}
+                onChange={(e) => setEditForm({ ...editForm, created_at: e.target.value })}
+                required
+              />
+            </div>
             <div className="space-y-2">
               <Label>Nama Penghuni</Label>
               <Input
