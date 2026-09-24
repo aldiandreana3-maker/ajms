@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CreateKeluhanSchema } from "@/lib/validation";
 
-interface Keluhan {
+export interface Keluhan {
   id: string;
   penghuni_id: string | null;
   unit_id: string | null;
