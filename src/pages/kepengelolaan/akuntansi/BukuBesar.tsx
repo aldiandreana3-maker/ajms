@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { TablePagination, usePagination } from "@/components/shared/TablePagination";
 import { ExportExcelButton } from "@/components/akuntansi/AccountingExcelTools";
+import { fetchAllRows } from "@/lib/fetchAllRows";
 
 const formatRp = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
@@ -43,30 +44,38 @@ export default function BukuBesar() {
     setLoading(true);
     setCurrentPage(1);
     (async () => {
-      const { data: lines, error } = await supabase
+      try {
+      const { data: lines } = await fetchAllRows(supabase
         .from("journal_entry_lines" as any)
         .select("*")
-        .eq("account_id", selectedAccount);
-      if (error) { setLoading(false); return; }
+        .eq("account_id", selectedAccount));
 
       const entryIds = [...new Set((lines as any[]).map((l: any) => l.journal_entry_id))];
-      const { data: entries } = await supabase
-        .from("journal_entries" as any)
-        .select("*")
-        .in("id", entryIds)
-        .eq("is_posted", true);
+      const entries: any[] = [];
+      for (let start = 0; start < entryIds.length; start += 300) {
+        const { data } = await fetchAllRows(supabase
+          .from("journal_entries" as any)
+          .select("*")
+          .in("id", entryIds.slice(start, start + 300))
+          .eq("is_posted", true));
+        entries.push(...data);
+      }
 
       const entryMap = new Map((entries as any[] || []).map((e: any) => [e.id, e]));
       const result: LedgerLine[] = (lines as any[])
-        .filter((l: any) => entryMap.has(l.journal_entry_id))
-        .map((l: any) => {
-          const entry = entryMap.get(l.journal_entry_id)!;
-          return { ...l, entry_number: entry.entry_number, entry_date: entry.entry_date, journal_description: entry.description };
+        .flatMap((l: any) => {
+          const entry = entryMap.get(l.journal_entry_id);
+          if (!entry) return [];
+          return [{ ...l, entry_number: entry.entry_number, entry_date: entry.entry_date, journal_description: entry.description }];
         })
         .sort((a: any, b: any) => new Date(a.entry_date).getTime() - new Date(b.entry_date).getTime());
 
       setLedgerLines(result);
-      setLoading(false);
+      } catch {
+        setLedgerLines([]);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [selectedAccount]);
 

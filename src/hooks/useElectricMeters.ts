@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -25,10 +26,10 @@ export function useElectricMeters() {
   const query = useQuery({
     queryKey: ["electric-meters"],
     queryFn: async (): Promise<ElectricMeter[]> => {
-      const { data, error } = await supabase
+      const { data, error } = await fetchAllRows(supabase
         .from("electric_meters")
         .select("*")
-        .order("unit_number", { ascending: true });
+        .order("unit_number", { ascending: true }));
       if (error) throw error;
       return data as unknown as ElectricMeter[];
     },

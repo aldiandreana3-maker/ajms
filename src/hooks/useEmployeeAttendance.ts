@@ -204,10 +204,10 @@ export function useAllAttendance() {
   return useQuery({
     queryKey: ["all-employee-attendance"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await fetchAllRows(supabase
         .from("employee_attendance")
         .select("*")
-        .order("attendance_date", { ascending: false });
+        .order("attendance_date", { ascending: false }));
       if (error) throw error;
       return data as EmployeeAttendance[];
     },

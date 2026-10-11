@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,10 +25,10 @@ export function useEmployeeOvertimes() {
   return useQuery({
     queryKey: ["employee-overtimes", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await fetchAllRows(supabase
         .from("employee_overtimes")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false }));
       if (error) throw error;
       return data as EmployeeOvertime[];
     },

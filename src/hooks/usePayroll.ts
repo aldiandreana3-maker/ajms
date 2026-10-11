@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,7 +14,7 @@ export function usePayrollList(month?: number, year?: number) {
         .order("created_at", { ascending: false });
       if (month) query = query.eq("period_month", month);
       if (year) query = query.eq("period_year", year);
-      const { data, error } = await query;
+      const { data, error } = await fetchAllRows(query);
       if (error) throw error;
       return data;
     },
