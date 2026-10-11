@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
@@ -142,10 +143,10 @@ export default function PemutakhiranData() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await fetchAllRows(supabase
         .from("penghuni_updates")
         .select("*")
-        .order("unit_number", { ascending: true });
+        .order("unit_number", { ascending: true }));
       if (error) throw error;
       const rows = (data || []).map((r: any) => ({
         "Nomor Unit": r.unit_number || "",

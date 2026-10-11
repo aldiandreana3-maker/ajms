@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -42,13 +43,13 @@ export function useForeignGuests() {
   return useQuery({
     queryKey: ["foreign-guests"],
     queryFn: async (): Promise<ForeignGuest[]> => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await fetchAllRows((supabase as any)
         .from("foreign_guest_reports")
         .select(`
           *,
           units:unit_id(unit_number)
         `)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false }));
 
       if (error) throw error;
       return data as ForeignGuest[];

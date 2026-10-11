@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -35,10 +36,10 @@ export function useBicycles() {
   const { data: bicycles = [], isLoading } = useQuery({
     queryKey: ["bicycles"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await fetchAllRows(supabase
         .from("bicycles" as any)
         .select("*")
-        .order("code", { ascending: true });
+        .order("code", { ascending: true }));
 
       if (error) throw error;
 

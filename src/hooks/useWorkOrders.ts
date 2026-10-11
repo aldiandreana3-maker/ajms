@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -37,14 +38,14 @@ export function useWorkOrders() {
   return useQuery({
     queryKey: ["work-orders"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await fetchAllRows(supabase
         .from("work_orders")
         .select(`
           *,
           units (unit_number),
           keluhan (subject, penghuni_name)
         `)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false }));
 
       if (error) throw error;
       return data as WorkOrder[];
