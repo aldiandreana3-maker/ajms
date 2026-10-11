@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CreateKeluhanSchema } from "@/lib/validation";
+import { fetchAllRows } from "@/lib/fetchAllRows";
 
 export interface Keluhan {
   id: string;
@@ -33,19 +34,6 @@ interface CreateKeluhanInput {
   phone?: string;
 }
 
-const KELUHAN_FETCH_TIMEOUT_MS = 12_000;
-
-async function fetchWithTimeout<T>(query: { abortSignal: (signal: AbortSignal) => PromiseLike<T> }) {
-  const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), KELUHAN_FETCH_TIMEOUT_MS);
-
-  try {
-    return await query.abortSignal(controller.signal);
-  } finally {
-    window.clearTimeout(timeout);
-  }
-}
-
 export function useKeluhan() {
   return useQuery({
     queryKey: ["keluhan"],
@@ -65,7 +53,7 @@ export function useKeluhan() {
         `)
         .order("created_at", { ascending: false });
 
-      const { data, error } = await fetchWithTimeout(query);
+      const { data, error } = await fetchAllRows(query);
 
       if (error) throw error;
       return (data as Keluhan[]) || [];
