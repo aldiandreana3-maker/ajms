@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Perbaiki ekspor seluruh halaman agar tidak terpotong pada 1.000 baris.
+
 - [x] Perbaiki loading lama pada halaman Home/Dashboard dan Keluhan agar data tampil normal.
 - [x] Tambahkan koreksi tanggal dan waktu keluhan khusus Admin, Super Admin, dan Master Dev.
 - [x] Pastikan pembayaran aktivasi tetap bisa dibuka saat sistem dibatasi.
