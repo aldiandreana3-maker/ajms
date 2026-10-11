@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,10 +28,10 @@ export function useReconciliations() {
   const { data: reconciliations = [], isLoading } = useQuery({
     queryKey: ["reconciliations"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await fetchAllRows(supabase
         .from("reconciliations" as any)
         .select("*")
-        .order("period_date", { ascending: false });
+        .order("period_date", { ascending: false }));
       if (error) throw error;
       return (data || []) as unknown as Reconciliation[];
     },

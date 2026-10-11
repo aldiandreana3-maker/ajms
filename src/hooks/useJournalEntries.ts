@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,10 +37,10 @@ export function useJournalEntries() {
   const { data: entries = [], isLoading } = useQuery({
     queryKey: ["journal_entries"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await fetchAllRows(supabase
         .from("journal_entries" as any)
         .select("*")
-        .order("entry_date", { ascending: false });
+        .order("entry_date", { ascending: false }));
       if (error) throw error;
       return (data || []) as unknown as JournalEntry[];
     },

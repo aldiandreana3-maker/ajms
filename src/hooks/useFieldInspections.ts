@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -51,7 +52,7 @@ export function useFieldInspections(search?: string) {
         query = query.or(`unit_number.ilike.%${search}%,finding_description.ilike.%${search}%`);
       }
 
-      const { data, error } = await query;
+      const { data, error } = await fetchAllRows(query);
       if (error) throw error;
       return data as FieldInspection[];
     },

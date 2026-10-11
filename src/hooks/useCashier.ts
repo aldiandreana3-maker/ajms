@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -90,10 +91,10 @@ export function useCashier() {
   const { data: allTransactions = [], isLoading: transactionsLoading } = useQuery({
     queryKey: ["cashier-transactions-all"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await fetchAllRows(supabase
         .from("cashier_transactions")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false }));
       if (error) throw error;
       return data as CashierTransaction[];
     },

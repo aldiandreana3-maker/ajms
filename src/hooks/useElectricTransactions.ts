@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -29,10 +30,10 @@ export function useElectricTransactions() {
   const query = useQuery({
     queryKey: ["electric-transactions"],
     queryFn: async (): Promise<ElectricTransaction[]> => {
-      const { data, error } = await supabase
+      const { data, error } = await fetchAllRows(supabase
         .from("electric_transactions")
         .select("*")
-        .order("transaction_date", { ascending: false });
+        .order("transaction_date", { ascending: false }));
       if (error) throw error;
       return data as unknown as ElectricTransaction[];
     },

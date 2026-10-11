@@ -1,3 +1,4 @@
+import { fetchAllRows } from "@/lib/fetchAllRows";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -66,14 +67,14 @@ export function useParkingSubscriptions() {
   return useQuery({
     queryKey: ["parking-subscriptions"],
     queryFn: async (): Promise<ParkingSubscription[]> => {
-      const { data, error } = await supabase
+      const { data, error } = await fetchAllRows(supabase
         .from("parking_subscriptions")
         .select(`
           *,
           penghuni:penghuni_id(full_name),
           units:unit_id(unit_number)
         `)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false }));
 
       if (error) throw error;
       return data as ParkingSubscription[];
