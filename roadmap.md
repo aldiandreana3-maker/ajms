@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Tambah manual, edit dan hapus satu unit NPP dengan konfirmasi; batasi halaman dan database untuk Master Dev, Super Admin, Admin dan staf TRO; pertahankan versi sumber dan uji simpan/baca ulang.
+- [x] Tambah manual, edit dan hapus satu unit NPP dengan konfirmasi; halaman dan database dibatasi untuk Master Dev, Super Admin, Admin dan staf TRO. Perubahan membuat versi baru, tambah/edit/hapus serta baca ulang terverifikasi; 2.511 unit asli aktif tetap utuh.
 
 - [x] Periksa kapasitas dan kelambatan: disk database 13%, memori 70%, tidak ada kehabisan sumber daya; file sekitar 3,84 GB. Perbaiki pratinjau tautan foto lama dan keterangan kegagalan; foto Cloud nyata terverifikasi.
 - [ ] Pemindahan foto keluhan Google Drive: 196 keluhan / 266 tautan diperiksa, seluruh file mendapat 404 dari akun Aldi's Google Drive, termasuk B2112. Menunggu akses akun terhubung ke file asli atau unggahan ulang foto yang cocok; tidak ada foto diganti/dipublikasikan. Fungsi pemindahan privat dan verifikasi penyimpanan siap.
