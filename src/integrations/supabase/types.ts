@@ -2353,6 +2353,33 @@ export type Database = {
         }
         Relationships: []
       }
+      npp_election_datasets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          owner_aliases: Json
+          records: Json
+          source_name: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          owner_aliases?: Json
+          records?: Json
+          source_name: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          owner_aliases?: Json
+          records?: Json
+          source_name?: string
+        }
+        Relationships: []
+      }
       packages: {
         Row: {
           courier: string
