@@ -2,7 +2,7 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { z } from 'npm:zod@3';
 
-const schema = z.object({ offset: z.number().int().min(0).default(0), limit: z.number().int().min(1).max(10).default(5) });
+const schema = z.object({ afterId: z.string().uuid().optional(), limit: z.number().int().min(1).max(10).default(5) });
 const reply = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 // Only download IDs already attached to complaint records; never accept arbitrary URLs.
 Deno.serve(async req => {
@@ -19,9 +19,11 @@ Deno.serve(async req => {
     if (roleError || !admin) return reply({ error: 'Admin only' }, 403);
     const parsed = schema.safeParse(await req.json());
     if (!parsed.success) return reply({ error: parsed.error.flatten() }, 400);
-    // Stable pagination over all records: successful replacements cannot shift later pages.
-    const { offset, limit } = parsed.data;
-    const { data: rows, error } = await db.from('keluhan').select('id,photo_url,created_by,penghuni_id').order('id').range(offset, offset + limit - 1);
+    // Keyset pagination: successful replacements cannot shift later pages.
+    const { afterId, limit } = parsed.data;
+    let query = db.from('keluhan').select('id,photo_url,created_by,penghuni_id').ilike('photo_url', '%drive.google.com%').order('id').limit(limit);
+    if (afterId) query = query.gt('id', afterId);
+    const { data: rows, error } = await query;
     if (error) throw error;
     const results: unknown[] = [];
     for (const row of rows || []) {
@@ -59,6 +61,6 @@ Deno.serve(async req => {
       }
       results.push({ id: row.id, outcomes });
     }
-    return reply({ nextOffset: offset + (rows?.length || 0), done: (rows?.length || 0) < limit, results });
+    return reply({ afterId: rows?.at(-1)?.id, done: (rows?.length || 0) < limit, results });
   } catch (e) { return reply({ error: e instanceof Error ? e.message : String(e) }, 500); }
 });
