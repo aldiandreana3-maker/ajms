@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 export interface NppUnit { row: number; unit: string; owner: string; area: number | null; tower: string; type: string; description: string; transfer: string; npp: number | null; remark: string }
 export interface NppOwner { key: string; name: string; units: NppUnit[]; area: number; npp: number }
 export const normalizeOwner = (s: string) => s.trim().replace(/\s+/g, ' ').toLocaleUpperCase('id-ID');
+export const nppOwnerName = (unit: NppUnit) => unit.transfer?.trim() ? unit.transfer : unit.owner;
 export const nppPercent = (n: number) => new Intl.NumberFormat('id-ID', { style: 'percent', minimumFractionDigits: 6, maximumFractionDigits: 8 }).format(n);
 export const nppNumber = (n: number) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: 3 }).format(n);
 export function parseNpp(buffer: ArrayBuffer): NppUnit[] {
@@ -35,7 +36,7 @@ export function validateNpp(rows: NppUnit[]) {
   const unit = r.unit.trim().toUpperCase();
   if (seen.has(unit)) { issues.push({row:r.row,unit:r.unit,message:'Nomor unit duplikat — tidak dihitung ulang'}); continue; }
   seen.add(unit); unique.push(r);
-  if (!normalizeOwner(r.owner)) issues.push({row:r.row,unit:r.unit,message:'Nama pemilik kosong'});
+   if (!normalizeOwner(nppOwnerName(r))) issues.push({row:r.row,unit:r.unit,message:'Nama pemilik kosong'});
   if (r.area == null || r.area < 0) issues.push({row:r.row,unit:r.unit,message:'Luas kosong/tidak valid/negatif'});
   if (r.npp == null || r.npp < 0) issues.push({row:r.row,unit:r.unit,message:'NPP kosong/tidak valid/negatif'});
  }
@@ -44,7 +45,7 @@ export function validateNpp(rows: NppUnit[]) {
 export function groupNpp(rows: NppUnit[], aliases: Record<string,string>): NppOwner[] {
  const groups = new Map<string,NppOwner>();
  for (const r of rows) {
-  const raw = normalizeOwner(r.owner); const name = aliases[raw] || raw || `PEMILIK BELUM DIISI — ${r.unit}`; const key = normalizeOwner(name);
+   const raw = normalizeOwner(nppOwnerName(r)); const name = aliases[raw] || raw || `PEMILIK BELUM DIISI — ${r.unit}`; const key = normalizeOwner(name);
   const group = groups.get(key) || {key,name,units:[],area:0,npp:0};
   group.units.push(r); group.area += r.area != null && r.area >= 0 ? r.area : 0; group.npp += r.npp != null && r.npp >= 0 ? r.npp : 0; groups.set(key,group);
  }

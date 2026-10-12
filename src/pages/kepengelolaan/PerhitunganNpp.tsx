@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNpp } from '@/hooks/useNpp';
-import { parseNpp, validateNpp, groupNpp, exportNpp, nppPercent, nppNumber, normalizeOwner, type NppUnit, type NppOwner } from '@/lib/npp';
+import { parseNpp, validateNpp, groupNpp, exportNpp, nppPercent, nppNumber, normalizeOwner, nppOwnerName, type NppUnit, type NppOwner } from '@/lib/npp';
 const title='Perhitungan NPP 2026 (Untuk Pemilihan)';
 function Choice({label,value,change,options}:{label:string;value:string;change:(s:string)=>void;options:{value:string;label:string}[]}){
  return <Select value={value} onValueChange={change}><SelectTrigger aria-label={label} className="w-full sm:w-44"><SelectValue placeholder={label}/></SelectTrigger><SelectContent>{options.map(o=><SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>;
@@ -38,7 +38,7 @@ export default function PerhitunganNpp(){
  async function confirmImport(){if(!preview)return;try{await data.save.mutateAsync({records:preview.rows,source_name:preview.name});setPreview(null);setSelected(new Set());reset();toast.success('Data NPP berhasil diimpor');}catch(e){toast.error(e instanceof Error?e.message:'Gagal impor');}}
  async function merge(){if(!from||!to||normalizeOwner(from)===normalizeOwner(to))return;try{
   const dest=aliases[normalizeOwner(to)]||normalizeOwner(to);const next={...aliases};
-  for(const g of all.filter(g=>g.key===from))for(const u of g.units)next[normalizeOwner(u.owner)]=dest;
+   for(const g of all.filter(g=>g.key===from))for(const u of g.units)next[normalizeOwner(nppOwnerName(u))]=dest;
   await data.merge.mutateAsync(next);setSelected(new Set());setMergeOpen(false);toast.success('Nama pemilik digabung; sumber tetap tersimpan');
  }catch(e){toast.error(e instanceof Error?e.message:'Gagal menggabungkan');}}
  const unitTable=(units:NppUnit[])=><div className="overflow-auto"><Table><TableHeader><TableRow>{['Unit','Nama asli','Tower','Tipe','Luas (m²)','NPP','Keterangan','Balik nama','Remark'].map(h=><TableHead key={h}>{h}</TableHead>)}</TableRow></TableHeader><TableBody>{units.map(u=><TableRow key={`${u.row}-${u.unit}`}><TableCell>{u.unit}</TableCell><TableCell>{u.owner||'—'}</TableCell><TableCell>{u.tower}</TableCell><TableCell>{u.type}</TableCell><TableCell>{u.area==null?'—':nppNumber(u.area)}</TableCell><TableCell className="whitespace-nowrap">{u.npp==null?'—':nppPercent(u.npp)}</TableCell><TableCell>{u.description||'—'}</TableCell><TableCell>{u.transfer||'—'}</TableCell><TableCell>{u.remark||'—'}</TableCell></TableRow>)}</TableBody></Table></div>;
