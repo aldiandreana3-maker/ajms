@@ -3973,6 +3973,15 @@ export type Database = {
       is_admin_or_above: { Args: { _user_id: string }; Returns: boolean }
       is_staff_or_above: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin_or_master: { Args: { _user_id: string }; Returns: boolean }
+      manage_npp_unit: {
+        Args: {
+          _action: string
+          _dataset_id: string
+          _original?: Json
+          _record?: Json
+        }
+        Returns: string
+      }
       refresh_unit_billing_status: {
         Args: { _unit_id?: string }
         Returns: undefined
