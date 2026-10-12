@@ -2,7 +2,7 @@ export const archiveServices: Record<string, { table: string; title: string; joi
   '/kepenghunian/keluhan': { table: 'keluhan', title: 'Keluhan Penghuni', joinUnit: true },
   '/kepenghunian/abonemen-parkir': { table: 'parking_subscriptions', title: 'Abonemen Parkir', joinUnit: true },
   '/kepenghunian/pemutakhiran-data': { table: 'penghuni_updates', title: 'Pemutakhiran Data Penghuni' },
-  '/kepengelolaan/pemutakhiran-data': { table: 'penghuni_updates', title: 'Pemutakhiran Data Penghuni' },
+  '/kepengelolaan/tro/pemutakhiran-data': { table: 'penghuni_updates', title: 'Pemutakhiran Data Penghuni' },
   '/kepenghunian/izin-kerja': { table: 'work_permits', title: 'Izin Kerja', joinUnit: true },
   '/kepenghunian/barang': { table: 'goods_movement', title: 'Keluar Masuk Barang', joinUnit: true },
   '/kepenghunian/kartu-akses': { table: 'access_cards', title: 'Kartu Akses', joinUnit: true },
@@ -72,7 +72,6 @@ export function printArchive(title: string, header: string, body: string, footer
     footer { margin-top: 32px; border-top: 1px solid hsl(var(--line)); padding-top: 12px; }
   </style></head><body><p>${escape(header)}</p><h1>${escape(title)}</h1><pre>${escape(body)}</pre><footer>${escape(footer)}</footer></body></html>`);
   popup.document.close();
-  popup.onload = () => { popup.focus(); popup.print(); };
   // The document contains only text and is ready immediately.
   popup.focus(); popup.print();
   return true;
