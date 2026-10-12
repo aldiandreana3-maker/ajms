@@ -99,7 +99,17 @@ export function printArchive(title: string, header: string, body: string, footer
       else if (fields.length) fields[fields.length - 1].value += `\n${line}`;
       else if (line.trim()) extra.push(line);
     }
-    const value = (...names: string[]) => fields.find(field => names.includes(field.label.toLowerCase()))?.value ?? '';
+    const value = (...names: string[]) => {
+      const text = fields.find(field => names.includes(field.label.toLowerCase()))?.value ?? '';
+      if (names.some(name => ['tanggal pencatatan', 'terakhir diperbarui'].includes(name))) {
+        const match = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s+(\d{1,2})[.:](\d{2})/);
+        if (match) {
+          const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+          return `${Number(match[1])} ${months[Number(match[2]) - 1]} ${match[3]}, pukul ${match[4].padStart(2, '0')}.${match[5]}`;
+        }
+      }
+      return text;
+    };
     const status = value('status').trim().toLowerCase();
     const fieldHtml = (label: string, content: string, wide = false, ruled = false) => `<div class="field ${wide ? 'wide' : ''} ${ruled ? 'ruled' : ''}"><div class="label">${escape(label)}</div><div class="value">${escape(content === '-' && ruled ? '' : content)}</div></div>`;
     const section = (name: string, contents: string, grid = false) => `<section><h2>${escape(name)}</h2><div class="fields ${grid ? 'grid' : ''}">${contents}</div></section>`;
@@ -121,7 +131,7 @@ export function printArchive(title: string, header: string, body: string, footer
     .eyebrow { display:inline-block; background:hsl(var(--archive-accent)); color:hsl(var(--archive-paper)); border-radius:2mm; padding:2mm 8mm; font-size:8pt; font-weight:bold; }
     .heading { display:flex; align-items:center; justify-content:space-between; gap:5mm; border-bottom:0.4mm solid hsl(var(--archive-accent)); padding:5mm 0 3.5mm; margin-bottom:6mm; } h1 { color:hsl(var(--archive-ink)); font-size:18pt; margin:0 0 2mm; } p { margin:0; line-height:1.55; white-space:pre-wrap; overflow-wrap:anywhere; } .heading p { color:hsl(var(--archive-muted)); font-size:9pt; }
     .record { text-align:right; min-width:24mm; color:hsl(var(--archive-ink)); font-weight:bold; font-size:9pt; } .badge { display:block; padding:1.5mm 3mm; border-radius:1.5mm; text-transform:uppercase; background:hsl(var(--archive-accent)); color:hsl(var(--archive-paper)); font-size:8pt; } .pending { background:hsl(var(--archive-pending)); } .proses { background:hsl(var(--archive-process)); } .selesai { background:hsl(var(--archive-done)); }
-    section { margin-bottom:8mm; } h2 { font-size:9pt; margin:0 0 2mm; background:hsl(var(--archive-section)); padding:2.5mm 3.5mm; border-radius:1.5mm; break-after:avoid; } .fields { padding:0 3mm; } .grid { display:grid; grid-template-columns:1fr 1fr; gap:5mm 9mm; } .field { margin-bottom:2mm; break-inside:avoid; } .label { text-transform:uppercase; font-weight:bold; font-size:8pt; color:hsl(var(--archive-muted)); margin-bottom:1.5mm; } .value { color:hsl(var(--archive-muted)); white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.6; border-bottom:0.2mm solid hsl(var(--archive-line)); padding-bottom:1mm; min-height:6mm; } .wide { margin-bottom:3mm; } .ruled .value { min-height:24mm; background:repeating-linear-gradient(transparent 0,transparent 7.6mm,hsl(var(--archive-line)) 7.6mm,hsl(var(--archive-line)) 7.8mm); border-bottom:0; }
+    section { margin-bottom:8mm; } h2 { font-size:9pt; margin:0 0 2mm; background:hsl(var(--archive-section)); padding:2.5mm 3.5mm; border-radius:1.5mm; break-after:avoid; } .fields { padding:0 3mm; } .grid { display:grid; grid-template-columns:1fr 1fr; gap:5mm 9mm; } .field { margin-bottom:2mm; break-inside:avoid; } .label { text-transform:uppercase; font-weight:bold; font-size:8pt; color:hsl(var(--archive-muted)); margin-bottom:1.5mm; } .value { color:hsl(var(--archive-muted)); white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.6; border-bottom:0.2mm solid hsl(var(--archive-line)); padding-bottom:1mm; min-height:6mm; } .wide { margin-bottom:3mm; } .ruled .value { min-height:24mm; background:repeating-linear-gradient(transparent 0,transparent 7.6mm,hsl(var(--archive-line)) 7.6mm,hsl(var(--archive-line)) 7.8mm); border-bottom:0; background-size:100% 7.8mm; }
     .status-strip { display:flex; justify-content:space-between; gap:3mm; background:hsl(var(--archive-section)); border-radius:1.5mm; padding:2.5mm 3.5mm; font-size:8pt; break-inside:avoid; } .status-strip p { color:hsl(var(--archive-muted)); } small { font-size:7pt; color:hsl(var(--archive-muted)); text-align:right; }
     .signature { text-align:center; white-space:pre-wrap; line-height:1.6; margin:7mm auto 5mm; color:hsl(var(--archive-muted)); break-inside:avoid; } .signature-line { width:50mm; margin:13mm auto 1mm; border-bottom:0.2mm solid hsl(var(--archive-line)); } em { font-size:8pt; }
     .bottom { display:flex; justify-content:space-between; gap:3mm; border-top:0.3mm solid hsl(var(--archive-accent)); padding-top:2mm; font-size:7pt; color:hsl(var(--archive-muted)); }
