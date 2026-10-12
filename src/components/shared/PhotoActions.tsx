@@ -5,22 +5,42 @@ import { Eye, Download, Image, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+function driveFileId(value: string): string | null {
+  try {
+    const url = new URL(value);
+    if (url.hostname !== "drive.google.com") return null;
+    return url.searchParams.get("id") || url.pathname.match(/\/file\/d\/([^/]+)/)?.[1] || null;
+  } catch { return null; }
+}
+
+function MediaPreview({ source, displayUrl, label }: { source: string; displayUrl: string | null; label: string }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [source, displayUrl]);
+  if (failed) return <div className="space-y-3 text-center py-6">
+    <p className="text-sm text-muted-foreground">{driveFileId(source) ? "Foto Google Drive tidak dapat ditampilkan. Masuk dengan akun Google yang memiliki akses, atau minta pemilik file memberikan akses." : "Foto tidak dapat dimuat. File mungkin tidak tersedia atau aksesnya sudah berakhir."}</p>
+    <Button variant="outline" asChild><a href={source.startsWith('https://') ? source : displayUrl || '#'} target="_blank" rel="noopener noreferrer">Buka file asli</a></Button>
+  </div>;
+  return isVideoUrl(source) ? <video src={displayUrl || ""} controls onError={() => setFailed(true)} className="w-full rounded-lg max-h-[70vh]" /> : <img src={displayUrl || ""} alt={label} onError={() => setFailed(true)} className="w-full h-auto rounded-lg max-h-[70vh] object-contain" />;
+}
+
 // Helper to get signed URL for storage paths
 async function getDisplayUrl(photoUrl: string): Promise<string> {
+  const driveId = driveFileId(photoUrl);
+  if (driveId) return `https://drive.google.com/thumbnail?id=${encodeURIComponent(driveId)}&sz=w1200`;
   if (photoUrl.startsWith("http://") || photoUrl.startsWith("https://")) {
     // Check if it's a broken public URL from a private bucket - extract path and get signed URL
-    const packagesMatch = photoUrl.match(/\/storage\/v1\/object\/public\/packages\/(.+)/);
+    const packagesMatch = photoUrl.match(/\/storage\/v1\/object\/(?:public|sign|authenticated)\/packages\/([^?]+)/);
     if (packagesMatch) {
       const { data, error } = await supabase.storage
         .from("packages")
-        .createSignedUrl(packagesMatch[1], 3600);
+        .createSignedUrl(decodeURIComponent(packagesMatch[1]), 3600);
       if (!error && data?.signedUrl) return data.signedUrl;
     }
-    const kepMatch = photoUrl.match(/\/storage\/v1\/object\/public\/kepenghunian-files\/(.+)/);
+    const kepMatch = photoUrl.match(/\/storage\/v1\/object\/(?:public|sign|authenticated)\/kepenghunian-files\/([^?]+)/);
     if (kepMatch) {
       const { data, error } = await supabase.storage
         .from("kepenghunian-files")
-        .createSignedUrl(kepMatch[1], 3600);
+        .createSignedUrl(decodeURIComponent(kepMatch[1]), 3600);
       if (!error && data?.signedUrl) return data.signedUrl;
     }
     return photoUrl;
@@ -45,6 +65,8 @@ function ThumbnailImage({ src, alt, onClick }: { src: string; alt: string; onCli
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
 
+  useEffect(() => { setLoaded(false); setErrored(false); }, [src]);
+  if (errored) return <Button variant="outline" className="w-16 h-16 whitespace-normal text-xs" onClick={onClick}>Buka foto</Button>;
   return (
     <div className="relative w-16 h-16">
       {!loaded && !errored && (
@@ -92,7 +114,9 @@ export function PhotoActions({ photoUrl, label = "Foto", size = "sm" }: PhotoAct
   const handleDownload = async () => {
     try {
       const url = await getDisplayUrl(photoUrl);
+      if (driveFileId(photoUrl)) { window.open(photoUrl, "_blank", "noopener,noreferrer"); return; }
       const response = await fetch(url);
+      if (!response.ok) throw new Error("File tidak tersedia");
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -108,7 +132,6 @@ export function PhotoActions({ photoUrl, label = "Foto", size = "sm" }: PhotoAct
     }
   };
 
-  const isVideo = isVideoUrl(photoUrl);
 
   return (
     <>
@@ -134,19 +157,8 @@ export function PhotoActions({ photoUrl, label = "Foto", size = "sm" }: PhotoAct
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
-            ) : isVideo ? (
-              <video
-                src={displayUrl || ""}
-                controls
-                className="w-full rounded-lg max-h-[70vh]"
-              />
-            ) : (
-              <img
-                src={displayUrl || ""}
-                alt={label}
-                className="w-full h-auto rounded-lg max-h-[70vh] object-contain"
-              />
-            )}
+            ) : <MediaPreview source={photoUrl} displayUrl={displayUrl} label={label} />}
+
             <Button onClick={handleDownload} className="w-full sm:w-auto" disabled={loading}>
               <Download className="w-4 h-4 mr-2" />
               Download {label}
@@ -189,7 +201,7 @@ export function PhotoCell({ photos, showThumbnail = false }: PhotoCellProps) {
             setThumbnailUrls((prev) => ({ ...prev, [index]: url }));
           }).catch(() => {
             // Fallback: use original URL if signed URL fails
-            setThumbnailUrls((prev) => ({ ...prev, [index]: photo.url! }));
+            setThumbnailUrls((prev) => ({ ...prev, [index]: photo.url || "" }));
           });
         }
       });
@@ -213,7 +225,9 @@ export function PhotoCell({ photos, showThumbnail = false }: PhotoCellProps) {
   const handleDownload = async (url: string, label: string) => {
     try {
       const resolvedUrl = await getDisplayUrl(url);
+      if (driveFileId(url)) { window.open(url, "_blank", "noopener,noreferrer"); return; }
       const response = await fetch(resolvedUrl);
+      if (!response.ok) throw new Error("File tidak tersedia");
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -239,7 +253,7 @@ export function PhotoCell({ photos, showThumbnail = false }: PhotoCellProps) {
     <>
       <div className="flex flex-wrap gap-1">
         {validPhotos.map((photo, index) => {
-          const isVideo = isVideoUrl(photo.url!);
+          const isVideo = isVideoUrl(photo.url || "");
           const thumbUrl = thumbnailUrls[index];
           
           if (showThumbnail) {
@@ -248,7 +262,7 @@ export function PhotoCell({ photos, showThumbnail = false }: PhotoCellProps) {
                 {isVideo ? (
                   <div
                     className="w-16 h-16 bg-muted rounded flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => openPreview({ url: photo.url!, label: photo.label })}
+                    onClick={() => openPreview({ url: photo.url || "", label: photo.label })}
                   >
                     <span className="text-xs text-muted-foreground font-medium">▶ Video</span>
                   </div>
@@ -258,11 +272,11 @@ export function PhotoCell({ photos, showThumbnail = false }: PhotoCellProps) {
                   <ThumbnailImage
                     src={thumbUrl}
                     alt={photo.label}
-                    onClick={() => openPreview({ url: photo.url!, label: photo.label })}
+                    onClick={() => openPreview({ url: photo.url || "", label: photo.label })}
                   />
                 )}
                 <button
-                  onClick={() => openPreview({ url: photo.url!, label: photo.label })}
+                  onClick={() => openPreview({ url: photo.url || "", label: photo.label })}
                   className="text-xs text-primary hover:underline block"
                 >
                   Lihat {photo.label}
@@ -276,7 +290,7 @@ export function PhotoCell({ photos, showThumbnail = false }: PhotoCellProps) {
               key={index}
               variant="outline"
               size="sm"
-              onClick={() => openPreview({ url: photo.url!, label: photo.label })}
+              onClick={() => openPreview({ url: photo.url || "", label: photo.label })}
               className="h-6 px-2 text-xs"
             >
               <Eye className="w-3 h-3 mr-1" />
@@ -300,19 +314,8 @@ export function PhotoCell({ photos, showThumbnail = false }: PhotoCellProps) {
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 </div>
-              ) : isVideoUrl(selectedPhoto.url) ? (
-                <video
-                  src={displayUrl || ""}
-                  controls
-                  className="w-full rounded-lg max-h-[70vh]"
-                />
-              ) : (
-                <img
-                  src={displayUrl || ""}
-                  alt={selectedPhoto.label}
-                  className="w-full h-auto rounded-lg max-h-[70vh] object-contain"
-                />
-              )}
+              ) : <MediaPreview source={selectedPhoto.url} displayUrl={displayUrl} label={selectedPhoto.label} />}
+
               <Button
                 onClick={() => handleDownload(selectedPhoto.url, selectedPhoto.label)}
                 className="w-full sm:w-auto"
