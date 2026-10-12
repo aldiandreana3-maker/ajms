@@ -33,6 +33,7 @@ import BroadcastPesan from "./pages/BroadcastPesan";
 import PesanPenghuni from "./pages/kepenghunian/PesanPenghuni";
 import DataPenghuni from "./pages/kepengelolaan/DataPenghuni";
 import TenantRelationOffice from "./pages/kepengelolaan/TenantRelationOffice";
+import PerhitunganNpp from "./pages/kepengelolaan/PerhitunganNpp";
 import Finance from "./pages/kepengelolaan/Finance";
 import SistemKasir from "./pages/kepengelolaan/SistemKasir";
 import KasirListrik from "./pages/kepengelolaan/KasirListrik";
@@ -155,6 +156,7 @@ const App = () => (
               <Route path="/kepenghunian/pemutakhiran-data" element={<PemutakhiranData />} />
               <Route path="/kepengelolaan/data-penghuni" element={guarded(<DataPenghuni />)} />
               <Route path="/kepengelolaan/tro" element={guarded(<TenantRelationOffice />)} />
+              <Route path="/kepengelolaan/tro/npp-2026" element={guarded(<PerhitunganNpp />)} />
               <Route path="/kepengelolaan/tro/pemutakhiran-data" element={<PemutakhiranDataTRO />} />
               <Route path="/kepengelolaan/finance" element={guarded(<Finance />)} />
               <Route path="/kepengelolaan/finance/kasir" element={guarded(<SistemKasir />)} />
