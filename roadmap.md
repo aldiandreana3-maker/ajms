@@ -1,6 +1,7 @@
 # Roadmap
 
-- [ ] Periksa kapasitas penyimpanan dan kelambatan; perbaiki foto keluhan B2112 serta jalur foto sejenis yang gagal tampil.
+- [x] Periksa kapasitas dan kelambatan: disk database 13%, memori 70%, tidak ada kehabisan sumber daya; file sekitar 3,84 GB. Perbaiki pratinjau tautan foto lama dan keterangan kegagalan; foto Cloud nyata terverifikasi.
+- [ ] Tampilkan foto Google Drive keluhan B2112: menunggu akses dari pemilik file Google Drive atau unggahan ulang foto asli.
 
 - [x] Tambahkan kartu/menu NPP 2026, impor sumber asli, rekap dan detail pemilik, filter, validasi, penggabungan manual, pemilihan, serta ekspor Excel; impor 2.511 unit tersimpan dan ekspor 2.088 pemilik terverifikasi dengan total NPP sesuai sumber.
 
