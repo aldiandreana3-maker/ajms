@@ -27,6 +27,7 @@ import {
   ShoppingCart,
   Monitor,
   ClipboardCheck,
+  Calculator,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -207,6 +208,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                   <ChevronDown className={cn("w-4 h-4 transition-transform", kepengelolaanOpen && "rotate-180")} />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="pl-4">
+                  {isAdmin && <NavLink to="/kepengelolaan/tro/npp-2026" className={cn("ml-4 flex items-start gap-3 px-3 py-2 rounded-lg text-sm", location.pathname === "/kepengelolaan/tro/npp-2026" ? "bg-sidebar-primary text-sidebar-primary-foreground" : "text-sidebar-foreground/70 hover:bg-sidebar-accent")}><Calculator className="mt-1 h-4 w-4 shrink-0" /><span>Tenant Relation · Perhitungan NPP 2026 (Untuk Pemilihan)</span></NavLink>}
                   {(fullAccess ? kepengelolaanItems : visibleKepengelolaan).map((item) => {
                     const isActive = location.pathname.startsWith(item.path);
                     return (
