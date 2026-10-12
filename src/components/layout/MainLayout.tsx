@@ -9,6 +9,7 @@ import { AlertTriangle } from "lucide-react";
 import { MonthlyPaymentBanner } from "@/components/shared/MonthlyPaymentBanner";
 import { RestrictedModeGuard } from "@/components/shared/RestrictedModeGuard";
 import { CutoffBanner } from "@/components/shared/CutoffBanner";
+import { ServicePrintArchive } from "@/components/shared/ServicePrintArchive";
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -69,7 +70,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         <MonthlyPaymentBanner />
         <div className="px-4 md:px-6 pt-3"><CutoffBanner /></div>
         <RestrictedModeGuard>
-          <div className="p-4 md:p-6">{children}</div>
+          <div className="p-4 md:p-6"><ServicePrintArchive />{children}</div>
         </RestrictedModeGuard>
       </main>
     </div>

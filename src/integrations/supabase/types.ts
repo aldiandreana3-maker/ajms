@@ -3177,6 +3177,45 @@ export type Database = {
         }
         Relationships: []
       }
+      service_print_archives: {
+        Row: {
+          body_text: string
+          footer_text: string
+          header_text: string
+          id: string
+          orientation: string
+          service_key: string
+          title: string
+          unit_number: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          body_text?: string
+          footer_text?: string
+          header_text?: string
+          id?: string
+          orientation?: string
+          service_key: string
+          title?: string
+          unit_number: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          body_text?: string
+          footer_text?: string
+          header_text?: string
+          id?: string
+          orientation?: string
+          service_key?: string
+          title?: string
+          unit_number?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       shift_definitions: {
         Row: {
           color: string
