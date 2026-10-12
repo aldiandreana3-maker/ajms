@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Tambahkan kartu/menu NPP 2026, impor sumber asli, rekap dan detail pemilik, filter, validasi, penggabungan manual, pemilihan, serta ekspor Excel.
+
 - [x] Samakan cetak keluhan dengan PDF contoh dan kop/gaya penulisan seluruh arsip layanan; kop asli, bagian A–C, tanggal, status, dan tanda tangan terverifikasi pada unit D2206.
 
 - [x] Tambahkan cetak arsip per unit terpisah setiap layanan dengan isi cetak yang dapat diedit dan disimpan Admin; muat, simpan, buka ulang, dan cetak unit nyata terverifikasi.
