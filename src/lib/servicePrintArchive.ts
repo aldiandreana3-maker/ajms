@@ -125,22 +125,34 @@ export function printArchive(title: string, header: string, body: string, footer
     :root { ${['archive-ink','archive-muted','archive-accent','archive-section','archive-line','archive-paper','archive-pending','archive-process','archive-done'].map(name => `--${name}: ${tokens.getPropertyValue(`--${name}`)};`).join(' ')} }
     @page { size: A4 ${orientation === 'landscape' ? 'landscape' : 'portrait'}; margin: 0; }
     * { box-sizing: border-box; letter-spacing: 0; } body { margin:0; font:10pt Arial,sans-serif; color:hsl(var(--archive-ink)); background:hsl(var(--archive-paper)); -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-    .sheet { position:relative; min-height:297mm; width:210mm; margin:0 auto; padding:50mm 17mm 8mm; break-after:page; } .sheet:last-child { break-after:auto; }
-    .letterhead { position:absolute; inset:0; width:100%; height:297mm; z-index:0; } main { position:relative; z-index:1; }
+    .sheet { position:relative; height:296mm; width:210mm; margin:0 auto; padding:50mm 17mm 8mm; break-after:page; break-inside:avoid; } .sheet:last-child { break-after:auto; }
+    .letterhead { position:absolute; inset:0; width:100%; height:296mm; z-index:0; } main { position:relative; z-index:1; display:flow-root; }
     .custom-header { position:absolute; top:11mm; right:14mm; width:58mm; min-height:29mm; z-index:1; font-size:8.5pt; line-height:1.35; white-space:pre-wrap; background:hsl(var(--archive-paper)); color:hsl(var(--archive-accent)); }
     .eyebrow { display:inline-block; background:hsl(var(--archive-accent)); color:hsl(var(--archive-paper)); border-radius:2mm; padding:2mm 8mm; font-size:8pt; font-weight:bold; }
     .heading { display:flex; align-items:center; justify-content:space-between; gap:5mm; border-bottom:0.4mm solid hsl(var(--archive-accent)); padding:5mm 0 3.5mm; margin-bottom:6mm; } h1 { color:hsl(var(--archive-ink)); font-size:18pt; margin:0 0 2mm; } p { margin:0; line-height:1.55; white-space:pre-wrap; overflow-wrap:anywhere; } .heading p { color:hsl(var(--archive-muted)); font-size:9pt; }
     .record { text-align:right; min-width:24mm; color:hsl(var(--archive-ink)); font-weight:bold; font-size:9pt; } .badge { display:block; padding:1.5mm 3mm; border-radius:1.5mm; text-transform:uppercase; background:hsl(var(--archive-accent)); color:hsl(var(--archive-paper)); font-size:8pt; } .pending { background:hsl(var(--archive-pending)); } .proses { background:hsl(var(--archive-process)); } .selesai { background:hsl(var(--archive-done)); }
     section { margin-bottom:8mm; } h2 { font-size:9pt; margin:0 0 2mm; background:hsl(var(--archive-section)); padding:2.5mm 3.5mm; border-radius:1.5mm; break-after:avoid; } .fields { padding:0 3mm; } .grid { display:grid; grid-template-columns:1fr 1fr; gap:5mm 9mm; } .field { margin-bottom:2mm; break-inside:avoid; } .label { text-transform:uppercase; font-weight:bold; font-size:8pt; color:hsl(var(--archive-muted)); margin-bottom:1.5mm; } .value { color:hsl(var(--archive-muted)); white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.6; border-bottom:0.2mm solid hsl(var(--archive-line)); padding-bottom:1mm; min-height:6mm; } .wide { margin-bottom:3mm; } .ruled .value { min-height:24mm; background:repeating-linear-gradient(transparent 0,transparent 7.6mm,hsl(var(--archive-line)) 7.6mm,hsl(var(--archive-line)) 7.8mm); border-bottom:0; background-size:100% 7.8mm; }
     .status-strip { display:flex; justify-content:space-between; gap:3mm; background:hsl(var(--archive-section)); border-radius:1.5mm; padding:2.5mm 3.5mm; font-size:8pt; break-inside:avoid; } .status-strip p { color:hsl(var(--archive-muted)); } small { font-size:7pt; color:hsl(var(--archive-muted)); text-align:right; }
-    .signature { text-align:center; white-space:pre-wrap; line-height:1.6; margin:7mm auto 5mm; color:hsl(var(--archive-muted)); break-inside:avoid; } .signature-line { width:50mm; margin:13mm auto 1mm; border-bottom:0.2mm solid hsl(var(--archive-line)); } em { font-size:8pt; }
+    .signature { text-align:center; white-space:pre-wrap; line-height:1.6; margin:5mm auto 3mm; color:hsl(var(--archive-muted)); break-inside:avoid; } .signature-line { width:50mm; margin:10mm auto 1mm; border-bottom:0.2mm solid hsl(var(--archive-line)); } em { font-size:8pt; }
     .bottom { display:flex; justify-content:space-between; gap:3mm; border-top:0.3mm solid hsl(var(--archive-accent)); padding-top:2mm; font-size:7pt; color:hsl(var(--archive-muted)); }
-    ${orientation === 'landscape' ? '.sheet { width:297mm; min-height:210mm; }.letterhead {height:100%;object-fit:fill;}' : ''}
+    ${orientation === 'landscape' ? '.sheet { width:297mm; height:209mm; }.letterhead {height:100%;object-fit:fill;}' : ''}
   </style></head><body>${pages}</body></html>`);
   popup.document.close();
-  const image = popup.document.querySelector('img');
-  const ready = () => { popup.focus(); popup.print(); };
-  if (image && !image.complete) { image.addEventListener('load', ready, { once: true }); image.addEventListener('error', ready, { once: true }); }
-  else ready();
+  const fitPages = () => {
+    popup.document.querySelectorAll<HTMLElement>('.sheet').forEach(sheet => {
+      const content = sheet.querySelector<HTMLElement>('main');
+      if (!content) return;
+      content.style.zoom = '1';
+      const style = popup.getComputedStyle(sheet);
+      const available = sheet.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom) - 4;
+      const height = content.getBoundingClientRect().height;
+      if (height > available) content.style.zoom = String(available / height);
+    });
+  };
+  popup.addEventListener('beforeprint', fitPages);
+  const images = Array.from(popup.document.images);
+  Promise.all(images.map(image => image.decode().catch(() => undefined)))
+    .then(() => popup.document.fonts.ready)
+    .then(() => { fitPages(); popup.focus(); popup.print(); });
   return true;
 }
