@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Periksa kapasitas penyimpanan dan kelambatan; perbaiki foto keluhan B2112 serta jalur foto sejenis yang gagal tampil.
+
 - [x] Tambahkan kartu/menu NPP 2026, impor sumber asli, rekap dan detail pemilik, filter, validasi, penggabungan manual, pemilihan, serta ekspor Excel; impor 2.511 unit tersimpan dan ekspor 2.088 pemilik terverifikasi dengan total NPP sesuai sumber.
 
 - [x] Samakan cetak keluhan dengan PDF contoh dan kop/gaya penulisan seluruh arsip layanan; kop asli, bagian A–C, tanggal, status, dan tanda tangan terverifikasi pada unit D2206.
