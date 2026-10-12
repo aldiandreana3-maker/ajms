@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAuth } from "@/contexts/AuthContext";
 import { ShieldAlert, UserCheck, ArrowLeft, ArrowRight, ClipboardCheck, Bike, Store, Calculator } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { canAccessPath } from "@/lib/rolePermissions";
 import { Button } from "@/components/ui/button";
 
 const troServices = [
@@ -73,10 +74,10 @@ const colorStyles = {
 
 export default function TenantRelationOffice() {
   const navigate = useNavigate();
-  const { isSuperAdmin, isAdmin, isLimitedAccess } = useAuth();
+  const { isSuperAdmin, isAdmin, isLimitedAccess, role } = useAuth();
 
   // Only admin and super_admin can access, not penghuni or agent
-  const canAccess = (isSuperAdmin || isAdmin) && !isLimitedAccess;
+  const canAccess = (isSuperAdmin || isAdmin || role === 'staff_tro') && !isLimitedAccess;
 
   if (!canAccess) {
     return (
@@ -111,7 +112,7 @@ export default function TenantRelationOffice() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {troServices.map((service, index) => {
+          {troServices.filter(service => canAccessPath(role, service.path)).map((service, index) => {
             const styles = colorStyles[service.color as keyof typeof colorStyles];
             return (
               <Card

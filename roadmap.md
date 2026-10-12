@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Tambah manual, edit dan hapus satu unit NPP dengan konfirmasi; halaman dan database dibatasi untuk Master Dev, Super Admin, Admin dan staf TRO. Perubahan membuat versi baru, tambah/edit/hapus serta baca ulang terverifikasi; 2.511 unit asli aktif tetap utuh.
+
 - [x] Periksa kapasitas dan kelambatan: disk database 13%, memori 70%, tidak ada kehabisan sumber daya; file sekitar 3,84 GB. Perbaiki pratinjau tautan foto lama dan keterangan kegagalan; foto Cloud nyata terverifikasi.
 - [ ] Pemindahan foto keluhan Google Drive: 196 keluhan / 266 tautan diperiksa, seluruh file mendapat 404 dari akun Aldi's Google Drive, termasuk B2112. Menunggu akses akun terhubung ke file asli atau unggahan ulang foto yang cocok; tidak ada foto diganti/dipublikasikan. Fungsi pemindahan privat dan verifikasi penyimpanan siap.
 - [x] Nilai, format, penjumlahan desimal dan ekspor NPP mengikuti kolom asli Excel tanpa konversi/perkiraan; 2.511 unit diperbarui tanpa mengubah alias, C0202 tampil 0.00045 dengan nilai sumber 0.0004544402948078124 tetap tersimpan dan terekspor.

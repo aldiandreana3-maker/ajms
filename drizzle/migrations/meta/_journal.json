@@ -15,6 +15,13 @@
       "when": 1791794953176,
       "tag": "0001_npp_election_datasets",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791799687368,
+      "tag": "0002_npp_manual_management_tro",
+      "breakpoints": true
     }
   ]
 }
