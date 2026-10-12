@@ -21,7 +21,8 @@ export function useNpp() {
  },onSuccess:()=>qc.invalidateQueries({queryKey:['npp-dataset']})});
  const manage=useMutation({mutationFn:async(input:{action:'add'|'edit'|'delete';original?:NppUnit;record?:NppUnit})=>{
   if(!canManage)throw new Error('Akses NPP ditolak');
-  const {error}=await supabase.rpc('manage_npp_unit',{_dataset_id:query.data?.id ?? null as unknown as string,_action:input.action,_original:input.original as unknown as Json ?? null,_record:input.record as unknown as Json ?? null});
+  if(!query.data)throw new Error('Data belum tersedia');
+  const {error}=await supabase.rpc('manage_npp_unit',{_dataset_id:query.data.id,_action:input.action,_original:input.original as unknown as Json ?? null,_record:input.record as unknown as Json ?? null});
   if(error)throw error;
  },onSuccess:()=>qc.invalidateQueries({queryKey:['npp-dataset']})});
  return {...query,save,merge,manage,canManage};
