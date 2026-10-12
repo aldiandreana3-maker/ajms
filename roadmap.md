@@ -1,8 +1,8 @@
 # Roadmap
 
 - [x] Periksa kapasitas dan kelambatan: disk database 13%, memori 70%, tidak ada kehabisan sumber daya; file sekitar 3,84 GB. Perbaiki pratinjau tautan foto lama dan keterangan kegagalan; foto Cloud nyata terverifikasi.
-- [ ] Setelah NPP selesai, pindahkan foto keluhan Google Drive B2112 dan seluruh kasus sejenis yang dapat diakses; verifikasi penyimpanan dan tampilan pengguna berwenang.
-- [ ] Samakan nilai, format, penjumlahan dan ekspor NPP dengan kolom asli Excel tanpa konversi atau perkiraan; uji C0202 dan pemilik multi-unit.
+- [ ] Pemindahan foto keluhan Google Drive: 196 keluhan / 266 tautan diperiksa, seluruh file mendapat 404 dari akun Aldi's Google Drive, termasuk B2112. Menunggu akses akun terhubung ke file asli atau unggahan ulang foto yang cocok; tidak ada foto diganti/dipublikasikan. Fungsi pemindahan privat dan verifikasi penyimpanan siap.
+- [x] Nilai, format, penjumlahan desimal dan ekspor NPP mengikuti kolom asli Excel tanpa konversi/perkiraan; 2.511 unit diperbarui tanpa mengubah alias, C0202 tampil 0.00045 dengan nilai sumber 0.0004544402948078124 tetap tersimpan dan terekspor.
 
 - [x] Tambahkan kartu/menu NPP 2026, impor sumber asli, rekap dan detail pemilik, filter, validasi, penggabungan manual, pemilihan, serta ekspor Excel; impor 2.511 unit tersimpan dan ekspor 2.088 pemilik terverifikasi dengan total NPP sesuai sumber.
 
