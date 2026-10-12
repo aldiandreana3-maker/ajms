@@ -47,6 +47,15 @@
     --sidebar-ring: 142 70% 45%;
 
     /* Custom tokens */
+    --archive-ink: 206 87% 25%;
+    --archive-muted: 210 13% 31%;
+    --archive-accent: 195 86% 43%;
+    --archive-section: 196 70% 95%;
+    --archive-line: 205 25% 85%;
+    --archive-paper: 0 0% 100%;
+    --archive-pending: 26 78% 47%;
+    --archive-process: 195 86% 43%;
+    --archive-done: 142 60% 35%;
     --navy-dark: 220 60% 15%;
     --navy-light: 220 40% 35%;
     --success: 142 70% 40%;

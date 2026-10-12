@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchAllRows } from '@/lib/fetchAllRows';
-import { archiveServices, archiveBody, normalizeArchiveUnit, printArchive } from '@/lib/servicePrintArchive';
+import { archiveServices, archiveBody, normalizeArchiveUnit, printArchive, defaultArchiveHeader, defaultArchiveFooter } from '@/lib/servicePrintArchive';
 
 export function ServicePrintArchive() {
   const { pathname } = useLocation();
@@ -46,8 +46,8 @@ export function ServicePrintArchive() {
         });
         if (!rows.length) { toast.info('Tidak ada arsip untuk unit ini'); return; }
         setCount(rows.length);
-        setDraft({ title: `Arsip ${service.title} — Unit ${unit.trim().toUpperCase()}`, header: 'AJMS\nAPARTEMEN JARRDIN MANAGEMENT SISTEM',
-          body: archiveBody(rows), footer: 'Mengetahui,\n\n\nBadan Pengelola', orientation: 'portrait' });
+        setDraft({ title: `Arsip ${service.title}`, header: defaultArchiveHeader,
+          body: archiveBody(rows, service.table), footer: defaultArchiveFooter, orientation: 'portrait' });
       }
       setLoadedUnit(key);
     } catch (error) { toast.error(error instanceof Error ? error.message : 'Gagal memuat arsip'); }
