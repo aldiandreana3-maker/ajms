@@ -58,6 +58,8 @@ export function NewsSlider({ news }: NewsSliderProps) {
       const threshold = 40;
       if (dx <= -threshold) goNext();
       else if (dx >= threshold) goPrev();
+      suppressClick.current = true;
+      window.setTimeout(() => (suppressClick.current = false), 300);
     }
     touchStartX.current = null;
     if (trackRef.current) {
