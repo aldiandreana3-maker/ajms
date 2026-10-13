@@ -70,8 +70,6 @@ export function NewsSlider({ news }: NewsSliderProps) {
     setPaused(false);
   };
 
-  const suppressClick = useRef(false);
-
   const openDetail = (item: NewsItem) => {
     if (suppressClick.current || !item.content) return;
     setSelected({
