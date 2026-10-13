@@ -100,16 +100,18 @@ export function NewsSlider({ news }: NewsSliderProps) {
       </div>
 
       <div
-        className="overflow-hidden pb-2"
+        className="overflow-hidden pb-2 touch-pan-y"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
-        onTouchStart={() => setPaused(true)}
-        onTouchEnd={() => setPaused(false)}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
       >
         <div
           ref={trackRef}
           className="flex gap-4 transition-transform duration-500 ease-in-out"
-          style={{ transform: `translateX(-${index * 340}px)` }}
+          style={{ transform: `translateX(-${index * slideWidth()}px)` }}
         >
           {news.map((item) => (
             <article
