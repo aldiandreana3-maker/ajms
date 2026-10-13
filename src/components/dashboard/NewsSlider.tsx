@@ -24,6 +24,44 @@ export function NewsSlider({ news }: NewsSliderProps) {
   const [paused, setPaused] = useState(false);
   const [index, setIndex] = useState(0);
   const trackRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchMoved = useRef(false);
+
+  const slideWidth = () => {
+    const first = trackRef.current?.firstElementChild as HTMLElement | null;
+    const w = first ? first.offsetWidth : 340;
+    return w + 16; // card width + gap
+  };
+
+  const goNext = () => setIndex((prev) => (prev + 1) % news.length);
+  const goPrev = () => setIndex((prev) => (prev - 1 + news.length) % news.length);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchMoved.current = false;
+    setPaused(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const dx = e.touches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 10) touchMoved.current = true;
+    if (trackRef.current) {
+      trackRef.current.style.transition = "none";
+      trackRef.current.style.transform = `translateX(calc(${-index * slideWidth()}px + ${dx}px))`;
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current !== null && touchMoved.current) {
+      const dx = e.changedTouches[0].clientX - touchStartX.current;
+      const threshold = 40;
+      if (dx <= -threshold) goNext();
+      else if (dx >= threshold) goPrev();
+    }
+    touchStartX.current = null;
+    setPaused(false);
+  };
 
   const openDetail = (item: NewsItem) => {
     if (!item.content) return;
