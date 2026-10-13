@@ -24,9 +24,54 @@ export function NewsSlider({ news }: NewsSliderProps) {
   const [paused, setPaused] = useState(false);
   const [index, setIndex] = useState(0);
   const trackRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchMoved = useRef(false);
+  const suppressClick = useRef(false);
+
+  const slideWidth = () => {
+    const first = trackRef.current?.firstElementChild as HTMLElement | null;
+    const w = first ? first.offsetWidth : 340;
+    return w + 16; // card width + gap
+  };
+
+  const goNext = () => setIndex((prev) => (prev + 1) % news.length);
+  const goPrev = () => setIndex((prev) => (prev - 1 + news.length) % news.length);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchMoved.current = false;
+    setPaused(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const dx = e.touches[0].clientX - touchStartX.current;
+    if (Math.abs(dx) > 10) touchMoved.current = true;
+    if (trackRef.current) {
+      trackRef.current.style.transition = "none";
+      trackRef.current.style.transform = `translateX(calc(${-index * slideWidth()}px + ${dx}px))`;
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current !== null && touchMoved.current) {
+      const dx = e.changedTouches[0].clientX - touchStartX.current;
+      const threshold = 40;
+      if (dx <= -threshold) goNext();
+      else if (dx >= threshold) goPrev();
+      suppressClick.current = true;
+      window.setTimeout(() => (suppressClick.current = false), 300);
+    }
+    touchStartX.current = null;
+    if (trackRef.current) {
+      trackRef.current.style.transition = "transform 500ms ease-in-out";
+      trackRef.current.style.transform = `translateX(-${index * slideWidth()}px)`;
+    }
+    setPaused(false);
+  };
 
   const openDetail = (item: NewsItem) => {
-    if (!item.content) return;
+    if (suppressClick.current || !item.content) return;
     setSelected({
       id: item.id,
       title: item.title,
@@ -58,16 +103,18 @@ export function NewsSlider({ news }: NewsSliderProps) {
       </div>
 
       <div
-        className="overflow-hidden pb-2"
+        className="overflow-hidden pb-2 touch-pan-y"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
-        onTouchStart={() => setPaused(true)}
-        onTouchEnd={() => setPaused(false)}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
       >
         <div
           ref={trackRef}
           className="flex gap-4 transition-transform duration-500 ease-in-out"
-          style={{ transform: `translateX(-${index * 340}px)` }}
+          style={{ transform: `translateX(-${index * slideWidth()}px)` }}
         >
           {news.map((item) => (
             <article
