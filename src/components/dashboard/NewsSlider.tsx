@@ -26,6 +26,7 @@ export function NewsSlider({ news }: NewsSliderProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
   const touchMoved = useRef(false);
+  const suppressClick = useRef(false);
 
   const slideWidth = () => {
     const first = trackRef.current?.firstElementChild as HTMLElement | null;
