@@ -60,6 +60,10 @@ export function NewsSlider({ news }: NewsSliderProps) {
       else if (dx >= threshold) goPrev();
     }
     touchStartX.current = null;
+    if (trackRef.current) {
+      trackRef.current.style.transition = "transform 500ms ease-in-out";
+      trackRef.current.style.transform = `translateX(-${index * slideWidth()}px)`;
+    }
     setPaused(false);
   };
 
