@@ -8,7 +8,7 @@ export interface CorrespondenceTemplate {
 let sequence = 0;
 const fill = (label: string, value = '', size = 'normal') => `<span class="fill ${size}" contenteditable="true" role="textbox" aria-label="${label}" data-field="${++sequence}">${value}</span>`;
 const line = (label: string, value = '') => `<div class="line"><span class="line-label">${label}</span><span>:</span>${fill(label, value)}</div>`;
-const check = (label: string) => `<label class="choice"><input type="checkbox" aria-label="${label}"/><span contenteditable="true">${label}</span></label>`;
+const check = (label: string, display = label) => `<label class="choice"><input type="checkbox" aria-label="${label}"/><span contenteditable="true">${display}</span></label>`;
 const block = (label: string, height: number, ruled = false) => `<div class="writing ${ruled ? 'ruled' : ''}" style="min-height:${height}mm" contenteditable="true" role="textbox" aria-label="${label}" data-field="${++sequence}"></div>`;
 const heading = (text: string) => `<h2 contenteditable="true">${text}</h2>`;
 const numberDate = () => `<div class="number-date"><div>No : ${fill('Nomor surat')}</div><div>Tgl : ${fill('Tanggal surat')}</div></div>`;
@@ -16,7 +16,7 @@ const signature = (headingText: string, role: string, details = false, name = ''
 const signatures = (items: [string, string, string?][], details = false) => `<div class="signatures ${details ? 'boxed' : ''}">${items.map(([head, role, name]) => signature(head, role, details, name)).join('')}</div>`;
 const title = (text: string, subtitle = '') => `<h1 contenteditable="true">${text}</h1>${subtitle ? `<p class="subtitle" contenteditable="true">${subtitle}</p>` : ''}`;
 const renovationIdentity = () => `<div class="number-date"><div>No. Unit : Tower ${fill('Tower', '', 'short')} Lt. ${fill('Lantai', '', 'short')} No. ${fill('Nomor unit', '', 'short')}</div><div>${line('No.')}${line('Tanggal')}</div></div>`;
-const conditionTable = (group: string, columns: string[], height: number) => `<table class="conditions">${group ? `<tr><th colspan="4" contenteditable="true">${group}</th></tr>` : ''}<tr>${columns.map(c => `<th contenteditable="true">${c}</th>`).join('')}</tr><tr>${columns.map(c => `<td>${check(`${c} Baik`)} ${check(`${c} Bermasalah`)}</td>`).join('')}</tr><tr>${columns.map(c => `<td>${c === 'TES TEKAN' ? `<div>${fill(`${group} Tekanan`, '', 'short')} BAR</div>` : ''}${block(`${group} ${c}`, height)}</td>`).join('')}</tr></table>`;
+const conditionTable = (group: string, columns: string[], height: number) => `<table class="conditions">${group ? `<tr><th colspan="4" contenteditable="true">${group}</th></tr>` : ''}<tr>${columns.map(c => `<th contenteditable="true">${c}</th>`).join('')}</tr><tr>${columns.map(c => `<td>${check(`${group} ${c} Baik`, 'Baik')} ${check(`${group} ${c} Bermasalah`, 'Bermasalah')}</td>`).join('')}</tr><tr>${columns.map(c => `<td>${c === 'TES TEKAN' ? `<div>${fill(`${group} Tekanan`, '', 'short')} BAR</div>` : ''}${block(`${group} ${c}`, height)}</td>`).join('')}</tr></table>`;
 
 const workOrder = `${title('FORM WORK ORDER', 'Catatan Pelaksanaan, Status Pekerjaan & Konfirmasi')}
 <table class="identity-table"><tr><th>No. Work Order</th><td>${fill('No. Work Order')}</td><th>Tanggal</th><td>${fill('Tanggal')}</td></tr><tr><th>Pemohon / Unit</th><td>${fill('Pemohon / Unit')}</td><th>No. Unit</th><td>${fill('No. Unit')}</td></tr><tr><th>Jenis Pekerjaan</th><td>${fill('Jenis Pekerjaan')}</td><th>PIC</th><td>${fill('PIC')}</td></tr></table>

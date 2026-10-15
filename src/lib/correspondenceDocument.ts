@@ -5,7 +5,7 @@ import type { CorrespondenceTemplate } from './correspondenceTemplates';
 export function correspondenceDocument(template: CorrespondenceTemplate, body?: string) {
   const safeTitle = template.title.replace(/[<>&"]/g, '');
   const headUrl = new URL(letterhead, window.location.origin).href;
-  return `<!doctype html><html lang="id"><head><meta charset="utf-8"><title>${safeTitle}</title><style>${styles}${template.orientation === 'landscape' ? '@media print {@page {size:A4 landscape;} html,body {width:297mm;} .letter-page {height:209mm;}}' : ''}</style></head><body><article class="letter-page ${template.orientation}" data-template="${template.id}"><img class="letterhead" src="${headUrl}" alt="Kop surat Badan Pengelola The Jarrdin"/><main class="letter-content">${body ?? template.body}</main></article></body></html>`;
+  return `<!doctype html><html lang="id"><head><meta charset="utf-8"><title>${safeTitle}</title><style>${styles}${template.orientation === 'landscape' ? '@media print {@page {size:A4 landscape;} html,body {width:297mm;} .letter-page {height:209mm;}}' : ''}</style></head><body><article class="letter-page ${template.orientation}" data-template="${template.id}"><img class="letterhead" src="${headUrl}" alt="Kop surat Badan Pengelola The Jarrdin"/><main class="letter-content" contenteditable="true">${body ?? template.body}</main></article></body></html>`;
 }
 
 export function fitCorrespondence(frame: HTMLIFrameElement) {

@@ -13,6 +13,7 @@ p { margin: 3mm 0; }
 .number-date > div { flex: 1; }
 .line { display: flex; align-items: baseline; gap: 2mm; min-height: 5mm; }
 .line-label { min-width: 46mm; }
+[data-template="pencairan-deposit"] .line-label { min-width: 66mm; }
 .fill { display: inline-block; min-width: 22mm; min-height: 4mm; border-bottom: .2mm solid hsl(var(--letter-rule)); vertical-align: baseline; white-space: pre-wrap; overflow-wrap: anywhere; }
 .line .fill { flex: 1; }
 .short { min-width: 10mm; max-width: 23mm; }
@@ -51,9 +52,7 @@ input[type=checkbox]:checked::after { content: '✓'; display: block; line-heigh
 .renovation-intro { margin-top: 12mm; }
 .conditions { font-size: 7pt; }
 .conditions .choice { margin-right: 1mm; }
-.conditions .choice span { font-size: 0; }
-.conditions .choice span::after { content: 'Baik'; font-size: 7pt; }
-.conditions .choice:nth-child(2) span::after { content: 'Bermasalah'; }
+.conditions .choice span { font-size: 7pt; }
 .spacious-lines .line { min-height: 9mm; }
 .permit-lines { margin-top: 12mm; margin-bottom: 16mm; }
 .terms { font-size: 9pt; line-height: 1.25; margin-top: 4mm; }
