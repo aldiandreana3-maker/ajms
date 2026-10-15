@@ -64,11 +64,12 @@ import {
   normalizePhone,
   isValidPhone,
 } from "@/lib/waBlastUtils";
+import { useWaBlastDraft, canSaveWaBlast } from "@/hooks/useWaBlastDraft";
 import ScheduleBlastSection from "@/components/wa-blast/ScheduleBlastSection";
 
 const EMOJIS = ["😊", "👍", "🎉", "🙏", "❤️", "🔥", "✨", "📣", "📢", "✅", "📌", "💬"];
 
-type SendStatus = "pending" | "sending" | "success" | "failed" | "cancelled";
+type SendStatus = "pending" | "sending" | "success" | "failed" | "cancelled" | "unknown";
 
 interface ContactStatus extends WaContact {
   status: SendStatus;
@@ -77,7 +78,8 @@ interface ContactStatus extends WaContact {
 
 export default function WaBlast() {
   const navigate = useNavigate();
-  const { isAdmin, isLoading } = useAuth();
+  const { user, isAdmin, isLoading } = useAuth();
+
 
   // Access guard
   useEffect(() => {
@@ -88,38 +90,59 @@ export default function WaBlast() {
   }, [isAdmin, isLoading, navigate]);
 
   // ---- State: Contacts ----
-  const [contacts, setContacts] = useState<WaContact[]>([]);
-  const [manualName, setManualName] = useState("");
-  const [manualUnit, setManualUnit] = useState("");
-  const [manualPhone, setManualPhone] = useState("");
-  const [bulkText, setBulkText] = useState("");
+  const [contacts, setContacts] = useWaBlastDraft<WaContact[]>(user?.id, "contacts", []);
+  const [manualName, setManualName] = useWaBlastDraft(user?.id, "manualName", "");
+  const [manualUnit, setManualUnit] = useWaBlastDraft(user?.id, "manualUnit", "");
+  const [manualPhone, setManualPhone] = useWaBlastDraft(user?.id, "manualPhone", "");
+  const [bulkText, setBulkText] = useWaBlastDraft(user?.id, "bulkText", "");
 
   // ---- State: Composer ----
-  const [message, setMessage] = useState("");
-  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
-  const [mediaName, setMediaName] = useState<string | null>(null);
+  const [message, setMessage] = useWaBlastDraft(user?.id, "message", "");
+  const [mediaUrl, setMediaUrl] = useWaBlastDraft<string | null>(user?.id, "mediaUrl", null);
+  const [mediaName, setMediaName] = useWaBlastDraft<string | null>(user?.id, "mediaName", null);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const fileMediaRef = useRef<HTMLInputElement>(null);
   const fileExcelRef = useRef<HTMLInputElement>(null);
 
   // ---- State: Safety ----
-  const [safetyMode, setSafetyMode] = useState<SafetyMode>("safe");
-  const [shuffle, setShuffle] = useState(true);
+  const [safetyMode, setSafetyMode] = useWaBlastDraft<SafetyMode>(user?.id, "safetyMode", "safe");
+  const [shuffle, setShuffle] = useWaBlastDraft(user?.id, "shuffle", true);
   const [counters, setCounters] = useState(readCounters());
 
   // Custom mode inputs (user-defined)
-  const [customDelay, setCustomDelay] = useState(5); // detik per pesan
-  const [customCooldownEvery, setCustomCooldownEvery] = useState(10); // setiap N pesan
-  const [customCooldownSec, setCustomCooldownSec] = useState(60); // jeda X detik
-  const [customDailyLimit, setCustomDailyLimit] = useState(500);
+  const [customDelay, setCustomDelay] = useWaBlastDraft(user?.id, "customDelay", 5); // detik per pesan
+  const [customCooldownEvery, setCustomCooldownEvery] = useWaBlastDraft(user?.id, "customCooldownEvery", 10); // setiap N pesan
+  const [customCooldownSec, setCustomCooldownSec] = useWaBlastDraft(user?.id, "customCooldownSec", 60); // jeda X detik
+  const [customDailyLimit, setCustomDailyLimit] = useWaBlastDraft(user?.id, "customDailyLimit", 500);
 
   // ---- State: Sending ----
   const [sending, setSending] = useState(false);
-  const [statuses, setStatuses] = useState<ContactStatus[]>([]);
+  const [statuses, setStatuses] = useWaBlastDraft<ContactStatus[]>(user?.id, "statuses", []);
   const [progress, setProgress] = useState(0);
   const [waitInfo, setWaitInfo] = useState<string | null>(null);
   const [waitCountdown, setWaitCountdown] = useState(0);
   const cancelRef = useRef(false);
+  const runningRef = useRef(false);
+  const [online, setOnline] = useState(navigator.onLine);
+  const [runPayload, setRunPayload] = useWaBlastDraft<{ message: string; mediaUrl: string | null; mediaName: string | null } | null>(user?.id, "runPayload", null);
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      cancelRef.current = true;
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
+  useEffect(() => {
+    if (!runningRef.current && statuses.some((s) => s.status === "sending")) {
+      setStatuses((previous) => previous.map((s) => s.status === "sending"
+        ? { ...s, status: "unknown", error: "Koneksi terputus saat mengirim; periksa WhatsApp sebelum mencoba ulang" } : s));
+    }
+  }, [statuses, setStatuses]);
+  const remaining = statuses.filter((s) => s.status === "pending" || s.status === "cancelled");
+  const retryable = statuses.filter((s) => s.status === "failed" || s.status === "unknown");
 
   // Build effective safety config (apply custom overrides if mode=custom)
   const safety = useMemo(() => {
@@ -252,16 +275,21 @@ export default function WaBlast() {
   };
 
   // ---- Send Blast ----
-  const startBlast = async () => {
+  const startBlast = async (resume = false) => {
+    if (runningRef.current) return;
+    if (!user || !navigator.onLine) return toast.error("Internet terputus. Isian tetap tersimpan di perangkat ini.");
+    if (!canSaveWaBlast(user.id)) return toast.error("Penyimpanan perangkat tidak tersedia. Kosongkan ruang sebelum mengirim.");
+    if (!resume && statuses.length && !window.confirm("Mulai pengiriman baru ke semua kontak? Kontak yang sudah berhasil dapat menerima pesan lagi.")) return;
+    const payload = resume && runPayload ? runPayload : { message, mediaUrl, mediaName };
     if (!contacts.length) {
       toast.error("Tambahkan minimal 1 kontak");
       return;
     }
-    if (!message.trim()) {
+    if (!payload.message.trim()) {
       toast.error("Pesan tidak boleh kosong");
       return;
     }
-    if (risk.level === "high") {
+    if (analyzeSpamRisk(payload.message).level === "high") {
       toast.error("Risiko spam TINGGI, perbaiki pesan dulu");
       return;
     }
@@ -272,15 +300,18 @@ export default function WaBlast() {
     }
 
     cancelRef.current = false;
+    runningRef.current = true;
     setSending(true);
+    setRunPayload(payload);
     setProgress(0);
 
-    const order = shuffle ? shuffleArray(contacts) : contacts;
+    const order = resume ? remaining : (shuffle ? shuffleArray(contacts) : contacts);
+    if (!order.length) { runningRef.current = false; setSending(false); return; }
     const initStatus: ContactStatus[] = order.map((c) => ({
       ...c,
       status: "pending",
     }));
-    setStatuses(initStatus);
+    setStatuses(resume ? statuses.map((s) => order.some((c) => c.id === s.id) ? { ...s, status: "pending", error: undefined } : s) : initStatus);
 
     const results: ContactStatus[] = [];
     let success = 0;
@@ -288,19 +319,7 @@ export default function WaBlast() {
     let cancelled = 0;
 
     for (let i = 0; i < order.length; i++) {
-      if (cancelRef.current) {
-        // Mark remaining as cancelled
-        for (let j = i; j < order.length; j++) {
-          results.push({ ...order[j], status: "cancelled" });
-          cancelled++;
-        }
-        setStatuses((prev) =>
-          prev.map((s, idx) =>
-            idx >= i ? { ...s, status: "cancelled" as SendStatus } : s,
-          ),
-        );
-        break;
-      }
+      if (cancelRef.current || !navigator.onLine) break;
 
       const contact = order[i];
 
@@ -308,10 +327,6 @@ export default function WaBlast() {
       const cur = readCounters();
       if (cur.dayCount >= safety.dailyLimit) {
         toast.error("Limit harian tercapai, blast dihentikan");
-        for (let j = i; j < order.length; j++) {
-          results.push({ ...order[j], status: "cancelled" });
-          cancelled++;
-        }
         break;
       }
       if (cur.hourCount >= safety.hourlyLimit) {
@@ -335,6 +350,8 @@ export default function WaBlast() {
         if (cancelRef.current) continue;
       }
 
+      if (cancelRef.current || !navigator.onLine) break;
+
       // Mark sending
       setStatuses((prev) =>
         prev.map((s) =>
@@ -342,7 +359,7 @@ export default function WaBlast() {
         ),
       );
 
-      const finalMsg = buildMessage(message, contact);
+      const finalMsg = buildMessage(payload.message, contact);
 
       try {
         const { data, error } = await supabase.functions.invoke(
@@ -351,8 +368,8 @@ export default function WaBlast() {
             body: {
               target: contact.phone,
               message: finalMsg,
-              url: mediaUrl ?? undefined,
-              filename: mediaName ?? undefined,
+              url: payload.mediaUrl ?? undefined,
+              filename: payload.mediaName ?? undefined,
             },
           },
         );
@@ -370,13 +387,13 @@ export default function WaBlast() {
         );
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Error";
-        results.push({ ...contact, status: "failed", error: msg });
+        const uncertain = !navigator.onLine || /fetch|network|relay/i.test(msg);
+        const status: SendStatus = uncertain ? "unknown" : "failed";
+        results.push({ ...contact, status, error: msg });
         failed++;
-        setStatuses((prev) =>
-          prev.map((s) =>
-            s.id === contact.id ? { ...s, status: "failed", error: msg } : s,
-          ),
-        );
+        setStatuses((prev) => prev.map((s) => s.id === contact.id
+          ? { ...s, status, error: uncertain ? "Hasil belum pasti; periksa WhatsApp sebelum mencoba ulang" : msg } : s));
+        if (uncertain) break;
       }
 
       setProgress(Math.round(((i + 1) / order.length) * 100));
@@ -389,15 +406,16 @@ export default function WaBlast() {
       }
     }
 
-    // Save log
+    // Save completed attempts only; paused progress remains in the local draft.
     try {
+      if (results.length !== order.length) throw new Error("Pengiriman dijeda; kemajuan tersimpan di perangkat");
       const { data: userData } = await supabase.auth.getUser();
       await (supabase.from("wa_blast_history") as any).insert({
         sender_id: userData.user?.id,
         sender_name: userData.user?.email,
         gateway: "fonnte",
-        message,
-        media_url: mediaUrl,
+        message: payload.message,
+        media_url: payload.mediaUrl,
         safety_mode: safetyMode,
         total_contacts: order.length,
         success_count: success,
@@ -411,10 +429,12 @@ export default function WaBlast() {
       console.error("Failed save log", e);
     }
 
+    runningRef.current = false;
     setSending(false);
     setWaitInfo(null);
     setWaitCountdown(0);
-    toast.success(`Selesai: ${success} berhasil, ${failed} gagal, ${cancelled} dibatalkan`);
+    if (results.length !== order.length) toast.info("Pengiriman dijeda. Klik Lanjutkan setelah internet kembali.");
+    else toast.success(`Selesai: ${success} berhasil, ${failed} gagal, ${cancelled} dibatalkan`);
   };
 
   const waitWithCountdown = async (
@@ -441,11 +461,12 @@ export default function WaBlast() {
     s === "success" ? "Berhasil"
     : s === "failed" ? "Gagal"
     : s === "cancelled" ? "Tidak Terkirim"
+    : s === "unknown" ? "Perlu diperiksa"
     : s === "sending" ? "Mengirim" : "Pending";
 
   const downloadReport = (mode: "failed" | "all") => {
     const rows = (mode === "failed"
-      ? statuses.filter((s) => s.status === "failed" || s.status === "cancelled")
+      ? statuses.filter((s) => s.status === "failed" || s.status === "cancelled" || s.status === "unknown" || s.status === "pending")
       : statuses
     ).map((s, idx) => ({
       No: idx + 1,
@@ -517,6 +538,11 @@ export default function WaBlast() {
         </div>
       </div>
 
+      <div className="max-w-7xl mx-auto px-4 mt-3" role="status">
+        <Badge variant={online ? "secondary" : "destructive"}>
+          {online ? "Isian tersimpan di perangkat ini" : "Internet terputus · isian tetap tersimpan di perangkat ini"}
+        </Badge>
+      </div>
       {/* Hasil Blast - banner penuh setelah selesai kirim */}
       {!sending && statuses.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 mt-6">
@@ -529,6 +555,14 @@ export default function WaBlast() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
+                {remaining.length > 0 && <Button size="sm" disabled={!online} onClick={() => startBlast(true)}>
+                  <Send className="w-4 h-4 mr-1" />Lanjutkan {remaining.length} belum terkirim
+                </Button>}
+                {retryable.length > 0 && <Button size="sm" variant="outline" disabled={!online} onClick={() => {
+                  if (window.confirm("Periksa WhatsApp terlebih dahulu. Hasil yang belum pasti mungkin sudah terkirim. Tandai gagal/perlu diperiksa untuk dicoba ulang?")) {
+                    setStatuses((previous) => previous.map((s) => s.status === "failed" || s.status === "unknown" ? { ...s, status: "pending", error: undefined } : s));
+                  }
+                }}>Siapkan ulang {retryable.length} gagal/perlu diperiksa</Button>}
                 <Button
                   size="sm"
                   variant="outline"
@@ -994,16 +1028,16 @@ export default function WaBlast() {
 
             {!sending ? (
               <Button
-                onClick={startBlast}
+                onClick={() => startBlast(false)}
                 className="w-full bg-success hover:bg-success/90 text-success-foreground"
                 disabled={
-                  !contacts.length ||
+                  !online || !contacts.length ||
                   !message.trim() ||
                   risk.level === "high"
                 }
               >
                 <Send className="w-4 h-4 mr-2" />
-                Kirim ke {contacts.length} kontak
+                {statuses.length ? "Pengiriman baru ke" : "Kirim ke"} {contacts.length} kontak
               </Button>
             ) : (
               <Button
