@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { ServiceRecordPrint } from "@/components/shared/ServiceRecordPrint";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -378,6 +379,7 @@ export default function KartuAkses() {
                       <TableHead>Keterangan</TableHead>
                       <TableHead>Jumlah</TableHead>
                       <TableHead>Foto</TableHead>
+                      <TableHead>Cetak Formulir</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -399,11 +401,12 @@ export default function KartuAkses() {
                             ]}
                           />
                         </TableCell>
+                        <TableCell><ServiceRecordPrint service="access" record={c} /></TableCell>
                       </TableRow>
                     ))}
                     {filteredData.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                           {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada kartu akses"}
                         </TableCell>
                       </TableRow>

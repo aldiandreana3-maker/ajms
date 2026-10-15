@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { ServiceRecordPrint } from "@/components/shared/ServiceRecordPrint";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -424,6 +425,7 @@ export default function KeluhanPenghuni() {
                           </Badge>
                         </TableCell>
                         <TableCell className="space-x-2">
+                          <ServiceRecordPrint service="complaint" record={k} />
                           <Dialog open={selectedKeluhan === k.id} onOpenChange={(open) => !open && setSelectedKeluhan(null)}>
                             <DialogTrigger asChild>
                               <Button

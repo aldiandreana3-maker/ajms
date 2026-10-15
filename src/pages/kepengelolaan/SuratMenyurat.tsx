@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { correspondenceTemplates, type CorrespondenceTemplate } from '@/lib/correspondenceTemplates';
-import { correspondenceDocument, fitCorrespondence } from '@/lib/correspondenceDocument';
+import { correspondenceDocument, fitCorrespondence, printCorrespondence } from '@/lib/correspondenceDocument';
 
 export default function SuratMenyurat() {
   const navigate = useNavigate();
@@ -47,25 +47,9 @@ export default function SuratMenyurat() {
 
   const print = () => {
     if (!selected) return;
-    const popup = window.open('', '_blank');
-    if (!popup) { toast({ title: 'Izinkan jendela cetak pada browser Anda', variant: 'destructive' }); return; }
-    popup.document.write(correspondenceDocument(selected, readBody()));
-    popup.document.close();
-    const fit = () => {
-      const sheet = popup.document.querySelector<HTMLElement>('.letter-page');
-      const content = popup.document.querySelector<HTMLElement>('.letter-content');
-      if (!sheet || !content) return;
-      content.style.zoom = '1';
-      const css = popup.getComputedStyle(sheet);
-      const height = (selected.orientation === 'landscape' ? 209 : 296) * 96 / 25.4;
-      const available = height - parseFloat(css.paddingTop) - parseFloat(css.paddingBottom) - 4;
-      if (content.scrollHeight > available) content.style.zoom = String(available / content.scrollHeight);
-    };
-    popup.addEventListener('beforeprint', fit);
-    Promise.all(Array.from(popup.document.images).map(image => image.decode()))
-      .then(() => popup.document.fonts.ready)
-      .then(() => { fit(); popup.focus(); popup.print(); })
-      .catch(() => { popup.close(); toast({ title: 'Kop surat gagal dimuat. Silakan coba lagi.', variant: 'destructive' }); });
+    void printCorrespondence(selected, readBody()).catch(error => {
+      toast({ title: error instanceof Error ? error.message : 'Gagal mencetak formulir', variant: 'destructive' });
+    });
   };
 
   if (isLoading) return <MainLayout><p>Memuat…</p></MainLayout>;

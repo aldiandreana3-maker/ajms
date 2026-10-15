@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { ServiceRecordPrint } from "@/components/shared/ServiceRecordPrint";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -655,6 +656,7 @@ export default function AbonemenParkir() {
                       <TableHead>Foto Kwitansi</TableHead>
                       <TableHead>Kwitansi Bulanan</TableHead>
                       {isSuperAdmin && <TableHead>Aksi</TableHead>}
+                      <TableHead>Cetak Formulir</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -868,11 +870,12 @@ export default function AbonemenParkir() {
                             </AlertDialog>
                           </TableCell>
                         )}
+                        <TableCell><ServiceRecordPrint service="parking" record={sub} /></TableCell>
                       </TableRow>
                     ))}
                     {filteredData.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={isSuperAdmin ? 17 : 16} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={isSuperAdmin ? 18 : 17} className="text-center text-muted-foreground py-8">
                           {searchValue || dateFilter !== "all" ? "Tidak ada data yang sesuai filter" : "Belum ada abonemen parkir"}
                         </TableCell>
                       </TableRow>

@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { ServiceRecordPrint } from "@/components/shared/ServiceRecordPrint";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -364,20 +365,21 @@ export default function WorkOrder() {
                     <TableHead>Deskripsi</TableHead>
                     <TableHead>Prioritas</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Cetak Formulir</TableHead>
                     {isStaff && <TableHead className="text-right">Aksi</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
+                      <TableCell colSpan={isStaff ? 8 : 7} className="text-center py-8">
                         <Loader2 className="w-6 h-6 animate-spin mx-auto" />
                       </TableCell>
                     </TableRow>
                   ) : filteredData.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={7}
+                        colSpan={isStaff ? 8 : 7}
                         className="text-center py-8 text-muted-foreground"
                       >
                         Belum ada data work order
@@ -420,6 +422,7 @@ export default function WorkOrder() {
                             {statusLabels[order.status]}
                           </Badge>
                         </TableCell>
+                        <TableCell><ServiceRecordPrint service="work-order" record={order} /></TableCell>
                         {isStaff && (
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">

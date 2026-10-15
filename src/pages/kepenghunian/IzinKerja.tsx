@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { ServiceRecordPrint } from "@/components/shared/ServiceRecordPrint";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -488,6 +489,7 @@ export default function IzinKerja() {
                           </Badge>
                         </TableCell>
                         <TableCell className="space-x-2">
+                          <ServiceRecordPrint service="permit" record={p} />
                           <Dialog open={selectedPermit === p.id} onOpenChange={(open) => !open && setSelectedPermit(null)}>
                             <DialogTrigger asChild>
                               <Button
