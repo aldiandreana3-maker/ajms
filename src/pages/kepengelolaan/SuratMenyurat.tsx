@@ -71,7 +71,6 @@ export default function SuratMenyurat() {
   if (isLoading) return <MainLayout><p>Memuat…</p></MainLayout>;
   if (!canAccess) return <MainLayout><div className="flex min-h-[60vh] flex-col items-center justify-center gap-3"><ShieldAlert className="h-12 w-12 text-muted-foreground"/><h1 className="text-xl font-bold">Akses Ditolak</h1></div></MainLayout>;
 
-  const [query, setQuery] = useState('');
   const filtered = correspondenceTemplates.filter(template =>
     template.title.toLowerCase().includes(query.trim().toLowerCase())
   );
