@@ -25,3 +25,29 @@ export function fitCorrespondence(frame: HTMLIFrameElement) {
   sheet.style.zoom = String(scale);
   frame.style.height = `${Math.ceil(pageHeight * scale) + 2}px`;
 }
+
+export async function printCorrespondence(template: CorrespondenceTemplate, body?: string) {
+  const popup = window.open('', '_blank');
+  if (!popup) throw new Error('Izinkan jendela cetak pada browser Anda');
+  popup.document.write(correspondenceDocument(template, body));
+  popup.document.close();
+  const fit = () => {
+    const sheet = popup.document.querySelector<HTMLElement>('.letter-page');
+    const content = popup.document.querySelector<HTMLElement>('.letter-content');
+    if (!sheet || !content) return;
+    content.style.zoom = '1';
+    const css = popup.getComputedStyle(sheet);
+    const height = (template.orientation === 'landscape' ? 209 : 296) * 96 / 25.4;
+    const available = height - parseFloat(css.paddingTop) - parseFloat(css.paddingBottom) - 4;
+    if (content.scrollHeight > available) content.style.zoom = String(available / content.scrollHeight);
+  };
+  popup.addEventListener('beforeprint', fit);
+  try {
+    await Promise.all(Array.from(popup.document.images).map(image => image.decode()));
+    await popup.document.fonts.ready;
+    fit(); popup.focus(); popup.print();
+  } catch {
+    popup.close();
+    throw new Error('Kop surat gagal dimuat. Silakan coba lagi.');
+  }
+}
