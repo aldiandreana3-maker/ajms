@@ -97,6 +97,7 @@ export default function SuratMenyurat() {
           <Button className="w-full" onClick={() => setSelected(template)}><FileText className="mr-2 h-4 w-4"/>Buka Formulir</Button>
         </div>)}
       </div>
+      )}
     </div>
     <Dialog open={selected !== null} onOpenChange={open => { if (!open) close(); }}>
       <DialogContent className="flex max-h-[95dvh] max-w-5xl flex-col gap-3 p-3 sm:p-5" aria-describedby={undefined}>
