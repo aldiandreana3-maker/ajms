@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useWaBlastDraft } from "@/hooks/useWaBlastDraft";
 import type { WaContact } from "@/lib/waBlastUtils";
 
 interface Campaign {
@@ -45,13 +47,14 @@ interface Props {
 }
 
 export default function ScheduleBlastSection({ contacts, message, mediaUrl, mediaName }: Props) {
-  const [name, setName] = useState("");
-  const [dailyCap, setDailyCap] = useState(50);
-  const [hourStart, setHourStart] = useState(9);
-  const [hourEnd, setHourEnd] = useState(20);
-  const [minDelay, setMinDelay] = useState(30);
-  const [maxDelay, setMaxDelay] = useState(90);
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const { user } = useAuth();
+  const [name, setName] = useWaBlastDraft(user?.id, "schedule-name", "");
+  const [dailyCap, setDailyCap] = useWaBlastDraft(user?.id, "schedule-dailyCap", 50);
+  const [hourStart, setHourStart] = useWaBlastDraft(user?.id, "schedule-hourStart", 9);
+  const [hourEnd, setHourEnd] = useWaBlastDraft(user?.id, "schedule-hourEnd", 20);
+  const [minDelay, setMinDelay] = useWaBlastDraft(user?.id, "schedule-minDelay", 30);
+  const [maxDelay, setMaxDelay] = useWaBlastDraft(user?.id, "schedule-maxDelay", 90);
+  const [startDate, setStartDate] = useWaBlastDraft(user?.id, "schedule-startDate", new Date().toISOString().slice(0, 10));
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -78,6 +81,7 @@ export default function ScheduleBlastSection({ contacts, message, mediaUrl, medi
   }, []);
 
   const createCampaign = async () => {
+    if (!navigator.onLine) return toast.error("Internet terputus. Isian jadwal tetap tersimpan di perangkat ini.");
     if (!contacts.length) return toast.error("Tambahkan kontak dulu");
     if (!message.trim()) return toast.error("Pesan kosong");
     if (!name.trim()) return toast.error("Beri nama kampanye");

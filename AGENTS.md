@@ -1,4 +1,5 @@
 # Architecture rules
+- Persist WA Blast drafts and immediate-send checkpoints synchronously in user-scoped browser storage; resume only unsent recipients and require explicit review for uncertain delivery to avoid duplicate sends after connection loss.
 - Keep correspondence templates separate from operational records; use one shared editable A4 document renderer and letterhead, with each template preserving its source orientation and signature layout. This prevents letter editing from changing service history.
 - Prefill individual service print forms through the shared correspondence templates and print renderer using only the selected authorized record; blank unavailable fields and keep print-only edits separate from persisted operational data to prevent invented values and history changes.
 
