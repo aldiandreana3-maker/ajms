@@ -1,0 +1,63 @@
+:root { --letter-ink: 0 0% 8%; --letter-paper: 0 0% 100%; --letter-rule: 0 0% 38%; --letter-table: 0 0% 93%; }
+* { box-sizing: border-box; letter-spacing: 0; }
+html, body { margin: 0; color: hsl(var(--letter-ink)); background: hsl(var(--letter-paper)); font-family: Arial, sans-serif; }
+.letter-page { position: relative; width: 210mm; min-height: 296mm; padding: 43mm 15mm 10mm; font-size: 10pt; line-height: 1.25; transform-origin: top left; }
+.letter-page.landscape { width: 297mm; min-height: 209mm; }
+.letterhead { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; }
+.letter-content { position: relative; z-index: 1; display: flow-root; }
+h1 { text-align: center; font-size: 16pt; line-height: 1.2; margin: 0 0 4mm; }
+h2 { font-size: 10pt; margin: 5mm 0 3mm; }
+p { margin: 3mm 0; }
+.subtitle { text-align: center; margin: 0 0 5mm; }
+.number-date { display: flex; justify-content: space-between; gap: 8mm; margin: 5mm 0; }
+.number-date > div { flex: 1; }
+.line { display: flex; align-items: baseline; gap: 2mm; min-height: 5mm; }
+.line-label { min-width: 46mm; }
+[data-template="pencairan-deposit"] .line-label { min-width: 66mm; }
+.fill { display: inline-block; min-width: 22mm; min-height: 4mm; border-bottom: .2mm solid hsl(var(--letter-rule)); vertical-align: baseline; white-space: pre-wrap; overflow-wrap: anywhere; }
+.line .fill { flex: 1; }
+.short { min-width: 10mm; max-width: 23mm; }
+.writing { white-space: pre-wrap; overflow-wrap: anywhere; border: .2mm solid hsl(var(--letter-rule)); padding: 1.5mm; }
+.ruled { border: 0; padding: 0; line-height: 7mm; background: repeating-linear-gradient(transparent 0, transparent 6.8mm, hsl(var(--letter-rule)) 6.8mm, hsl(var(--letter-rule)) 7mm); }
+.bordered { border: .2mm solid hsl(var(--letter-rule)); padding: 2mm; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 9pt; }
+th, td { border: .2mm solid hsl(var(--letter-rule)); padding: 1.2mm; vertical-align: top; overflow-wrap: anywhere; }
+th { background: hsl(var(--letter-table)); font-weight: bold; }
+td .writing { border: 0; padding: 0; }
+.identity-table th { width: 18%; text-align: left; }
+.identity-table td { width: 32%; }
+.choice { display: inline-flex; align-items: baseline; gap: 1mm; margin-right: 2mm; font-size: inherit; }
+input[type=checkbox] { appearance: none; width: 2.6mm; height: 2.6mm; border: .2mm solid hsl(var(--letter-ink)); margin: 0; flex-shrink: 0; vertical-align: middle; }
+input[type=checkbox]:checked::after { content: '✓'; display: block; line-height: 2.3mm; font-size: 9pt; text-align: center; }
+.signatures { display: flex; justify-content: space-between; gap: 5mm; margin: 6mm 0; text-align: center; break-inside: avoid; }
+.signature { flex: 1; min-width: 0; font-size: 9pt; }
+.signature .writing { border: 0; }
+.signature .fill { min-width: 90%; }
+.role { margin-top: 1mm; }
+.boxed { border: .2mm solid hsl(var(--letter-rule)); gap: 0; margin: 5mm 0; }
+.boxed .signature { border-right: .2mm solid hsl(var(--letter-rule)); text-align: left; font-size: 7.5pt; }
+.boxed .signature:last-child { border-right: 0; }
+.boxed .signature > div:first-child { background: hsl(var(--letter-table)); padding: 1mm; border-bottom: .2mm solid hsl(var(--letter-rule)); text-align: center; }
+.signature-detail { display: flex; gap: 1mm; padding: .5mm 1mm; border-top: .2mm solid hsl(var(--letter-rule)); }
+.signature-detail .fill { min-width: 0; flex: 1; border: 0; }
+.boxed .role { padding: 0 1mm; min-height: 5mm; }
+.footnote { font-size: 8pt; margin-top: 5mm; }
+.footer { text-align: center; font-size: 7pt; margin-top: 5mm; }
+.objection th { width: 32%; vertical-align: middle; text-align: left; }
+.objection td { height: 10mm; vertical-align: middle; }
+.objection .signatures { margin: 0; }
+.objection .choice { font-size: 7.5pt; }
+.received { width: 33%; text-align: center; }
+.center-signatures { width: 44%; margin: 15mm auto 0; }
+.renovation-intro { margin-top: 12mm; }
+.conditions { font-size: 7pt; }
+.conditions .choice { margin-right: 1mm; }
+.conditions .choice span { font-size: 7pt; }
+.spacious-lines .line { min-height: 9mm; }
+.permit-lines { margin-top: 12mm; margin-bottom: 16mm; }
+.terms { font-size: 9pt; line-height: 1.25; margin-top: 4mm; }
+.term-row { display: grid; grid-template-columns: 48mm 1fr; gap: 2mm; }
+.tariffs { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+[contenteditable] { outline: none; }
+@media screen { [contenteditable]:focus { outline: 1px dashed hsl(var(--archive-accent, 195 86% 43%)); } .fill:empty::before, .writing:empty::before { content: '\200B'; } }
+@media print { @page { size: A4 portrait; margin: 0; } html,body { width: 210mm; margin: 0; } .letter-page { height: 296mm; min-height: 0; zoom: 1 !important; break-inside: avoid; overflow: hidden; } * { -webkit-print-color-adjust: exact; print-color-adjust: exact; } [contenteditable]:focus { outline: none; } }

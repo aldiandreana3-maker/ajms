@@ -1,4 +1,5 @@
 # Architecture rules
+- Keep correspondence templates separate from operational records; use one shared editable A4 document renderer and letterhead, with each template preserving its source orientation and signature layout. This prevents letter editing from changing service history.
 
 - Fetch full export datasets using a shared paginated reader with deterministic ordering; never rely on the Data API's default row limit.
 - Mount service-specific unit print archives through MainLayout and a shared route registry; store admin-edited print snapshots separately from original service records so printing never alters operational history.
