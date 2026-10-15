@@ -1,4 +1,6 @@
 # Roadmap
+- [ ] Tambahkan kartu Surat Menyurat TRO dan 10 formulir editable/manual mengikuti contoh, tanda tangan dan cetak A4 potret; verifikasi masing-masing form.
+- [ ] Terapkan file Kop Surat khusus ke seluruh surat: menunggu unggahan file Kop Surat (belum ada pada 10 gambar pertama).
 
 - [x] Tambah manual, edit dan hapus satu unit NPP dengan konfirmasi; halaman dan database dibatasi untuk Master Dev, Super Admin, Admin dan staf TRO. Perubahan membuat versi baru, tambah/edit/hapus serta baca ulang terverifikasi; 2.511 unit asli aktif tetap utuh.
 
