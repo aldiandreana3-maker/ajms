@@ -4,7 +4,7 @@
 
 - Fetch full export datasets using a shared paginated reader with deterministic ordering; never rely on the Data API's default row limit.
 - Mount service-specific unit print archives through MainLayout and a shared route registry; store admin-edited print snapshots separately from original service records so printing never alters operational history.
-- Render editable archive text through a shared structured A4 renderer with the original letterhead asset; interpret legacy snapshots at print time without overwriting admin edits.
+- Render unit print snapshots for mapped services through the same correspondence templates and multi-page A4 renderer as individual records; interpret legacy text in memory and persist document edits separately so both print entry points stay identical without altering history.
 - Store NPP imports and manual unit changes as versioned snapshots with separate owner aliases; serialize manual mutations in a role-validated database function and reject stale versions to preserve source history and concurrent edits.
 - Preserve NPP cell values and Excel display formats separately and sum with decimal arithmetic; display formatting must never overwrite source precision.
 - Restore legacy complaint media only through an admin-validated function using stored Drive IDs, verified private storage uploads and keyset pagination; inaccessible originals remain unchanged.

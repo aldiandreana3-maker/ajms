@@ -2,10 +2,11 @@ import letterhead from '@/assets/jarrdin-letterhead.png';
 import styles from '@/styles/correspondence.css?raw';
 import type { CorrespondenceTemplate } from './correspondenceTemplates';
 
-export function correspondenceDocument(template: CorrespondenceTemplate, body?: string) {
+export function correspondenceDocument(template: CorrespondenceTemplate, body?: string, additionalBodies: string[] = []) {
   const safeTitle = template.title.replace(/[<>&"]/g, '');
   const headUrl = new URL(letterhead, window.location.origin).href;
-  return `<!doctype html><html lang="id"><head><meta charset="utf-8"><title>${safeTitle}</title><style>${styles}${template.orientation === 'landscape' ? '@media print {@page {size:A4 landscape;} html,body {width:297mm;} .letter-page {height:209mm;}}' : ''}</style></head><body><article class="letter-page ${template.orientation}" data-template="${template.id}"><img class="letterhead" src="${headUrl}" alt="Kop surat Badan Pengelola The Jarrdin"/><main class="letter-content">${body ?? template.body}</main></article></body></html>`;
+  const pages = [body ?? template.body, ...additionalBodies].map(content => `<article class="letter-page ${template.orientation}" data-template="${template.id}"><img class="letterhead" src="${headUrl}" alt="Kop surat Badan Pengelola The Jarrdin"/><main class="letter-content">${content}</main></article>`).join('');
+  return `<!doctype html><html lang="id"><head><meta charset="utf-8"><title>${safeTitle}</title><style>${styles}.letter-page {break-after:page;} .letter-page:last-child {break-after:auto;} ${template.orientation === 'landscape' ? '@media print {@page {size:A4 landscape;} html,body {width:297mm;} .letter-page {height:209mm;}}' : ''}</style></head><body>${pages}</body></html>`;
 }
 
 export function fitCorrespondence(frame: HTMLIFrameElement) {
@@ -26,20 +27,21 @@ export function fitCorrespondence(frame: HTMLIFrameElement) {
   frame.style.height = `${Math.ceil(pageHeight * scale) + 2}px`;
 }
 
-export async function printCorrespondence(template: CorrespondenceTemplate, body?: string) {
+export async function printCorrespondence(template: CorrespondenceTemplate, body?: string, additionalBodies: string[] = []) {
   const popup = window.open('', '_blank');
   if (!popup) throw new Error('Izinkan jendela cetak pada browser Anda');
-  popup.document.write(correspondenceDocument(template, body));
+  popup.document.write(correspondenceDocument(template, body, additionalBodies));
   popup.document.close();
   const fit = () => {
-    const sheet = popup.document.querySelector<HTMLElement>('.letter-page');
-    const content = popup.document.querySelector<HTMLElement>('.letter-content');
-    if (!sheet || !content) return;
-    content.style.zoom = '1';
-    const css = popup.getComputedStyle(sheet);
-    const height = (template.orientation === 'landscape' ? 209 : 296) * 96 / 25.4;
-    const available = height - parseFloat(css.paddingTop) - parseFloat(css.paddingBottom) - 4;
-    if (content.scrollHeight > available) content.style.zoom = String(available / content.scrollHeight);
+    popup.document.querySelectorAll<HTMLElement>('.letter-page').forEach(sheet => {
+      const content = sheet.querySelector<HTMLElement>('.letter-content');
+      if (!content) return;
+      content.style.zoom = '1';
+      const css = popup.getComputedStyle(sheet);
+      const height = (template.orientation === 'landscape' ? 209 : 296) * 96 / 25.4;
+      const available = height - parseFloat(css.paddingTop) - parseFloat(css.paddingBottom) - 4;
+      if (content.scrollHeight > available) content.style.zoom = String(available / content.scrollHeight);
+    });
   };
   popup.addEventListener('beforeprint', fit);
   try {
