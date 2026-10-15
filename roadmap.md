@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Simpan isian dan kemajuan WA Blast per pengguna; pulihkan setelah refresh/offline dan lanjutkan penerima belum terkirim tanpa mengirim ulang keberhasilan.
 - [x] Samakan tombol cetak per unit pada lima layanan dengan formulir Surat Menyurat, tanpa kata Arsip; edit/simpan terpisah dari data asli, cetak beberapa data satu formulir A4 per data.
 - [x] Samakan cetak per data pada lima layanan dengan formulir Surat Menyurat; lima data nyata terisi otomatis, perubahan isian terbawa saat cetak tanpa mengubah data asli, dan seluruh hasil satu halaman A4 terverifikasi.
 - [x] Tambahkan kartu Surat Menyurat TRO dan 10 formulir editable/manual dengan struktur contoh, tanda tangan dan Chief Tenant Relation; pengisian, checkbox, buka ulang dan 10 cetakan masing-masing satu halaman A4 potret terverifikasi. Kop sementara memakai kop Jarrdin yang tersedia; isian hanya bertahan selama halaman terbuka.
