@@ -16,6 +16,7 @@ export default function SuratMenyurat() {
   const { isAdmin, role, isLoading } = useAuth();
   const { toast } = useToast();
   const [selected, setSelected] = useState<CorrespondenceTemplate | null>(null);
+  const [query, setQuery] = useState('');
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [resetOpen, setResetOpen] = useState(false);
   const [revision, setRevision] = useState(0);
