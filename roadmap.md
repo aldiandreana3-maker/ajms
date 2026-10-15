@@ -1,6 +1,7 @@
 # Roadmap
 - [x] Tambahkan kartu Surat Menyurat TRO dan 10 formulir editable/manual dengan struktur contoh, tanda tangan dan Chief Tenant Relation; pengisian, checkbox, buka ulang dan 10 cetakan masing-masing satu halaman A4 potret terverifikasi. Kop sementara memakai kop Jarrdin yang tersedia; isian hanya bertahan selama halaman terbuka.
-- [ ] Terapkan file Kop Surat khusus ke seluruh surat: menunggu unggahan file Kop Surat (belum ada pada 10 gambar pertama).
+- [x] Kop Jarrdin yang tersedia disetujui pengguna; pertahankan kop dengan website thejarrdin.com tanpa perubahan.
+- [x] Tambahkan 10 formulir batch kedua sesuai gambar dengan kop tetap, isian manual dan Chief Tenant Relation; seluruh cetakan satu halaman A4 terverifikasi (8 potret, Fitting Out dan Leave Message landscape). Gambar bernama Izin_Huni berjudul Ijin Kegiatan / Promosi dan mengikuti judul gambar.
 
 - [x] Tambah manual, edit dan hapus satu unit NPP dengan konfirmasi; halaman dan database dibatasi untuk Master Dev, Super Admin, Admin dan staf TRO. Perubahan membuat versi baru, tambah/edit/hapus serta baca ulang terverifikasi; 2.511 unit asli aktif tetap utuh.
 

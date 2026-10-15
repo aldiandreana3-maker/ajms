@@ -58,6 +58,37 @@ input[type=checkbox]:checked::after { content: '✓'; display: block; line-heigh
 .terms { font-size: 9pt; line-height: 1.25; margin-top: 4mm; }
 .term-row { display: grid; grid-template-columns: 48mm 1fr; gap: 2mm; }
 .tariffs { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+.copy-note { text-align: right; font-size: 8pt; margin-top: 6mm; }
+.compact-lines .line { min-height: 4mm; }
+.drawing-table { font-size: 7pt; margin: 2mm 0; }
+.drawing-table th, .drawing-table td { padding: .5mm; }
+.drawing-table .fill { min-width: 13mm; min-height: 2.5mm; }
+.drawing-table .choice { margin-right: .5mm; }
+.fitting-grid { display: grid; grid-template-columns: 1fr 36mm; gap: 4mm; }
+.fitting-grid .line-label { min-width: 79mm; }
+.fitting-grid aside { align-self: center; font-size: 8pt; }
+.signature-headings { display: grid; grid-template-columns: 1fr 1fr; margin-top: 5mm; }
+.message-grid { display: grid; grid-template-columns: 45mm 1fr; margin: 5mm 0 7mm; }
+.promotion-identity th { width: 30%; text-align: left; }
+.promotion-table { margin-top: 4mm; }
+.promotion-table td { vertical-align: middle; }
+.promotion-table .fill { min-width: 12mm; }
+.terms ol { padding-left: 5mm; margin: 1mm 0; }
+.request-table .mini-box { width: 40%; margin-left: auto; font-size: 8pt; }
+.request-table .mini-box .line-label { min-width: 12mm; }
+.request-table .mini-box .fill { min-width: 8mm; }
+.request-table .writing { clear: both; }
+.request-table .signature { text-align: left; }
+.request-table .choice { font-size: 7pt; }
+.address-signature { width: 46%; margin: 6mm 0 0 auto; }
+[data-template="pernyataan-alamat"] .line-label { min-width: 48mm; }
+[data-template="pernyataan-alamat"] h1 { font-size: 13pt; }
+[data-template="pernyataan-alamat"] .subtitle { font-size: 8pt; font-style: italic; }
+[data-template="ijin-renovasi"] .terms { font-size: 7.5pt; }
+[data-template="ijin-renovasi"] .boxed .writing { min-height: 13mm !important; }
+[data-template="izin-kegiatan-promosi"] .terms { font-size: 8pt; }
+[data-template="izin-cctv"] .signature { font-size: 8pt; }
+[data-template="lost-found"] .line-label { min-width: 40mm; }
 [contenteditable] { outline: none; }
 @media screen { [contenteditable]:focus { outline: 1px dashed hsl(var(--archive-accent, 195 86% 43%)); } .fill:empty::before, .writing:empty::before { content: '\200B'; } }
 @media print { @page { size: A4 portrait; margin: 0; } html,body { width: 210mm; margin: 0; } .letter-page { height: 296mm; min-height: 0; zoom: 1 !important; break-inside: avoid; overflow: hidden; } * { -webkit-print-color-adjust: exact; print-color-adjust: exact; } [contenteditable]:focus { outline: none; } }
