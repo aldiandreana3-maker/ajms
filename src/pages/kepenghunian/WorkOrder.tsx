@@ -422,6 +422,7 @@ export default function WorkOrder() {
                             {statusLabels[order.status]}
                           </Badge>
                         </TableCell>
+                        <TableCell><ServiceRecordPrint service="work-order" record={order} /></TableCell>
                         {isStaff && (
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
