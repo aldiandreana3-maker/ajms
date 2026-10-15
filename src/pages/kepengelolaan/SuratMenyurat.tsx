@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Printer, RotateCcw, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, FileText, Printer, RotateCcw, Search, ShieldAlert, X } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +16,7 @@ export default function SuratMenyurat() {
   const { isAdmin, role, isLoading } = useAuth();
   const { toast } = useToast();
   const [selected, setSelected] = useState<CorrespondenceTemplate | null>(null);
+  const [query, setQuery] = useState('');
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [resetOpen, setResetOpen] = useState(false);
   const [revision, setRevision] = useState(0);
@@ -69,16 +71,33 @@ export default function SuratMenyurat() {
   if (isLoading) return <MainLayout><p>Memuat…</p></MainLayout>;
   if (!canAccess) return <MainLayout><div className="flex min-h-[60vh] flex-col items-center justify-center gap-3"><ShieldAlert className="h-12 w-12 text-muted-foreground"/><h1 className="text-xl font-bold">Akses Ditolak</h1></div></MainLayout>;
 
+  const filtered = correspondenceTemplates.filter(template =>
+    template.title.toLowerCase().includes(query.trim().toLowerCase())
+  );
+
   return <MainLayout>
     <div className="space-y-6">
       <div className="flex items-center gap-3"><Button variant="ghost" size="icon" aria-label="Kembali ke Tenant Relation Office" onClick={() => navigate('/kepengelolaan/tro')}><ArrowLeft className="h-5 w-5"/></Button><h1 className="text-2xl font-bold">Surat Menyurat</h1></div>
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input value={query} onChange={event => setQuery(event.target.value)} placeholder="Cari formulir surat..." className="pl-9 pr-9" aria-label="Cari formulir surat" />
+        {query && (
+          <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" aria-label="Bersihkan pencarian">
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+      {filtered.length === 0 ? (
+        <p className="py-10 text-center text-muted-foreground">Tidak ada formulir yang cocok dengan "{query}".</p>
+      ) : (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {correspondenceTemplates.map((template, index) => <div key={template.id} className="flex flex-col rounded-lg border border-border bg-card p-5">
+        {filtered.map((template, index) => <div key={template.id} className="flex flex-col rounded-lg border border-border bg-card p-5">
           <div className="mb-4 flex items-center justify-between"><FileText className="h-7 w-7 text-primary"/><span className="text-xs text-muted-foreground">{String(index + 1).padStart(2, '0')} · A4 {template.orientation === 'portrait' ? 'Potret' : 'Landscape'}</span></div>
           <h2 className="mb-5 flex-1 text-lg font-semibold">{template.title}</h2>
           <Button className="w-full" onClick={() => setSelected(template)}><FileText className="mr-2 h-4 w-4"/>Buka Formulir</Button>
         </div>)}
       </div>
+      )}
     </div>
     <Dialog open={selected !== null} onOpenChange={open => { if (!open) close(); }}>
       <DialogContent className="flex max-h-[95dvh] max-w-5xl flex-col gap-3 p-3 sm:p-5" aria-describedby={undefined}>
