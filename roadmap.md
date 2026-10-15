@@ -1,5 +1,5 @@
 # Roadmap
-- [ ] Samakan cetak per data pada lima layanan dengan formulir Surat Menyurat; isi otomatis dari data yang dipilih dan verifikasi cetak A4.
+- [x] Samakan cetak per data pada lima layanan dengan formulir Surat Menyurat; lima data nyata terisi otomatis, perubahan isian terbawa saat cetak tanpa mengubah data asli, dan seluruh hasil satu halaman A4 terverifikasi.
 - [x] Tambahkan kartu Surat Menyurat TRO dan 10 formulir editable/manual dengan struktur contoh, tanda tangan dan Chief Tenant Relation; pengisian, checkbox, buka ulang dan 10 cetakan masing-masing satu halaman A4 potret terverifikasi. Kop sementara memakai kop Jarrdin yang tersedia; isian hanya bertahan selama halaman terbuka.
 - [x] Kop Jarrdin yang tersedia disetujui pengguna; pertahankan kop dengan website thejarrdin.com tanpa perubahan.
 - [x] Tambahkan 10 formulir batch kedua sesuai gambar dengan kop tetap, isian manual dan Chief Tenant Relation; seluruh cetakan satu halaman A4 terverifikasi (8 potret, Fitting Out dan Leave Message landscape). Gambar bernama Izin_Huni berjudul Ijin Kegiatan / Promosi dan mengikuti judul gambar.
