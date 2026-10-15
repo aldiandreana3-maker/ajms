@@ -58,7 +58,7 @@ export function archiveValue(value: unknown): string {
 
 export function archiveBody(rows: Record<string, unknown>[], serviceKey?: string) {
   if (serviceKey === 'keluhan') return rows.map((row, index) => [
-    `ARSIP ${index + 1}`,
+    `FORMULIR ${index + 1}`,
     `Status: ${archiveValue(row.status)}`,
     'A. IDENTITAS PENGHUNI',
     `Nama penghuni: ${archiveValue(row.penghuni_name)}`,
@@ -73,7 +73,7 @@ export function archiveBody(rows: Record<string, unknown>[], serviceKey?: string
     `Terakhir diperbarui: ${archiveValue(row.updated_at)}`,
   ].join('\n')).join('\n\n────────────────────────────────\n\n');
   return rows.map((row, index) => [
-    `ARSIP ${index + 1}`,
+    `FORMULIR ${index + 1}`,
     ...Object.entries(labels).filter(([key]) => row[key] != null && row[key] !== '')
       .map(([key, label]) => `${label}: ${archiveValue(row[key])}`),
   ].join('\n')).join('\n\n────────────────────────────────\n\n');
@@ -85,7 +85,7 @@ export function printArchive(title: string, header: string, body: string, footer
   const escape = (text: string) => text.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char] ?? char));
   const tokens = getComputedStyle(document.documentElement);
   const isComplaint = /keluhan/i.test(title);
-  const blocks = body.split(/\n\s*─{3,}\s*\n|\n(?=ARSIP \d+\s*\n)/).filter(block => block.trim());
+  const blocks = body.split(/\n\s*─{3,}\s*\n|\n(?=(?:ARSIP|FORMULIR) \d+\s*\n)/).filter(block => block.trim());
   const statusNames: Record<string, string> = { pending: 'Pending', proses: 'Proses', selesai: 'Selesai' };
   const statusNotes: Record<string, string> = { pending: 'menunggu hasil pengecekan dan tindak lanjut', proses: 'sedang dalam pengecekan dan penanganan', selesai: 'penanganan keluhan telah selesai' };
   const identityLabels = ['nama penghuni', 'nama lengkap', 'nama pemilik / penerima', 'nomor unit', 'telepon', 'nomor telepon', 'email', 'tanggal pencatatan'];
@@ -93,7 +93,7 @@ export function printArchive(title: string, header: string, body: string, footer
     const fields: { label: string; value: string }[] = [];
     const extra: string[] = [];
     for (const line of block.split('\n')) {
-      if (/^ARSIP \d+$/i.test(line.trim()) || /^[A-C]\. /i.test(line.trim())) continue;
+      if (/^(?:ARSIP|FORMULIR) \d+$/i.test(line.trim()) || /^[A-C]\. /i.test(line.trim())) continue;
       const match = line.match(/^([^:]+):\s*(.*)$/);
       if (match) fields.push({ label: match[1], value: match[2] });
       else if (fields.length) fields[fields.length - 1].value += `\n${line}`;
@@ -119,7 +119,7 @@ export function printArchive(title: string, header: string, body: string, footer
     const detail = isComplaint
       ? fieldHtml('SUBJEK KELUHAN', value('subjek keluhan', 'subjek'), true) + fieldHtml('URAIAN KELUHAN', value('uraian keluhan', 'deskripsi'), true)
       : fields.filter(field => !identityLabels.includes(field.label.toLowerCase()) && !['status', 'terakhir diperbarui', 'tanggapan', 'catatan'].includes(field.label.toLowerCase())).map(field => fieldHtml(field.label, field.value, true)).join('');
-    return `<article class="sheet"><img class="letterhead" src="${escape(new URL(letterhead, window.location.origin).href)}" alt="" />${header !== defaultArchiveHeader && header !== 'AJMS\nAPARTEMEN JARRDIN MANAGEMENT SISTEM' ? `<div class="custom-header">${escape(header)}</div>` : ''}<main><div class="eyebrow">ARSIP PENGHUNI</div><div class="heading"><div><h1>${escape(title.replace(/\s*[—–-]\s*Unit\s+.*$/i, '').toUpperCase())}</h1><p>${isComplaint ? 'Dokumentasi keluhan dan tindak lanjut pengelolaan unit' : 'Dokumentasi administrasi dan pengelolaan unit'}</p></div><div class="record">ARSIP ${index + 1}${status ? `<span class="badge ${['pending', 'proses', 'selesai'].includes(status) ? status : ''}">${escape(statusNames[status] || status)}</span>` : ''}</div></div>${section('A. IDENTITAS PENGHUNI', identity, true)}${section(isComplaint ? 'B. RINCIAN KELUHAN' : 'B. RINCIAN LAYANAN', detail)}${section('C. PENCATATAN DAN TINDAK LANJUT', fieldHtml('CATATAN PEMERIKSAAN / TINDAK LANJUT', value('catatan pemeriksaan / tindak lanjut', 'tanggapan', 'catatan'), true, true))}${extra.length ? `<p>${escape(extra.join('\n'))}</p>` : ''}<div class="status-strip"><div><strong>STATUS PENANGANAN</strong><p>${escape(statusNames[status] || status || '—')}${statusNotes[status] && isComplaint ? ` — ${escape(statusNotes[status])}` : ''}</p></div><small>Terakhir diperbarui: ${escape(value('terakhir diperbarui'))}</small></div><div class="signature">${footer === defaultArchiveFooter || footer === 'Mengetahui,\n\n\nBadan Pengelola' ? 'Mengetahui,<br><strong>BADAN PENGELOLA</strong><div class="signature-line"></div><em>Nama dan tanda tangan</em>' : escape(footer)}</div><div class="bottom"><span>Dokumen internal — arsip administrasi ${escape(isComplaint ? 'keluhan penghuni' : 'layanan penghuni')}</span><span>AJMS | THE JARRDIN</span></div></main></article>`;
+    return `<article class="sheet"><img class="letterhead" src="${escape(new URL(letterhead, window.location.origin).href)}" alt="" />${header !== defaultArchiveHeader && header !== 'AJMS\nAPARTEMEN JARRDIN MANAGEMENT SISTEM' ? `<div class="custom-header">${escape(header)}</div>` : ''}<main><div class="eyebrow">FORMULIR PENGHUNI</div><div class="heading"><div><h1>${escape(title.replace(/^Arsip\s+/i, '').replace(/\s*[—–-]\s*Unit\s+.*$/i, '').toUpperCase())}</h1><p>${isComplaint ? 'Dokumentasi keluhan dan tindak lanjut pengelolaan unit' : 'Dokumentasi administrasi dan pengelolaan unit'}</p></div><div class="record">FORMULIR ${index + 1}${status ? `<span class="badge ${['pending', 'proses', 'selesai'].includes(status) ? status : ''}">${escape(statusNames[status] || status)}</span>` : ''}</div></div>${section('A. IDENTITAS PENGHUNI', identity, true)}${section(isComplaint ? 'B. RINCIAN KELUHAN' : 'B. RINCIAN LAYANAN', detail)}${section('C. PENCATATAN DAN TINDAK LANJUT', fieldHtml('CATATAN PEMERIKSAAN / TINDAK LANJUT', value('catatan pemeriksaan / tindak lanjut', 'tanggapan', 'catatan'), true, true))}${extra.length ? `<p>${escape(extra.join('\n'))}</p>` : ''}<div class="status-strip"><div><strong>STATUS PENANGANAN</strong><p>${escape(statusNames[status] || status || '—')}${statusNotes[status] && isComplaint ? ` — ${escape(statusNotes[status])}` : ''}</p></div><small>Terakhir diperbarui: ${escape(value('terakhir diperbarui'))}</small></div><div class="signature">${footer === defaultArchiveFooter || footer === 'Mengetahui,\n\n\nBadan Pengelola' ? 'Mengetahui,<br><strong>BADAN PENGELOLA</strong><div class="signature-line"></div><em>Nama dan tanda tangan</em>' : escape(footer)}</div><div class="bottom"><span>Dokumen internal — administrasi ${escape(isComplaint ? 'keluhan penghuni' : 'layanan penghuni')}</span><span>AJMS | THE JARRDIN</span></div></main></article>`;
   }).join('');
   popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escape(title)}</title><style>
     :root { ${['archive-ink','archive-muted','archive-accent','archive-section','archive-line','archive-paper','archive-pending','archive-process','archive-done'].map(name => `--${name}: ${tokens.getPropertyValue(`--${name}`)};`).join(' ')} }
