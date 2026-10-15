@@ -2,12 +2,13 @@ import { useNavigate } from "react-router-dom";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShieldAlert, UserCheck, ArrowLeft, ArrowRight, ClipboardCheck, Bike, Store, Calculator } from "lucide-react";
+import { ShieldAlert, UserCheck, ArrowLeft, ArrowRight, ClipboardCheck, Bike, Store, Calculator, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { canAccessPath } from "@/lib/rolePermissions";
 import { Button } from "@/components/ui/button";
 
 const troServices = [
+  { icon: FileText, title: "Surat Menyurat", description: "Formulir dan berita acara", color: "primary", path: "/kepengelolaan/tro/surat-menyurat" },
   { icon: Calculator, title: "Perhitungan NPP 2026 (Untuk Pemilihan)", description: "Rekap kepemilikan unit dan nilai NPP pemilik", color: "primary", path: "/kepengelolaan/tro/npp-2026" },
   {
     icon: UserCheck,
