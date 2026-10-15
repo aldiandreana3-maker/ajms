@@ -54,7 +54,10 @@ input[type=checkbox]:checked::after { content: '✓'; display: block; line-heigh
 .conditions .choice { margin-right: 1mm; }
 .conditions .choice span { font-size: 7pt; }
 .spacious-lines .line { min-height: 9mm; }
-.permit-lines { margin-top: 12mm; margin-bottom: 16mm; }
+.permit-lines { margin-top: 12mm; margin-bottom: 8mm; }
+.approval-signature { width: 46%; margin: 0 auto; text-align: center; break-inside: avoid; }
+.approval-signature .writing { min-height: 15mm !important; }
+.approval-signature .role { margin-top: 1mm; }
 .terms { font-size: 9pt; line-height: 1.25; margin-top: 4mm; }
 .term-row { display: grid; grid-template-columns: 48mm 1fr; gap: 2mm; }
 .tariffs { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
