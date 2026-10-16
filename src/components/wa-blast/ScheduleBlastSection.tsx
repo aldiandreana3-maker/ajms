@@ -66,7 +66,7 @@ export default function ScheduleBlastSection({ contacts, message, mediaUrl, medi
 
   const loadCampaigns = async () => {
     setLoading(true);
-    const { data, error } = await (supabase.from("wa_blast_campaigns") as any)
+    const { data, error } = await supabase.from("wa_blast_campaigns")
       .select("*")
       .order("created_at", { ascending: false })
       .limit(20);
@@ -90,7 +90,7 @@ export default function ScheduleBlastSection({ contacts, message, mediaUrl, medi
     setCreating(true);
     try {
       const { data: u } = await supabase.auth.getUser();
-      const { data: camp, error: cErr } = await (supabase.from("wa_blast_campaigns") as any)
+      const { data: camp, error: cErr } = await supabase.from("wa_blast_campaigns")
         .insert({
           name: name.trim(),
           message_template: message,
@@ -129,7 +129,7 @@ export default function ScheduleBlastSection({ contacts, message, mediaUrl, medi
       // Insert in chunks of 500
       for (let i = 0; i < queueRows.length; i += 500) {
         const batch = queueRows.slice(i, i + 500);
-        const { error: qErr } = await (supabase.from("wa_blast_queue") as any).insert(batch);
+        const { error: qErr } = await supabase.from("wa_blast_queue").insert(batch);
         if (qErr) throw qErr;
       }
 
@@ -145,7 +145,7 @@ export default function ScheduleBlastSection({ contacts, message, mediaUrl, medi
   };
 
   const setStatus = async (id: string, status: string) => {
-    const { error } = await (supabase.from("wa_blast_campaigns") as any)
+    const { error } = await supabase.from("wa_blast_campaigns")
       .update({ status })
       .eq("id", id);
     if (error) toast.error(error.message);
@@ -156,7 +156,7 @@ export default function ScheduleBlastSection({ contacts, message, mediaUrl, medi
   };
 
   const deleteCampaign = async (id: string) => {
-    const { error } = await (supabase.from("wa_blast_campaigns") as any).delete().eq("id", id);
+    const { error } = await supabase.from("wa_blast_campaigns").delete().eq("id", id);
     if (error) toast.error(error.message);
     else {
       toast.success("Kampanye dihapus");
