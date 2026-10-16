@@ -316,7 +316,7 @@ export default function WaBlast() {
     const results: ContactStatus[] = [];
     let success = 0;
     let failed = 0;
-    let cancelled = 0;
+    const cancelled = 0;
 
     for (let i = 0; i < order.length; i++) {
       if (cancelRef.current || !navigator.onLine) break;
@@ -410,7 +410,7 @@ export default function WaBlast() {
     try {
       if (results.length !== order.length) throw new Error("Pengiriman dijeda; kemajuan tersimpan di perangkat");
       const { data: userData } = await supabase.auth.getUser();
-      await (supabase.from("wa_blast_history") as any).insert({
+      await supabase.from("wa_blast_history").insert({
         sender_id: userData.user?.id,
         sender_name: userData.user?.email,
         gateway: "fonnte",
@@ -444,7 +444,7 @@ export default function WaBlast() {
   ) => {
     if (!quiet) setWaitInfo(label);
     for (let s = seconds; s > 0; s--) {
-      if (cancelRef.current) break;
+      if (cancelRef.current || !navigator.onLine) break;
       setWaitCountdown(s);
       await sleep(1000);
     }
