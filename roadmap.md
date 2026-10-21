@@ -1,6 +1,6 @@
 # Roadmap
-- [ ] Tampilkan rincian biaya paket Lovable, Cloud/backend, domain dan layanan tambahan sebelum melanjutkan pembangunan WA Blast simulasi.
-- [ ] Bangun ulang hanya WA Blast sesuai prompt: persetujuan/opt-out, template resmi, kampanye dan antrean tersimpan, status terpisah, audit, penghentian otomatis, simulasi; produksi menunggu pilihan provider resmi dan uji penerima internal.
+- [x] Periksa rincian biaya paket Lovable, saldo, pemakaian Cloud/backend dan kebutuhan domain/layanan tambahan; nominal invoice pribadi dan provider/domain belum tersedia.
+- [ ] Bangun ulang hanya WA Blast sesuai prompt: persetujuan/opt-out, template resmi, kampanye dan antrean tersimpan, status terpisah, audit, penghentian otomatis, simulasi. Ditahan atas permintaan pengguna untuk meninjau biaya sebelum melanjutkan; produksi menunggu provider resmi dan uji penerima internal.
 - [ ] Simpan isian dan kemajuan WA Blast per pengguna; pulihkan setelah refresh/offline dan lanjutkan penerima belum terkirim tanpa mengirim ulang keberhasilan.
 - [x] Samakan tombol cetak per unit pada lima layanan dengan formulir Surat Menyurat, tanpa kata Arsip; edit/simpan terpisah dari data asli, cetak beberapa data satu formulir A4 per data.
 - [x] Samakan cetak per data pada lima layanan dengan formulir Surat Menyurat; lima data nyata terisi otomatis, perubahan isian terbawa saat cetak tanpa mengubah data asli, dan seluruh hasil satu halaman A4 terverifikasi.
