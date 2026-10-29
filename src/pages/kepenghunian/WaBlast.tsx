@@ -424,7 +424,7 @@ export default function WaBlast() {
         contacts_snapshot: order,
         results,
         status: cancelRef.current ? "cancelled" : "completed",
-      });
+      } as never);
     } catch (e) {
       console.error("Failed save log", e);
     }
