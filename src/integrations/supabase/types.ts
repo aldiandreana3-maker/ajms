@@ -3982,9 +3982,52 @@ export type Database = {
         }
         Returns: string
       }
+      public_dashboard_settings: {
+        Args: never
+        Returns: {
+          setting_key: string
+          setting_value: number
+        }[]
+      }
+      public_queue_status: {
+        Args: never
+        Returns: {
+          called_at: string
+          completed_at: string
+          created_at: string
+          created_by: string
+          id: string
+          queue_date: string
+          queue_number: string
+          status: string
+        }[]
+      }
+      public_system_status: {
+        Args: never
+        Returns: {
+          activated_at: string
+          deactivated_at: string
+          monthly_notification_enabled: boolean
+          monthly_status: string
+          system_status: string
+        }[]
+      }
       refresh_unit_billing_status: {
         Args: { _unit_id?: string }
         Returns: undefined
+      }
+      take_queue_number: {
+        Args: never
+        Returns: {
+          called_at: string
+          completed_at: string
+          created_at: string
+          created_by: string
+          id: string
+          queue_date: string
+          queue_number: string
+          status: string
+        }[]
       }
       user_owns_unit_number: {
         Args: { _unit_number: string; _user_id: string }

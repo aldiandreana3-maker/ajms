@@ -3,13 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface DashboardSetting {
-  id: string;
+  id?: string;
   setting_key: string;
   setting_value: number;
-  description: string | null;
-  updated_by: string | null;
-  created_at: string;
-  updated_at: string;
+  description?: string | null;
+  updated_by?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export function useDashboardSettings() {
@@ -20,9 +20,7 @@ export function useDashboardSettings() {
     placeholderData: [] as DashboardSetting[],
     queryFn: async (): Promise<DashboardSetting[]> => {
       try {
-        const { data, error } = await (supabase
-          .from("dashboard_settings" as any)
-          .select("*") as any);
+        const { data, error } = await supabase.rpc("public_dashboard_settings");
 
         if (error) throw error;
         return data || [];

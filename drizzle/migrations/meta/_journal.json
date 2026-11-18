@@ -22,6 +22,13 @@
       "when": 1791799687368,
       "tag": "0002_npp_manual_management_tro",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794991310477,
+      "tag": "0003_scope_selected_security_policies",
+      "breakpoints": true
     }
   ]
 }

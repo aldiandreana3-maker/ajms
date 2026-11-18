@@ -9,3 +9,5 @@
 - Store NPP imports and manual unit changes as versioned snapshots with separate owner aliases; serialize manual mutations in a role-validated database function and reject stale versions to preserve source history and concurrent edits.
 - Preserve NPP cell values and Excel display formats separately and sum with decimal arithmetic; display formatting must never overwrite source precision.
 - Restore legacy complaint media only through an admin-validated function using stored Drive IDs, verified private storage uploads and keyset pagination; inaccessible originals remain unchanged.
+- Expose public dashboard settings, system status and queue status through fixed-field database functions; issue queue numbers under an advisory lock to preserve public access without leaking account IDs or trusting client numbering.
+- Enforce notification recipient roles and allow non-admin updates only to the caller's read marker; role-scoped RLS alone must not allow changing notification content or other readers.

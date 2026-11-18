@@ -77,11 +77,7 @@ export function useCashier() {
   const { data: queues = [], isLoading: queuesLoading } = useQuery({
     queryKey: ["cashier-queues", today()],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("cashier_queues")
-        .select("*")
-        .eq("queue_date", today())
-        .order("created_at", { ascending: true });
+      const { data, error } = await supabase.rpc("public_queue_status");
       if (error) throw error;
       return data as QueueItem[];
     },
@@ -105,34 +101,7 @@ export function useCashier() {
   // Take a queue number
   const takeQueue = useMutation({
     mutationFn: async () => {
-      const todayDate = today();
-      const { data: lastQueue } = await supabase
-        .from("cashier_queues")
-        .select("queue_number")
-        .eq("queue_date", todayDate)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-
-      let nextNum = 1;
-      if (lastQueue?.queue_number) {
-        const num = parseInt(lastQueue.queue_number.replace("A", ""), 10);
-        nextNum = num + 1;
-      }
-      const queueNumber = `A${String(nextNum).padStart(3, "0")}`;
-
-      const { data: { user } } = await supabase.auth.getUser();
-
-      const { data, error } = await supabase
-        .from("cashier_queues")
-        .insert({
-          queue_number: queueNumber,
-          queue_date: todayDate,
-          status: "waiting",
-          created_by: user?.id || null,
-        })
-        .select()
-        .single();
+      const { data, error } = await supabase.rpc("take_queue_number").single();
 
       if (error) throw error;
       return data as QueueItem;

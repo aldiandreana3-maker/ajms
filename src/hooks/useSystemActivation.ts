@@ -7,9 +7,7 @@ export function useSystemStatus() {
     queryKey: ["system-activation"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("system_activation")
-        .select("*")
-        .limit(1)
+        .rpc("public_system_status")
         .maybeSingle();
       if (error) throw error;
       return data;
