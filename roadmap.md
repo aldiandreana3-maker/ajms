@@ -1,6 +1,6 @@
 # Roadmap
 - [x] Impor laporan November: 21 Keluhan, 7 Kartu Akses, 4 Izin Kerja/Fitting Out dan 2 Work Order baru; 9 barang unik sudah tercatat, 3 baris sumber duplikat dilewati. Pengguna mengonfirmasi seluruh tanggal November 2026; lima halaman layanan terverifikasi dengan akun Super Admin. Data lama tidak ditimpa.
-- [ ] Rekonsiliasi Work Order A1933: Excel 7 November/selesai, website 10 November/pending; menunggu pilihan pengguna sebelum mengganti tanggal/status data lama.
+- [x] Rekonsiliasi Work Order A1933 sesuai pilihan pengguna mengikuti Excel: tanggal dan tanggal selesai 7 November 2026, status selesai; baca ulang database dan tampilan halaman dengan akun masuk terverifikasi, data pekerjaan lainnya tetap.
 - [x] Periksa rincian biaya paket Lovable, saldo, pemakaian Cloud/backend dan kebutuhan domain/layanan tambahan; nominal invoice pribadi dan provider/domain belum tersedia.
 - [ ] Bangun ulang hanya WA Blast sesuai prompt: persetujuan/opt-out, template resmi, kampanye dan antrean tersimpan, status terpisah, audit, penghentian otomatis, simulasi. Ditahan atas permintaan pengguna untuk meninjau biaya sebelum melanjutkan; produksi menunggu provider resmi dan uji penerima internal.
 - [ ] Simpan isian dan kemajuan WA Blast per pengguna; pulihkan setelah refresh/offline dan lanjutkan penerima belum terkirim tanpa mengirim ulang keberhasilan.
