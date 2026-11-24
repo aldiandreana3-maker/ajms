@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
       return json({ error: "Pesan maksimal 4096 karakter" }, 400);
     }
 
-    const FONNTE_API_TOKEN = Deno.env.get("FONNTE_API_TOKEN");
+    const FONNTE_API_TOKEN = Deno.env.get("FONNTE_API_TOKEN")?.trim();
     if (!FONNTE_API_TOKEN) {
       return json({ error: "FONNTE_API_TOKEN belum dikonfigurasi" }, 500);
     }
