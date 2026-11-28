@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   AlertTriangle,
   Trash2,
+  LogOut,
   StopCircle,
   Clock,
   X,
@@ -78,7 +79,7 @@ interface ContactStatus extends WaContact {
 
 export default function WaBlast() {
   const navigate = useNavigate();
-  const { user, isAdmin, isLoading, role } = useAuth();
+  const { user, isAdmin, isLoading, role, signOut } = useAuth();
   const canUse = isAdmin || role === "staff_wa_blast";
 
 
@@ -233,6 +234,22 @@ export default function WaBlast() {
   const clearContacts = () => {
     setContacts([]);
     toast.info("Daftar kontak dikosongkan");
+  };
+
+  const clearAll = async () => {
+    if (sending) { toast.error("Hentikan pengiriman dulu sebelum menghapus semua"); return; }
+    if (!window.confirm("Hapus semua nomor, pesan, dan riwayat pengiriman hari ini?")) return;
+    setContacts([]); setManualName(""); setManualUnit(""); setManualPhone(""); setBulkText("");
+    setMessage(""); setMediaUrl(null); setMediaName(null); setStatuses([]); setRunPayload(null); setProgress(0);
+    localStorage.removeItem("wa_blast_counters_v1");
+    setCounters(readCounters());
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    if (user?.id) {
+      const { error } = await supabase.from("wa_blast_history").delete()
+        .eq("sender_id", user.id).gte("created_at", start.toISOString());
+      if (error) { toast.error("Isian dihapus, tetapi riwayat hari ini gagal dihapus"); return; }
+    }
+    toast.success("Semua isian dan riwayat hari ini dihapus");
   };
 
   // ---- Composer helpers ----
@@ -533,6 +550,12 @@ export default function WaBlast() {
               Kirim pesan ke banyak penghuni dengan sistem keamanan tinggi
             </p>
           </div>
+          <Button variant="outline" size="sm" onClick={clearAll} className="text-destructive">
+            <Trash2 className="w-4 h-4 sm:mr-1" /><span className="hidden sm:inline">Hapus Semua</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={async () => { await signOut(); navigate("/auth"); }} aria-label="Keluar">
+            <LogOut className="w-4 h-4 sm:mr-1" /><span className="hidden sm:inline">Keluar</span>
+          </Button>
           <Badge className="bg-success text-success-foreground hidden sm:flex">
             Fonnte API
           </Badge>
