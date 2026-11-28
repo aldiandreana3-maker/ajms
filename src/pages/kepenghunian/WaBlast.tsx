@@ -78,16 +78,17 @@ interface ContactStatus extends WaContact {
 
 export default function WaBlast() {
   const navigate = useNavigate();
-  const { user, isAdmin, isLoading } = useAuth();
+  const { user, isAdmin, isLoading, role } = useAuth();
+  const canUse = isAdmin || role === "staff_wa_blast";
 
 
   // Access guard
   useEffect(() => {
-    if (!isLoading && !isAdmin) {
+    if (!isLoading && !canUse) {
       toast.error("Akses ditolak");
       navigate("/");
     }
-  }, [isAdmin, isLoading, navigate]);
+  }, [canUse, isLoading, navigate]);
 
   // ---- State: Contacts ----
   const [contacts, setContacts] = useWaBlastDraft<WaContact[]>(user?.id, "contacts", []);
