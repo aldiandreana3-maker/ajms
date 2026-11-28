@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { TopMenu } from "./TopMenu";
 import { cn } from "@/lib/utils";
@@ -19,9 +20,14 @@ export function MainLayout({ children }: MainLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const { data: systemStatus } = useSystemStatus();
-  const { isSuperAdmin } = useAuth();
+  const { isSuperAdmin, role } = useAuth();
   const isMobile = useIsMobile();
+  const location = useLocation();
   const isSystemInactive = systemStatus?.system_status === "tidak_aktif";
+
+  if (role === "staff_wa_blast" && !location.pathname.startsWith("/kepenghunian/wa-blast") && !location.pathname.startsWith("/profile")) {
+    return <Navigate to="/kepenghunian/wa-blast" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-background">

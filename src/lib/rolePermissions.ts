@@ -19,7 +19,8 @@ export type AppRole =
   | "staff_outsourcing_cleaning"
   | "staff_outsourcing_security"
   | "staff_outsourcing_parkir"
-  | "staff_purchasing";
+  | "staff_purchasing"
+  | "staff_wa_blast";
 
 // Path prefixes each role is allowed to access (besides always-public ones)
 const ROLE_ALLOWED_PREFIXES: Record<string, string[] | "*"> = {
@@ -81,6 +82,7 @@ const ROLE_ALLOWED_PREFIXES: Record<string, string[] | "*"> = {
     "/karyawan",
     "/profile",
   ],
+  staff_wa_blast: ["/kepenghunian/wa-blast", "/profile"],
   staff: [
     "/karyawan",
     "/profile",
@@ -113,6 +115,7 @@ const ALWAYS_ALLOWED = [
 ];
 
 export function canAccessPath(role: AppRole | null, path: string): boolean {
+  if (role === "staff_wa_blast") return path === "/auth" || ["/kepenghunian/wa-blast", "/profile"].some((p) => path === p || path.startsWith(p + "/"));
   if (!role) return ALWAYS_ALLOWED.some((p) => path === p || path.startsWith(p + "/"));
   if (ALWAYS_ALLOWED.some((p) => path === p || path.startsWith(p + "/"))) return true;
 

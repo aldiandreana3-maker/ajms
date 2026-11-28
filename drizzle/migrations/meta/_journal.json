@@ -29,6 +29,20 @@
       "when": 1794991310477,
       "tag": "0003_scope_selected_security_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795825901383,
+      "tag": "0004_add_wa_blast_role",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795825916002,
+      "tag": "0005_wa_blast_operator_access",
+      "breakpoints": true
     }
   ]
 }

@@ -85,7 +85,7 @@ function useUserUnits() {
 
 export default function AksesUnit() {
   const navigate = useNavigate();
-  const { isSuperAdmin, isAdmin, isLimitedAccess } = useAuth();
+  const { isMasterDev, isSuperAdmin, isAdmin, isLimitedAccess } = useAuth();
   const { data: users, isLoading: usersLoading } = useUsers();
   const { data: unitMap, isLoading: unitsLoading } = useUserUnits();
   const [search, setSearch] = useState("");
@@ -111,6 +111,7 @@ export default function AksesUnit() {
   const filteredUsers = users?.filter((u) => {
     // Sembunyikan akun developer kecuali untuk super admin
     if (u.email === "admin@ajms.com" && !isSuperAdmin) return false;
+    if (u.role === "staff_wa_blast" && !isMasterDev) return false;
     const q = search.toLowerCase();
     const units = unitMap?.get(u.id) || [];
     return (

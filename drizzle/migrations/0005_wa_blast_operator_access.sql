@@ -1,0 +1,5 @@
+CREATE POLICY "WA operator manage wa_blast_history" ON public.wa_blast_history FOR ALL TO authenticated USING (public.has_role(auth.uid(),'staff_wa_blast')) WITH CHECK (public.has_role(auth.uid(),'staff_wa_blast'));
+CREATE POLICY "WA operator manage campaigns" ON public.wa_blast_campaigns FOR ALL TO authenticated USING (public.has_role(auth.uid(),'staff_wa_blast')) WITH CHECK (public.has_role(auth.uid(),'staff_wa_blast'));
+CREATE POLICY "WA operator manage queue" ON public.wa_blast_queue FOR ALL TO authenticated USING (public.has_role(auth.uid(),'staff_wa_blast')) WITH CHECK (public.has_role(auth.uid(),'staff_wa_blast'));
+CREATE POLICY "WA operator media upload" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id='wa-blast-media' AND public.has_role(auth.uid(),'staff_wa_blast'));
+CREATE POLICY "WA operator media delete" ON storage.objects FOR DELETE TO authenticated USING (bucket_id='wa-blast-media' AND public.has_role(auth.uid(),'staff_wa_blast'));

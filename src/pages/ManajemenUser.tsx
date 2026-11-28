@@ -19,7 +19,7 @@ import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type AppRole = "master_dev" | "super_admin" | "admin" | "staff" | "agent" | "penghuni" | "staff_tro" | "staff_finance" | "staff_hrd_ga" | "staff_engineering" | "staff_building_service" | "staff_outsourcing_cleaning" | "staff_outsourcing_security" | "staff_outsourcing_parkir";
+type AppRole = "master_dev" | "super_admin" | "admin" | "staff" | "agent" | "penghuni" | "staff_tro" | "staff_finance" | "staff_hrd_ga" | "staff_engineering" | "staff_building_service" | "staff_outsourcing_cleaning" | "staff_outsourcing_security" | "staff_outsourcing_parkir" | "staff_wa_blast";
 
 const roleLabels: Record<string, string> = {
   master_dev: "Master Development",
@@ -36,6 +36,7 @@ const roleLabels: Record<string, string> = {
   staff_outsourcing_cleaning: "Staff Outsourcing Cleaning",
   staff_outsourcing_security: "Staff Outsourcing Security",
   staff_outsourcing_parkir: "Staff Outsourcing Parkir",
+  staff_wa_blast: "Operator WA Blast",
 };
 
 const roleColors: Record<string, string> = {
@@ -53,13 +54,14 @@ const roleColors: Record<string, string> = {
   staff_outsourcing_cleaning: "bg-teal-500/20 text-teal-600 border-teal-500/30",
   staff_outsourcing_security: "bg-rose-500/20 text-rose-600 border-rose-500/30",
   staff_outsourcing_parkir: "bg-amber-500/20 text-amber-600 border-amber-500/30",
+  staff_wa_blast: "bg-green-600/20 text-green-700 border-green-600/30",
 };
 
 const HIDDEN_MASTER_EMAILS = ["admin@ajms.com", "admin_ajms@ajms.com"];
 
 const isHiddenMasterAccount = (email: string, role: AppRole | null) => {
   const normalizedEmail = email.trim().toLowerCase();
-  return HIDDEN_MASTER_EMAILS.includes(normalizedEmail) || role === "master_dev";
+  return HIDDEN_MASTER_EMAILS.includes(normalizedEmail) || role === "master_dev" || role === "staff_wa_blast";
 };
 
 // Roles available for selection - master_dev never shown, super_admin only for master_dev
@@ -80,6 +82,7 @@ const getSelectableRoles = (isMasterDev: boolean) => {
   if (isMasterDev) {
     roles.unshift({ value: "master_dev", label: "Master Development" });
     roles.splice(1, 0, { value: "super_admin", label: "Super Admin" });
+    roles.push({ value: "staff_wa_blast", label: "Operator WA Blast" });
   }
   return roles;
 };
@@ -120,6 +123,7 @@ export default function ManajemenUser() {
     staff_outsourcing_security: 3,
     staff_outsourcing_parkir: 3,
     staff_purchasing: 3,
+    staff_wa_blast: 3,
     agent: 4,
     penghuni: 5,
   };

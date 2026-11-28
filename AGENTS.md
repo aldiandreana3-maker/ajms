@@ -10,4 +10,4 @@
 - Preserve NPP cell values and Excel display formats separately and sum with decimal arithmetic; display formatting must never overwrite source precision.
 - Restore legacy complaint media only through an admin-validated function using stored Drive IDs, verified private storage uploads and keyset pagination; inaccessible originals remain unchanged.
 - Expose public dashboard settings, system status and queue status through fixed-field database functions; issue queue numbers under an advisory lock to preserve public access without leaking account IDs or trusting client numbering.
-- Enforce notification recipient roles and allow non-admin updates only to the caller's read marker; role-scoped RLS alone must not allow changing notification content or other readers.
+- Enforce notification recipient roles and allow non-admin updates only to the caller's read marker; role-scoped RLS alone must not allow changing notification content or other readers.- Restricted operator roles (e.g. staff_wa_blast) are whitelisted in canAccessPath and redirected by MainLayout; hidden from non-master_dev user lists so only Master Dev manages them.
